@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { ListFilter, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface SearchBarProps {
@@ -53,13 +53,13 @@ const SearchBar = ({ value, onChange, onSearch }: SearchBarProps) => {
                     onBlur={() => handleBlur()}
                 />
             </div>
-            <div className="fixed bottom-0 right-0 mb-23 p-5">
+            <div className="fixed bottom-0 right-0 mb-23 p-5 z-1">
                 <button
                     className={`bg-[#403D39] rounded-full p-5 cursor-pointer transition-all duration-500 ${isClicked && "scale-95 rotate-2 translate-y-1 opacity-50"}`}
                     disabled={isFocused}
                     onPointerDown={(e) => e.preventDefault()}
                     onClick={handleSearchClick}>
-                    <Search size={32} strokeWidth={2.5} className={`transition-colors duration-500 ${isFocused ? "text-[#FFFCF2]" : "text-gray-400"}`} />
+                    <Search size={32} strokeWidth={2.5} className={`transition-colors duration-500 ${isFocused ? "text-[#FFFCF2]" : "text-light-gray"}`} />
                 </button>
             </div>
         </>
