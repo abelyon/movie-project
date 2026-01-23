@@ -2,4 +2,15 @@
 
 @theme {
     --font-space-grotesk: 'Space Grotesk', sans-serif;
+    --color-light-gray: #CCC5B9;
+}
+
+@utility no-scrollbar {
+  /* Firefox */
+  scrollbar-width: none;
+  
+  /* Chrome, Safari, Edge */
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

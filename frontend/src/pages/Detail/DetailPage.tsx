@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 
-const DiscoveryDetail = () => {
+const Detail = () => {
     const { type, id } = useParams();
 
     return (
@@ -12,4 +12,4 @@ const DiscoveryDetail = () => {
     )
 }
 
-export default DiscoveryDetail;
+export default Detail;
