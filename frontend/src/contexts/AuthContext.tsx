@@ -12,7 +12,7 @@ const TOKEN_KEY = "movie_token";
 
 export interface User {
   id: number;
-  name: string;
+  username: string;
   email: string;
 }
 
@@ -21,7 +21,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -89,12 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (name: string, email: string, password: string, passwordConfirmation?: string) => {
+    async (username: string, email: string, password: string, passwordConfirmation?: string) => {
       const res = await fetch(`${API_BASE_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
+          username,
           email,
           password,
           password_confirmation: passwordConfirmation ?? password,

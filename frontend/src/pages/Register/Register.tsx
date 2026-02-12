@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
 const Register = () => {
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -25,7 +25,7 @@ const Register = () => {
     }
     setLoading(true);
     try {
-      await register(name, email, password, passwordConfirmation);
+      await register(username, email, password, passwordConfirmation);
       navigate("/discovery");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -47,11 +47,11 @@ const Register = () => {
             </p>
           )}
           <div>
-            <label className="block text-light-gray text-sm font-space-grotesk font-medium mb-2">Name</label>
+            <label className="block text-light-gray text-sm font-space-grotesk font-medium mb-2">Username</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full p-3 rounded-full bg-[#252422] text-[#FFFCF2] font-space-grotesk focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors"
             />
