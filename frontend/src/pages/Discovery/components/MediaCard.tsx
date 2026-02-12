@@ -1,33 +1,46 @@
-import { forwardRef, use, useEffect } from "react";
+import { forwardRef } from "react";
+import { Link } from "react-router-dom";
 import type { TmdbMedia } from "../../../types/tmdb";
-import { PcCase } from "lucide-react";
+import SavedButton from "./SavedButton";
 
 interface MediaCardProps {
   item: TmdbMedia;
+  isSaved?: boolean;
+  onSavedChange?: () => void;
 }
 
 const MediaCard = forwardRef<HTMLDivElement, MediaCardProps>(
-  ({ item }, ref) => {
+  ({ item, isSaved = false, onSavedChange }, ref) => {
     const posterUrl = item.poster_path
       ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
       : "/placeholder.png";
 
-    const rating = item.vote_average ? item.vote_average.toFixed(1) : "N/A";
+    const type = item.media_type === "tv" ? "tv" : "movie";
+    const certification = item.certification ?? null;
+
     return (
       <div ref={ref} className="relative">
-        <img
-          src={posterUrl}
-          alt={item.title ?? item.name}
-          className="w-full h-full object-cover rounded-[36px]"
-        />
-
-        <div className="absolute top-0 right-0 p-5">
-          <div className=" bg-amber-300 rounded-full">
-            <p className="text-black font-bold font-space-grotesk text-[22px] px-3 py-1">
-              {rating}
-            </p>
+        <Link to={`/discovery/${type}/${item.id}`} className="block">
+          <div className="relative w-full aspect-2/3 rounded-[36px] overflow-hidden">
+            <img
+              src={posterUrl}
+              alt={item.title ?? item.name ?? ""}
+              className="w-full h-full object-cover"
+            />
+            {certification && (
+              <div className="absolute top-0 right-0 m-5 rounded-full px-4 py-2 bg-amber-400 flex items-center justify-center">
+                <span className="text-xl text-black font-space-grotesk font-bold">
+                  {certification}
+                </span>
+              </div>
+            )}
+            <SavedButton
+              item={item}
+              isSaved={isSaved}
+              onToggle={onSavedChange}
+            />
           </div>
-        </div>
+        </Link>
       </div>
     );
   },

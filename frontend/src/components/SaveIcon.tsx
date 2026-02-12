@@ -1,0 +1,35 @@
+interface SaveIconProps {
+  className?: string;
+  size?: number;
+  strokeWidth?: number;
+  stroke?: string;
+  fill?: string;
+}
+
+const SaveIcon = ({
+  className,
+  size = 32,
+  strokeWidth = 2.5,
+  stroke = "currentColor",
+  fill = "none",
+}: SaveIconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    fill={fill}
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M25.3334 23.8305C25.3334 26.1339 22.8449 27.578 20.8449 26.4352L17.4884 24.5172C16.5661 23.9902 15.4339 23.9902 14.5116 24.5172L11.1551 26.4352C9.15514 27.578 6.66669 26.1339 6.66669 23.8305V7.66667C6.66669 6.95942 6.94764 6.28115 7.44774 5.78105C7.94783 5.28095 8.62611 5 9.33335 5H22.6667C23.3739 5 24.0522 5.28095 24.5523 5.78105C25.0524 6.28115 25.3334 6.95942 25.3334 7.66667V23.8305Z"
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill={fill}
+    />
+  </svg>
+);
+
+export default SaveIcon;

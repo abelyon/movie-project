@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'auth.token' => \App\Http\Middleware\AuthenticateWithToken::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
