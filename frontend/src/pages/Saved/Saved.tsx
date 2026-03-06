@@ -4,38 +4,38 @@ import type { TmdbMedia } from "../../types/tmdb";
 import MediaCard from "../Discovery/components/MediaCard";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
-interface Favourite {
+interface SavedItem {
   id: number;
   media_type: string;
   tmdb_id: number;
 }
 
 const Saved = () => {
-  const [favourites, setFavourites] = useState<Favourite[]>([]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [mediaDetails, setMediaDetails] = useState<Record<string, TmdbMedia>>({});
   const [loading, setLoading] = useState(true);
 
-  const loadFavourites = useCallback(async () => {
+  const loadSaved = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.getFavouritesWithDetails();
-      const favs = (data.favourites ?? []) as (Favourite & { detail?: TmdbMedia })[];
-      setFavourites(favs);
+      const data = await api.getSavedWithDetails();
+      const items = (data.saved ?? []) as (SavedItem & { detail?: TmdbMedia })[];
+      setSavedItems(items);
 
       const details: Record<string, TmdbMedia> = {};
-      for (const f of favs) {
-        const d = f.detail;
+      for (const item of items) {
+        const d = item.detail;
         if (d) {
-          details[`${f.media_type}-${f.tmdb_id}`] = {
+          details[`${item.media_type}-${item.tmdb_id}`] = {
             ...d,
-            id: f.tmdb_id,
-            media_type: f.media_type as "movie" | "tv",
+            id: item.tmdb_id,
+            media_type: item.media_type as "movie" | "tv",
           };
         }
       }
       setMediaDetails(details);
     } catch {
-      setFavourites([]);
+      setSavedItems([]);
       setMediaDetails({});
     } finally {
       setLoading(false);
@@ -43,10 +43,10 @@ const Saved = () => {
   }, []);
 
   useEffect(() => {
-    loadFavourites();
-  }, [loadFavourites]);
+    loadSaved();
+  }, [loadSaved]);
 
-  const favouriteIds = new Set(favourites.map((f) => `${f.media_type}-${f.tmdb_id}`));
+  const savedIds = new Set(savedItems.map((s) => `${s.media_type}-${s.tmdb_id}`));
 
   if (loading) {
     return (
@@ -56,8 +56,8 @@ const Saved = () => {
     );
   }
 
-  const items = favourites
-    .map((f) => mediaDetails[`${f.media_type}-${f.tmdb_id}`])
+  const items = savedItems
+    .map((s) => mediaDetails[`${s.media_type}-${s.tmdb_id}`])
     .filter(Boolean);
 
   return (
@@ -71,8 +71,8 @@ const Saved = () => {
             <MediaCard
               key={`${item.media_type}-${item.id}`}
               item={item}
-              isSaved={favouriteIds.has(`${item.media_type}-${item.id}`)}
-              onSavedChange={loadFavourites}
+              isSaved={savedIds.has(`${item.media_type}-${item.id}`)}
+              onSavedChange={loadSaved}
             />
           ))}
           </div>

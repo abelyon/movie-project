@@ -6,10 +6,9 @@
 }
 
 @utility no-scrollbar {
-  /* Firefox */
+
   scrollbar-width: none;
-  
-  /* Chrome, Safari, Edge */
+
   &::-webkit-scrollbar {
     display: none;
   }

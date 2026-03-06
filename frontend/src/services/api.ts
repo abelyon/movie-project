@@ -41,45 +41,44 @@ export const api = {
     );
     return res.json();
   },
-  getFavourites: async () => {
-    const res = await fetch(`${API_BASE_URL}/favourites`, {
+  getSaved: async () => {
+    const res = await fetch(`${API_BASE_URL}/saved`, {
       headers: authHeaders(),
     });
     return res.json();
   },
-  /** Favourites with TMDB details in one request (faster for Saved page). */
-  getFavouritesWithDetails: async () => {
-    const res = await fetch(`${API_BASE_URL}/favourites/with-details`, {
+  getSavedWithDetails: async () => {
+    const res = await fetch(`${API_BASE_URL}/saved/with-details`, {
       headers: authHeaders(),
     });
     return res.json();
   },
-  toggleFavourite: async (mediaType: string, tmdbId: number) => {
-    const res = await fetch(`${API_BASE_URL}/favourites/toggle`, {
+  toggleSaved: async (mediaType: string, tmdbId: number) => {
+    const res = await fetch(`${API_BASE_URL}/saved/toggle`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ media_type: mediaType, tmdb_id: tmdbId }),
     });
     return res.json();
   },
-  addFavourite: async (mediaType: string, tmdbId: number) => {
-    const res = await fetch(`${API_BASE_URL}/favourites`, {
+  addSaved: async (mediaType: string, tmdbId: number) => {
+    const res = await fetch(`${API_BASE_URL}/saved`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ media_type: mediaType, tmdb_id: tmdbId }),
     });
     return res.json();
   },
-  removeFavourite: async (id: number) => {
-    const res = await fetch(`${API_BASE_URL}/favourites/${id}`, {
+  removeSaved: async (id: number) => {
+    const res = await fetch(`${API_BASE_URL}/saved/${id}`, {
       method: "DELETE",
       headers: authHeaders(),
     });
     return res.json();
   },
-  checkFavourite: async (mediaType: string, tmdbId: number) => {
+  checkSaved: async (mediaType: string, tmdbId: number) => {
     const res = await fetch(
-      `${API_BASE_URL}/favourites/check?media_type=${mediaType}&tmdb_id=${tmdbId}`,
+      `${API_BASE_URL}/saved/check?media_type=${mediaType}&tmdb_id=${tmdbId}`,
       { headers: authHeaders() }
     );
     return res.json();

@@ -316,11 +316,6 @@ class TmdbController extends Controller
         return response()->json($data);
     }
 
-    /**
-     * Fetch full TMDB details (with certification) for multiple items in parallel.
-     * @param array<int, array{media_type: string, tmdb_id: int}> $items
-     * @return array<string, array> Keyed by "media_type-tmdb_id"
-     */
     public function fetchDetailsBatch(array $items): array
     {
         if (empty($items) || empty(env('TMDB_API_KEY'))) {

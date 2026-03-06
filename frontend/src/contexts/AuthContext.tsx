@@ -120,7 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: { Authorization: `Bearer ${t}` },
         });
       } catch {
-        // ignore
       }
       localStorage.removeItem(TOKEN_KEY);
     }

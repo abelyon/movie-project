@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TmdbController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\FavouriteController;
+use App\Http\Controllers\SavedController;
 use App\Http\Controllers\ReactionController;
 
 Route::get('/tmdb/popular', [TmdbController::class, 'popular']);
@@ -19,12 +19,12 @@ Route::middleware('auth.token')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
 
-    Route::get('/favourites', [FavouriteController::class, 'index']);
-    Route::get('/favourites/with-details', [FavouriteController::class, 'indexWithDetails']);
-    Route::post('/favourites', [FavouriteController::class, 'store']);
-    Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
-    Route::get('/favourites/check', [FavouriteController::class, 'check']);
-    Route::post('/favourites/toggle', [FavouriteController::class, 'toggle']);
+    Route::get('/saved', [SavedController::class, 'index']);
+    Route::get('/saved/with-details', [SavedController::class, 'indexWithDetails']);
+    Route::post('/saved', [SavedController::class, 'store']);
+    Route::delete('/saved/{id}', [SavedController::class, 'destroy']);
+    Route::get('/saved/check', [SavedController::class, 'check']);
+    Route::post('/saved/toggle', [SavedController::class, 'toggle']);
 
     Route::get('/reactions/check', [ReactionController::class, 'check']);
     Route::post('/reactions', [ReactionController::class, 'set']);

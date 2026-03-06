@@ -43,12 +43,12 @@ const SearchBar = ({ value, onChange, onDebouncedChange }: SearchBarProps) => {
 
     return (
         <>
-            <div className="flex justify-center items-center p-4 sm:p-5 max-w-2xl mx-auto">
+            <div className="flex justify-center items-center p-4 sm:p-5 w-100 mx-auto">
                 <input
                     ref={inputRef}
                     type="text"
                     placeholder="Search..."
-                    className={`p-4 sm:p-5 text-[#FFFCF2] font-space-grotesk font-bold bg-[#403D39] rounded-full outline-none text-lg sm:text-2xl w-full transition-all duration-500 ${isPulsing && "animate-pulse"}`}
+                    className={`p-4 sm:p-5 text-neutral-100 font-space-grotesk font-bold bg-neutral-800/80 border-t border-neutral-600 rounded-full outline-none text-lg sm:text-2xl w-full transition-all duration-500 ${isPulsing && "animate-pulse"}`}
                     value={value}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onFocus={() => setIsFocused(true)}

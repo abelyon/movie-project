@@ -32,9 +32,9 @@ const DiscoveryPage = () => {
             return;
         }
         try {
-            const data = await api.getFavourites();
+            const data = await api.getSaved();
             const ids = new Set(
-                (data.favourites ?? []).map(
+                (data.saved ?? []).map(
                     (f: { media_type: string; tmdb_id: number }) =>
                         `${f.media_type}-${f.tmdb_id}`
                 )
@@ -50,7 +50,7 @@ const DiscoveryPage = () => {
     }, [fetchSaved]);
 
     return (
-        <div className="min-h-screen bg-[#252422]">
+        <div className="min-h-screen bg-neutral-900">
             <SortBar
                 genres={genres}
                 selectedGenreIds={selectedGenreIds}

@@ -1,7 +1,7 @@
 import { User, Bookmark, Compass, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const Navbar = () => {
     const { isAuthenticated } = useAuth();
@@ -21,9 +21,9 @@ const Navbar = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] gap-4 sm:gap-5">
-            <div className="bg-[#403D39] rounded-full">
-                <div className="flex justify-center p-4 sm:p-5 gap-6 sm:gap-8">
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex flex-col p-5 w-100 mx-auto">
+            <div className="bg-neutral-800/80 backdrop-blur-sm border-t border-neutral-600 rounded-full p-5">
+                <div className="flex justify-around gap-5">
                     {navItems.map((item) => (
                         <NavItem key={item.path} path={item.path} icon={item.icon} />
                     ))}
@@ -54,7 +54,7 @@ const NavItem = ({ path, icon: Icon }: NavItemProps) => {
         <Link
             to={path}
             className={`flex items-center justify-center w-full transition-all duration-500 ${isClicked && "scale-95 rotate-4 opacity-50"} ${
-                isActive ? "text-white" : "text-light-gray"
+                isActive ? "text-neutral-100" : "text-neutral-400"
             }`}
             onClick={handleClick}
         >

@@ -21,7 +21,7 @@ const SavedButton = ({ item, isSaved, onToggle, variant = "card" }: SavedButtonP
     if (!isAuthenticated || loading) return;
     setLoading(true);
     try {
-      await api.toggleFavourite(item.media_type, item.id);
+      await api.toggleSaved(item.media_type, item.id);
       onToggle?.();
     } catch {
     } finally {
