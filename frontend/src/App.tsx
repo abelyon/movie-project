@@ -1,0 +1,37 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import GuestRoute from "./components/GuestRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
+import MainLayout from "./layout/MainLayout";
+import DiscoveryPage from "./pages/Discovery/DiscoveryPage";
+import LoginPage from "./pages/Login/LoginPage";
+import RegisterPage from "./pages/Register/RegisterPage";
+import SavedPage from "./pages/Saved/SavedPage";
+import DetailPage from "./pages/Detail/DetailPage";
+import ProfilePage from "./pages/Profile/ProfilePage";
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<MainLayout />}>
+            <Route element={<ProtectedRoute />}>
+              <Route index element={<Navigate to="/discovery" replace />} />
+              <Route path="discovery" element={<DiscoveryPage />} />
+              <Route path=":media_type/:id" element={<DetailPage />} />
+              <Route path="saved" element={<SavedPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
+            <Route element={<GuestRoute />}>
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+};
+
+export default App;

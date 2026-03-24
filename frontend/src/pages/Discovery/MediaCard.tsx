@@ -1,0 +1,77 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+import type { MediaItem } from "../../api/types";
+import { Bookmark, Clapperboard, Tv } from "lucide-react";
+
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
+const getMediaTypeIcon = (mediaType: string) => {
+  if (mediaType === "movie") return Clapperboard;
+  if (mediaType === "tv") return Tv;
+  return null;
+};
+
+const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boolean }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const Icon = getMediaTypeIcon(item.media_type);
+  const navigate = useNavigate();
+
+  return (
+    <motion.div
+      onClick={() => navigate(`/${item.media_type}/${item.id}`)}
+      className="relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full"
+      initial={{ opacity: 0, y: 24, scale: 0.95 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.15, margin: "0px 0px -40px 0px" }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <div className="relative w-full h-full wmin-h-[280px] bg-neutral-800/80">
+        <motion.img
+          src={`${TMDB_IMAGE_BASE_URL}${item.poster_path ?? ""}`}
+          alt={item.title ?? item.name ?? ""}
+          className="w-full h-full object-cover"
+          onLoad={() => setImageLoaded(true)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: imageLoaded ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-4xl bg-neutral-800/90"
+          initial={false}
+          animate={{ opacity: imageLoaded ? 0 : 1 }}
+          transition={{ duration: 0.25 }}
+          style={{ pointerEvents: "none" }}
+        >
+          <motion.div
+            className="absolute inset-0 rounded-4xl bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
+            animate={{ x: ["-100%", "100%"] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+            style={{ width: "60%", willChange: "transform" }}
+          />
+        </motion.div>
+      </div>
+      <div className="absolute top-0 left-0 p-4 flex justify-between w-full pointer-events-none">
+        <span className="flex items-center h-9 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100">
+          {Icon && <Icon size={20} strokeWidth={2.5} />}
+        </span>
+        {item.vote_average != null && item.vote_average > 0 && (
+          <span className="flex items-center h-9 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-md">
+            {item.vote_average.toFixed(1)}
+          </span>
+        )}
+      </div>
+      {isSaved && (
+        <div className="absolute bottom-0 right-0 p-4">
+          <span className="flex items-center h-9 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-white">
+            <Bookmark size={20} strokeWidth={2.5} fill="currentColor" />
+          </span>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+export default MediaCard;
