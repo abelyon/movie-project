@@ -1,5 +1,4 @@
 import api from "./client";
-import { getCsrfCookie } from "./auth";
 import type { MediaItem } from "./types";
 
 export type UserMediaState = {
@@ -34,26 +33,20 @@ export async function getLiked(): Promise<MediaItem[]> {
 }
 
 export async function saveMedia(tmdbId: number, mediaType: string) {
-  await getCsrfCookie();
   await api.post("/user/media/save", { tmdb_id: tmdbId, media_type: mediaType });
 }
 export async function unsaveMedia(tmdbId: number, mediaType: string) {
-  await getCsrfCookie();
   await api.delete("/user/media/save", { data: { tmdb_id: tmdbId, media_type: mediaType } });
 }
 export async function likeMedia(tmdbId: number, mediaType: string) {
-  await getCsrfCookie();
   await api.post("/user/media/like", { tmdb_id: tmdbId, media_type: mediaType });
 }
 export async function unlikeMedia(tmdbId: number, mediaType: string) {
-  await getCsrfCookie();
   await api.delete("/user/media/like", { data: { tmdb_id: tmdbId, media_type: mediaType } });
 }
 export async function dislikeMedia(tmdbId: number, mediaType: string) {
-  await getCsrfCookie();
   await api.post("/user/media/dislike", { tmdb_id: tmdbId, media_type: mediaType });
 }
 export async function undislikeMedia(tmdbId: number, mediaType: string) {
-  await getCsrfCookie();
   await api.delete("/user/media/dislike", { data: { tmdb_id: tmdbId, media_type: mediaType } });
 }
