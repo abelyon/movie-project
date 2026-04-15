@@ -23,10 +23,36 @@ const DEFAULT_STATE: UserMediaState = {
 const stateQKey = (tmdbId: number, mediaType: string) =>
   ["user", "media", "state", stateKey(tmdbId, mediaType)] as const;
 
-/** Keep list-based queries in sync without forcing immediate state refetch races */
-const invalidateLists = (qc: ReturnType<typeof useQueryClient>) => {
-  qc.invalidateQueries({ queryKey: ["user", "media", "saved"] });
-  qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+const isBatchStateQueryKey = (key: readonly unknown[]) =>
+  key[0] === "user" &&
+  key[1] === "media" &&
+  key[2] === "state" &&
+  key[3] === "batch";
+
+/** Discovery/search grids read batched state; keep them in sync with detail actions */
+const patchBatchStateMaps = (
+  qc: ReturnType<typeof useQueryClient>,
+  tmdbId: number,
+  mediaType: string,
+  updates: Partial<UserMediaState>,
+) => {
+  const mapKey = stateKey(tmdbId, mediaType);
+  qc.setQueriesData<Record<string, UserMediaState>>(
+    { predicate: (q) => isBatchStateQueryKey(q.queryKey) },
+    (old) => {
+      if (!old) return old;
+      const prevRow = old[mapKey] ?? DEFAULT_STATE;
+      return { ...old, [mapKey]: { ...prevRow, ...updates } };
+    },
+  );
+};
+
+/** Defer list refetch so React paints optimistic cache updates first */
+const scheduleListSync = (qc: ReturnType<typeof useQueryClient>) => {
+  queueMicrotask(() => {
+    void qc.invalidateQueries({ queryKey: ["user", "media", "saved"] });
+    void qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+  });
 };
 
 export const useMediaState = (tmdbId: number | undefined, mediaType: string | undefined) => {
@@ -58,6 +84,25 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
       ...updates,
     }));
 
+  const patchLocalAndGrid = (updates: Partial<UserMediaState>) => {
+    patch(updates);
+    patchBatchStateMaps(qc, tmdbId, mediaType, updates);
+  };
+
+  const snapshotBatchMaps = () =>
+    qc
+      .getQueryCache()
+      .findAll({ predicate: (q) => isBatchStateQueryKey(q.queryKey) })
+      .map((q) => {
+        const raw = q.state.data as Record<string, UserMediaState> | undefined;
+        const data = raw
+          ? Object.fromEntries(
+              Object.entries(raw).map(([k, v]) => [k, { ...v }]),
+            )
+          : undefined;
+        return { key: q.queryKey, data };
+      });
+
   const noop = async () => {};
 
   if (!valid) {
@@ -67,62 +112,96 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
   return {
     save: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      patch({ is_saved: true });
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({ is_saved: true });
       try {
         await saveMedia(tmdbId, mediaType);
-        invalidateLists(qc);
+        scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
       }
     },
     unsave: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      patch({ is_saved: false, is_liked: false, is_disliked: false });
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({ is_saved: false, is_liked: false, is_disliked: false });
       try {
         await unsaveMedia(tmdbId, mediaType);
-        invalidateLists(qc);
+        scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
       }
     },
     like: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      patch({ is_saved: true, is_liked: true, is_disliked: false });
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({
+        is_saved: true,
+        is_liked: true,
+        is_disliked: false,
+        watched_at: new Date().toISOString(),
+      });
       try {
         await likeMedia(tmdbId, mediaType);
-        invalidateLists(qc);
+        scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
       }
     },
     unlike: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      patch({ is_liked: false });
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({ is_liked: false });
       try {
         await unlikeMedia(tmdbId, mediaType);
-        invalidateLists(qc);
+        scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
       }
     },
     dislike: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      patch({ is_saved: true, is_disliked: true, is_liked: false });
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({
+        is_saved: true,
+        is_disliked: true,
+        is_liked: false,
+        watched_at: new Date().toISOString(),
+      });
       try {
         await dislikeMedia(tmdbId, mediaType);
-        invalidateLists(qc);
+        scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
       }
     },
     undislike: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      patch({ is_disliked: false });
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({ is_disliked: false });
       try {
         await undislikeMedia(tmdbId, mediaType);
-        invalidateLists(qc);
+        scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
       }
     },
   };
