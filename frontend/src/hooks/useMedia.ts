@@ -92,8 +92,10 @@ export const useMediaState = (tmdbId: number | undefined, mediaType: string | un
       return map[stateKey(tmdbId!, mediaType!)] ?? DEFAULT_STATE;
     },
     enabled: valid,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -242,8 +244,10 @@ export const useMediaStateMap = (items: { id: number; media_type: string }[]) =>
     queryKey: ["user", "media", "state", "batch", keys],
     queryFn: () => getState(items),
     enabled: items.length > 0,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -251,8 +255,10 @@ export const useSavedList = () =>
   useQuery({
     queryKey: ["user", "media", "saved"],
     queryFn: getSaved,
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
 export const useLikedList = () =>

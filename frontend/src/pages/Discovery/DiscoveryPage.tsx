@@ -24,7 +24,7 @@ const DiscoveryPage = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const {
     data,
-    isLoading,
+    isPending,
     isError,
     error,
     fetchNextPage,
@@ -59,7 +59,7 @@ const DiscoveryPage = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
@@ -80,7 +80,7 @@ const DiscoveryPage = () => {
     [savedList],
   );
 
-  if (isLoading) {
+  if (isPending && !data) {
     return (
       <div>
         <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">Trending</h1>
