@@ -49,17 +49,6 @@ const DetailPage = () => {
   const actions = useMediaActions(numericId, media_type ?? "movie");
 
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [isActionPending, setIsActionPending] = useState(false);
-
-  const runAction = async (action: () => Promise<void>) => {
-    if (isActionPending) return;
-    setIsActionPending(true);
-    try {
-      await action();
-    } finally {
-      setIsActionPending(false);
-    }
-  };
 
   if (!media_type || !id)
     return <div className="p-5 text-neutral-400">Invalid route</div>;
@@ -240,12 +229,11 @@ const DetailPage = () => {
             >
               <motion.button
                 onClick={() => {
-                  runAction(() => (isDisliked ? actions.undislike() : actions.dislike()));
+                  void (isDisliked ? actions.undislike() : actions.dislike());
                 }}
                 className={`${pill} ${isDisliked ? "bg-red-500/80 border-red-400 text-white" : "text-neutral-300 hover:text-white"}`}
                 title={isDisliked ? "Remove dislike" : "Dislike"}
                 whileTap={{ scale: 0.93 }}
-                disabled={isActionPending}
               >
                 <ThumbsDown
                   size={20}
@@ -255,12 +243,11 @@ const DetailPage = () => {
               </motion.button>
               <motion.button
                 onClick={() => {
-                  runAction(() => (isLiked ? actions.unlike() : actions.like()));
+                  void (isLiked ? actions.unlike() : actions.like());
                 }}
                 className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
                 title={isLiked ? "Remove like" : "Like"}
                 whileTap={{ scale: 0.93 }}
-                disabled={isActionPending}
               >
                 <ThumbsUp
                   size={20}
@@ -273,14 +260,15 @@ const DetailPage = () => {
         </AnimatePresence>
 
         <motion.button
-          onClick={() => runAction(() => (isSaved ? actions.unsave() : actions.save()))}
+          onClick={() => {
+            void (isSaved ? actions.unsave() : actions.save());
+          }}
           className={`${pill} ${isSaved ? "bg-amber-500/80 border-amber-400 text-white" : "text-neutral-300 hover:text-white"}`}
           title={isSaved ? "Unsave" : "Save"}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease }}
-          disabled={isActionPending}
         >
           <Bookmark size={20} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
         </motion.button>
