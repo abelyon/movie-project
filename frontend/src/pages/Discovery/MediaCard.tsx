@@ -6,24 +6,17 @@ import { Bookmark, Clapperboard, Tv } from "lucide-react";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-const getMediaTypeIcon = (mediaType: string) => {
-  if (mediaType === "movie") return Clapperboard;
-  if (mediaType === "tv") return Tv;
-  return null;
-};
-
 const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boolean }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const Icon = getMediaTypeIcon(item.media_type);
   const navigate = useNavigate();
 
   return (
     <motion.div
       onClick={() => navigate(`/${item.media_type}/${item.id}`)}
       className="relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full"
-      initial={{ opacity: 0, y: 24, scale: 0.95 }}
+      initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: 0.15, margin: "0px 0px -40px 0px" }}
+      viewport={{ once: false, amount: 0.15, margin: "0px 0px -40px 0px" }}
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
@@ -55,7 +48,11 @@ const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boole
       </div>
       <div className="absolute top-0 left-0 p-4 flex justify-between w-full pointer-events-none">
         <span className="flex items-center h-9 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100">
-          {Icon && <Icon size={20} strokeWidth={2.5} />}
+          {item.media_type === "movie" ? (
+            <Clapperboard size={20} strokeWidth={2.5} />
+          ) : item.media_type === "tv" ? (
+            <Tv size={20} strokeWidth={2.5} />
+          ) : null}
         </span>
         {item.vote_average != null && item.vote_average > 0 && (
           <span className="flex items-center h-9 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-md">
