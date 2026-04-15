@@ -240,11 +240,10 @@ const DetailPage = () => {
             >
               <motion.button
                 onClick={() => {
-                  if (isDisliked) return;
-                  runAction(() => actions.dislike());
+                  runAction(() => (isDisliked ? actions.undislike() : actions.dislike()));
                 }}
                 className={`${pill} ${isDisliked ? "bg-red-500/80 border-red-400 text-white" : "text-neutral-300 hover:text-white"}`}
-                title="Dislike"
+                title={isDisliked ? "Remove dislike" : "Dislike"}
                 whileTap={{ scale: 0.93 }}
                 disabled={isActionPending}
               >
@@ -256,11 +255,10 @@ const DetailPage = () => {
               </motion.button>
               <motion.button
                 onClick={() => {
-                  if (isLiked) return;
-                  runAction(() => actions.like());
+                  runAction(() => (isLiked ? actions.unlike() : actions.like()));
                 }}
                 className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
-                title="Like"
+                title={isLiked ? "Remove like" : "Like"}
                 whileTap={{ scale: 0.93 }}
                 disabled={isActionPending}
               >
