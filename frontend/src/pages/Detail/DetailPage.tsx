@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
-import { useMediaState, useMediaActions } from "../../hooks/useMedia";
+import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
 import { ArrowLeft, Bookmark, Clapperboard, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 
@@ -46,7 +46,15 @@ const DetailPage = () => {
     Number.isNaN(numericId) ? undefined : numericId,
     media_type,
   );
-  const actions = useMediaActions(numericId, media_type ?? "movie");
+  const savedListPreview = useMemo(() => {
+    if (!data || (media_type !== "movie" && media_type !== "tv")) return null;
+    return mediaItemFromDetail(data, media_type);
+  }, [data, media_type]);
+  const actions = useMediaActions(
+    numericId,
+    media_type === "tv" ? "tv" : "movie",
+    savedListPreview,
+  );
 
   const [imageLoaded, setImageLoaded] = useState(false);
 
