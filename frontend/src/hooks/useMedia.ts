@@ -13,6 +13,27 @@ import {
   type UserMediaState,
 } from "../api/userMedia";
 import type { MediaItem } from "../api/types";
+import type { MediaDetail, MovieDetail, TvDetail } from "../api/tmdb";
+
+export function mediaItemFromDetail(
+  detail: MediaDetail,
+  mediaType: "movie" | "tv",
+): MediaItem {
+  const base = {
+    id: detail.id,
+    media_type: mediaType,
+    poster_path: detail.poster_path,
+    backdrop_path: detail.backdrop_path,
+    overview: detail.overview,
+    vote_average: detail.vote_average,
+  };
+  if (mediaType === "movie") {
+    const m = detail as MovieDetail;
+    return { ...base, title: m.title, release_date: m.release_date };
+  }
+  const t = detail as TvDetail;
+  return { ...base, name: t.name, first_air_date: t.first_air_date };
+}
 
 const DEFAULT_STATE: UserMediaState = {
   is_saved: false,
@@ -71,6 +92,31 @@ const optimisticRemoveFromSavedList = (
   });
 };
 
+/** Add or move item to front of Saved list cache (save / like / dislike) */
+const optimisticUpsertSavedList = (
+  qc: ReturnType<typeof useQueryClient>,
+  preview: MediaItem,
+) => {
+  qc.setQueryData<MediaItem[]>(SAVED_LIST_KEY, (old) => {
+    const rest = (old ?? []).filter(
+      (item) =>
+        !(item.id === preview.id && item.media_type === preview.media_type),
+    );
+    return [preview, ...rest];
+  });
+};
+
+const restoreSavedListSnapshot = (
+  qc: ReturnType<typeof useQueryClient>,
+  prev: MediaItem[] | undefined,
+) => {
+  if (prev === undefined) {
+    qc.removeQueries({ queryKey: SAVED_LIST_KEY });
+  } else {
+    qc.setQueryData(SAVED_LIST_KEY, prev);
+  }
+};
+
 /** Defer list refetch so React paints optimistic cache updates first */
 const scheduleListSync = (qc: ReturnType<typeof useQueryClient>) => {
   queueMicrotask(() => {
@@ -99,10 +145,21 @@ export const useMediaState = (tmdbId: number | undefined, mediaType: string | un
   });
 };
 
-export const useMediaActions = (tmdbId: number, mediaType: string) => {
+export const useMediaActions = (
+  tmdbId: number,
+  mediaType: string,
+  listPreview?: MediaItem | null,
+) => {
   const qc = useQueryClient();
   const valid = !Number.isNaN(tmdbId) && (mediaType === "movie" || mediaType === "tv");
   const qKey = stateQKey(tmdbId, mediaType);
+
+  const savedPreview = (): MediaItem =>
+    listPreview ?? {
+      id: tmdbId,
+      media_type: mediaType,
+      poster_path: null,
+    };
 
   const patch = (updates: Partial<UserMediaState>) =>
     qc.setQueryData<UserMediaState>(qKey, (prev) => ({
@@ -139,7 +196,9 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
     save: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
+      const prevSaved = snapshotSavedList(qc);
       patchLocalAndGrid({ is_saved: true });
+      optimisticUpsertSavedList(qc, savedPreview());
       try {
         await saveMedia(tmdbId, mediaType);
         scheduleListSync(qc);
@@ -148,6 +207,7 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
+        restoreSavedListSnapshot(qc, prevSaved);
       }
     },
     unsave: async () => {
@@ -164,20 +224,20 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        if (prevSaved !== undefined) {
-          qc.setQueryData(SAVED_LIST_KEY, prevSaved);
-        }
+        restoreSavedListSnapshot(qc, prevSaved);
       }
     },
     like: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
+      const prevSaved = snapshotSavedList(qc);
       patchLocalAndGrid({
         is_saved: true,
         is_liked: true,
         is_disliked: false,
         watched_at: new Date().toISOString(),
       });
+      optimisticUpsertSavedList(qc, savedPreview());
       try {
         await likeMedia(tmdbId, mediaType);
         scheduleListSync(qc);
@@ -186,6 +246,7 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
+        restoreSavedListSnapshot(qc, prevSaved);
       }
     },
     unlike: async () => {
@@ -205,12 +266,14 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
     dislike: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
+      const prevSaved = snapshotSavedList(qc);
       patchLocalAndGrid({
         is_saved: true,
         is_disliked: true,
         is_liked: false,
         watched_at: new Date().toISOString(),
       });
+      optimisticUpsertSavedList(qc, savedPreview());
       try {
         await dislikeMedia(tmdbId, mediaType);
         scheduleListSync(qc);
@@ -219,6 +282,7 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
+        restoreSavedListSnapshot(qc, prevSaved);
       }
     },
     undislike: async () => {
