@@ -12,6 +12,7 @@ import {
   stateKey,
   type UserMediaState,
 } from "../api/userMedia";
+import type { MediaItem } from "../api/types";
 
 const DEFAULT_STATE: UserMediaState = {
   is_saved: false,
@@ -45,6 +46,29 @@ const patchBatchStateMaps = (
       return { ...old, [mapKey]: { ...prevRow, ...updates } };
     },
   );
+};
+
+const SAVED_LIST_KEY = ["user", "media", "saved"] as const;
+
+const snapshotSavedList = (
+  qc: ReturnType<typeof useQueryClient>,
+): MediaItem[] | undefined => {
+  const data = qc.getQueryData<MediaItem[]>(SAVED_LIST_KEY);
+  return data?.map((item) => ({ ...item }));
+};
+
+/** Remove item from cached Saved list so Saved tab updates before refetch */
+const optimisticRemoveFromSavedList = (
+  qc: ReturnType<typeof useQueryClient>,
+  tmdbId: number,
+  mediaType: string,
+) => {
+  qc.setQueryData<MediaItem[]>(SAVED_LIST_KEY, (old) => {
+    if (!old) return old;
+    return old.filter(
+      (item) => !(item.id === tmdbId && item.media_type === mediaType),
+    );
+  });
 };
 
 /** Defer list refetch so React paints optimistic cache updates first */
@@ -127,7 +151,9 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
     unsave: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
+      const prevSaved = snapshotSavedList(qc);
       patchLocalAndGrid({ is_saved: false, is_liked: false, is_disliked: false });
+      optimisticRemoveFromSavedList(qc, tmdbId, mediaType);
       try {
         await unsaveMedia(tmdbId, mediaType);
         scheduleListSync(qc);
@@ -135,6 +161,9 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
+        }
+        if (prevSaved !== undefined) {
+          qc.setQueryData(SAVED_LIST_KEY, prevSaved);
         }
       }
     },
