@@ -1,18 +1,35 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import type { MediaItem } from "../../api/types";
 import { Bookmark, Clapperboard, Tv } from "lucide-react";
+import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
 const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boolean }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const prefetchDetail = () => {
+    if (item.media_type !== "movie" && item.media_type !== "tv") return;
+    void queryClient.prefetchQuery({
+      queryKey: detailQueryKey(item.media_type, item.id),
+      queryFn: () => fetchDetail(item.media_type, item.id),
+      staleTime: 5 * 60 * 1000,
+    });
+  };
 
   return (
     <motion.div
-      onClick={() => navigate(`/${item.media_type}/${item.id}`)}
+      onClick={() =>
+        navigate(`/${item.media_type}/${item.id}`, { state: { preview: item } })
+      }
+      onMouseEnter={prefetchDetail}
+      onFocus={prefetchDetail}
+      onTouchStart={prefetchDetail}
       className="relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full"
       initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}

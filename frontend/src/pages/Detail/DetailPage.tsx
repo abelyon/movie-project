@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
 import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
 import { ArrowLeft, Bookmark, Clapperboard, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
+import type { MediaItem } from "../../api/types";
+import { previewItemToDetail } from "../../utils/detailPreview";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+const POSTER_SIZE = "w780";
 
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
   mediaType === "movie"
@@ -32,16 +35,109 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
 };
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
+const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
   "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-3 cursor-pointer transition-colors";
 
+function DetailPosterBlock({
+  poster,
+  title,
+  mediaType,
+  voteAverage,
+  runtime,
+  seasonsLabel,
+}: {
+  poster: string;
+  title: string;
+  mediaType: string;
+  voteAverage: number | null | undefined;
+  runtime: number | undefined;
+  seasonsLabel: string | undefined;
+}) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  return (
+    <motion.div
+      className="relative w-full sm:w-56 sm:shrink-0"
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={enterFast}
+    >
+      <motion.div
+        className="absolute inset-0 rounded-4xl bg-neutral-800/90 overflow-hidden aspect-2/3 h-full"
+        animate={{ opacity: imageLoaded ? 0 : 1 }}
+        transition={{ duration: 0.2 }}
+        style={{ pointerEvents: "none" }}
+      >
+        <motion.div
+          className="absolute inset-0 bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
+          animate={{ x: ["-100%", "100%"] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+          style={{ width: "60%", willChange: "transform" }}
+        />
+      </motion.div>
+      <motion.img
+        src={poster}
+        alt={title}
+        className="w-full h-50 object-cover rounded-4xl sm:h-full"
+        decoding="async"
+        fetchPriority="high"
+        onLoad={() => setImageLoaded(true)}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: imageLoaded ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      />
+      <div className="absolute top-0 left-0 p-4 flex justify-between w-full pointer-events-none">
+        <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100">
+          {mediaType === "movie" ? (
+            <Clapperboard size={16} strokeWidth={2.5} />
+          ) : (
+            <Tv size={16} strokeWidth={2.5} />
+          )}
+        </span>
+        {voteAverage != null && voteAverage > 0 && (
+          <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-sm">
+            {voteAverage.toFixed(1)}
+          </span>
+        )}
+      </div>
+      {(mediaType === "movie" && runtime != null && runtime > 0) || seasonsLabel ? (
+        <div className="absolute bottom-0 right-0 p-4 pointer-events-none">
+          <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-sm whitespace-nowrap">
+            {mediaType === "movie" && runtime != null && runtime > 0
+              ? `${runtime} min`
+              : seasonsLabel}
+          </span>
+        </div>
+      ) : null}
+    </motion.div>
+  );
+}
+
+type DetailLocationState = { preview?: MediaItem };
+
 const DetailPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { media_type, id } = useParams<{ media_type: string; id: string }>();
   const numericId = id ? parseInt(id, 10) : NaN;
 
-  const { data, isLoading, isError, error } = useDetail(media_type, id);
+  const previewFromNav = (location.state as DetailLocationState | null)?.preview;
+  const previewDetail =
+    previewFromNav &&
+    (media_type === "movie" || media_type === "tv") &&
+    previewFromNav.id === numericId &&
+    previewFromNav.media_type === media_type
+      ? previewItemToDetail(previewFromNav, media_type)
+      : null;
+
+  const { data: fetched, isPending, isFetching, isError, error } = useDetail(
+    media_type,
+    id,
+  );
+  const data = fetched ?? previewDetail;
+  const showSkeleton = isPending && !data;
   const { data: userState } = useMediaState(
     Number.isNaN(numericId) ? undefined : numericId,
     media_type,
@@ -56,11 +152,9 @@ const DetailPage = () => {
     savedListPreview,
   );
 
-  const [imageLoaded, setImageLoaded] = useState(false);
-
   if (!media_type || !id)
     return <div className="p-5 text-neutral-400">Invalid route</div>;
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="text-white overflow-hidden">
         <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
@@ -90,7 +184,7 @@ const DetailPage = () => {
       </div>
     );
   }
-  if (isError)
+  if (isError && !data)
     return <p className="p-5 text-red-400">Error: {error?.message}</p>;
   if (!data) return null;
 
@@ -98,7 +192,10 @@ const DetailPage = () => {
   const date = getDate(data, media_type);
   const runtime = getRuntime(data, media_type);
   const seasonsLabel = getSeasonsLabel(data, media_type);
-  const poster = data.poster_path ? `${TMDB_IMAGE_BASE}/w1280${data.poster_path}` : null;
+  const poster = data.poster_path
+    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.poster_path}`
+    : null;
+  const isPreviewOnly = !fetched && !!previewDetail;
 
   const isSaved = userState?.is_saved ?? false;
   const isLiked = userState?.is_liked ?? false;
@@ -111,64 +208,23 @@ const DetailPage = () => {
 
           {/* Poster */}
           {poster && (
-            <motion.div
-              className="relative w-full sm:w-56 sm:shrink-0"
-              initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.45, ease }}
-            >
-              <motion.div
-                className="absolute inset-0 rounded-4xl bg-neutral-800/90 overflow-hidden aspect-2/3 h-full"
-                animate={{ opacity: imageLoaded ? 0 : 1 }}
-                transition={{ duration: 0.3 }}
-                style={{ pointerEvents: "none" }}
-              >
-                <motion.div
-                  className="absolute inset-0 bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
-                  animate={{ x: ["-100%", "100%"] }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                  style={{ width: "60%", willChange: "transform" }}
-                />
-              </motion.div>
-              <motion.img
-                src={poster}
-                alt={title}
-                className="w-full h-50 object-cover rounded-4xl sm:h-full"
-                onLoad={() => setImageLoaded(true)}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: imageLoaded ? 1 : 0 }}
-                transition={{ duration: 0.35 }}
-              />
-              <div className="absolute top-0 left-0 p-4 flex justify-between w-full pointer-events-none">
-                <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100">
-                  {media_type === "movie"
-                    ? <Clapperboard size={16} strokeWidth={2.5} />
-                    : <Tv size={16} strokeWidth={2.5} />}
-                </span>
-                {data.vote_average != null && data.vote_average > 0 && (
-                  <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-sm">
-                    {data.vote_average.toFixed(1)}
-                  </span>
-                )}
-              </div>
-              {(media_type === "movie" && runtime != null && runtime > 0) || seasonsLabel ? (
-                <div className="absolute bottom-0 right-0 p-4 pointer-events-none">
-                  <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-sm whitespace-nowrap">
-                    {media_type === "movie" && runtime != null && runtime > 0
-                      ? `${runtime} min`
-                      : seasonsLabel}
-                  </span>
-                </div>
-              ) : null}
-            </motion.div>
+            <DetailPosterBlock
+              key={`${media_type}-${numericId}`}
+              poster={poster}
+              title={title}
+              mediaType={media_type}
+              voteAverage={data.vote_average}
+              runtime={runtime}
+              seasonsLabel={seasonsLabel}
+            />
           )}
 
           {/* Info */}
           <motion.div
             className="flex-1"
-            initial={{ opacity: 0, x: 24 }}
+            initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.45, ease, delay: 0.05 }}
+            transition={enterFast}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-5">
@@ -188,7 +244,7 @@ const DetailPage = () => {
                 animate="visible"
                 variants={{
                   hidden: {},
-                  visible: { transition: { staggerChildren: 0.05, delayChildren: 0.15 } },
+                  visible: { transition: { staggerChildren: 0.03, delayChildren: 0 } },
                 }}
               >
                 {data.genres.map((genre) => (
@@ -196,8 +252,8 @@ const DetailPage = () => {
                     key={genre.id}
                     className="text-sm font-space-grotesk font-medium text-neutral-400 bg-neutral-800/80 border-t border-neutral-600 px-3 py-1 rounded-4xl"
                     variants={{
-                      hidden: { opacity: 0, y: 8 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease } },
+                      hidden: { opacity: 0, y: 4 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease } },
                     }}
                   >
                     {genre.name}
@@ -206,15 +262,23 @@ const DetailPage = () => {
               </motion.p>
             )}
 
-            {data.overview && (
-              <motion.p
-                className="mt-4 leading-relaxed text-neutral-200"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease, delay: 0.25 }}
-              >
-                {data.overview}
-              </motion.p>
+            {isPreviewOnly && isFetching ? (
+              <div className="mt-4 space-y-2" aria-hidden>
+                <div className="h-4 w-full rounded bg-neutral-800/70 animate-pulse" />
+                <div className="h-4 w-[92%] rounded bg-neutral-800/70 animate-pulse" />
+                <div className="h-4 w-[85%] rounded bg-neutral-800/70 animate-pulse" />
+              </div>
+            ) : (
+              data.overview && (
+                <motion.p
+                  className="mt-4 leading-relaxed text-neutral-200"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, ease }}
+                >
+                  {data.overview}
+                </motion.p>
+              )
             )}
           </motion.div>
         </div>
@@ -274,9 +338,8 @@ const DetailPage = () => {
           className={`${pill} ${isSaved ? "bg-amber-500/80 border-amber-400 text-white" : "text-neutral-300 hover:text-white"}`}
           title={isSaved ? "Unsave" : "Save"}
           whileTap={{ scale: 0.93 }}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease }}
         >
           <Bookmark size={20} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
         </motion.button>
@@ -286,9 +349,8 @@ const DetailPage = () => {
           className={`${pill} text-neutral-300 hover:text-white`}
           title="Back"
           whileTap={{ scale: 0.93 }}
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease }}
         >
           <ArrowLeft size={20} strokeWidth={2.5} />
         </motion.button>
