@@ -23,10 +23,10 @@ const DEFAULT_STATE: UserMediaState = {
 const stateQKey = (tmdbId: number, mediaType: string) =>
   ["user", "media", "state", stateKey(tmdbId, mediaType)] as const;
 
-/** Invalidate saved list + all state queries so Discovery bookmarks update too */
-const invalidateAll = (qc: ReturnType<typeof useQueryClient>) => {
+/** Keep list-based queries in sync without forcing immediate state refetch races */
+const invalidateLists = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ["user", "media", "saved"] });
-  qc.invalidateQueries({ queryKey: ["user", "media", "state"] });
+  qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
 };
 
 export const useMediaState = (tmdbId: number | undefined, mediaType: string | undefined) => {
@@ -66,61 +66,63 @@ export const useMediaActions = (tmdbId: number, mediaType: string) => {
 
   return {
     save: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       patch({ is_saved: true });
       try {
         await saveMedia(tmdbId, mediaType);
-        invalidateAll(qc);
+        invalidateLists(qc);
       } catch {
-        patch({ is_saved: false });
+        qc.setQueryData(qKey, prev);
       }
     },
     unsave: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       patch({ is_saved: false, is_liked: false, is_disliked: false });
       try {
         await unsaveMedia(tmdbId, mediaType);
-        invalidateAll(qc);
-        qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+        invalidateLists(qc);
       } catch {
-        patch({ is_saved: true });
+        qc.setQueryData(qKey, prev);
       }
     },
     like: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       patch({ is_saved: true, is_liked: true, is_disliked: false });
       try {
         await likeMedia(tmdbId, mediaType);
-        invalidateAll(qc);
-        qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+        invalidateLists(qc);
       } catch {
-        patch({ is_liked: false, is_saved: false });
+        qc.setQueryData(qKey, prev);
       }
     },
     unlike: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       patch({ is_liked: false });
       try {
         await unlikeMedia(tmdbId, mediaType);
-        invalidateAll(qc);
-        qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+        invalidateLists(qc);
       } catch {
-        patch({ is_liked: true });
+        qc.setQueryData(qKey, prev);
       }
     },
     dislike: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       patch({ is_saved: true, is_disliked: true, is_liked: false });
       try {
         await dislikeMedia(tmdbId, mediaType);
-        invalidateAll(qc);
-        qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+        invalidateLists(qc);
       } catch {
-        patch({ is_disliked: false, is_saved: false });
+        qc.setQueryData(qKey, prev);
       }
     },
     undislike: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       patch({ is_disliked: false });
       try {
         await undislikeMedia(tmdbId, mediaType);
-        invalidateAll(qc);
+        invalidateLists(qc);
       } catch {
-        patch({ is_disliked: true });
+        qc.setQueryData(qKey, prev);
       }
     },
   };
