@@ -18,6 +18,12 @@ const SkeletonCards = ({ count = 12 }: { count?: number }) => (
   </div>
 );
 
+const SingleSkeletonCard = () => (
+  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+    <div className="aspect-2/3 w-full rounded-4xl bg-neutral-800/70 animate-pulse" />
+  </div>
+);
+
 const DiscoveryPage = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
@@ -83,8 +89,7 @@ const DiscoveryPage = () => {
   if (isPending && !data) {
     return (
       <div>
-        <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">Trending</h1>
-        <SkeletonCards />
+        <SingleSkeletonCard />
       </div>
     );
   }
