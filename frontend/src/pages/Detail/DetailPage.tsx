@@ -34,6 +34,10 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
   return seasons != null ? `${seasons} season${seasons !== 1 ? "s" : ""}` : undefined;
 };
 
+const getUSProviders = (detail: MediaDetail) => detail.watch_providers?.results?.US;
+const getCast = (detail: MediaDetail) =>
+  (detail.credits?.cast ?? []).slice(0, 8).filter((p) => p?.name);
+
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
 
@@ -271,7 +275,7 @@ const DetailPage = () => {
             ) : (
               data.overview && (
                 <motion.p
-                  className="mt-4 leading-relaxed text-neutral-200"
+                  className="mt-4 leading-relaxed text-neutral-200 font-space-grotesk"
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.22, ease }}
@@ -279,6 +283,54 @@ const DetailPage = () => {
                   {data.overview}
                 </motion.p>
               )
+            )}
+
+            {!isPreviewOnly && (
+              <>
+                <div className="mt-6">
+                  <h2 className="text-sm uppercase tracking-wide text-neutral-400 font-space-grotesk">
+                    Streaming
+                  </h2>
+                  {getUSProviders(data)?.flatrate?.length ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => (
+                        <span
+                          key={`stream-${provider.provider_id}`}
+                          className="rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-3 py-1 text-sm text-neutral-200 font-space-grotesk"
+                        >
+                          {provider.provider_name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
+                      No streaming provider data available.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <h2 className="text-sm uppercase tracking-wide text-neutral-400 font-space-grotesk">
+                    Cast
+                  </h2>
+                  {getCast(data).length ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {getCast(data).map((person) => (
+                        <span
+                          key={`cast-${person.id}`}
+                          className="rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-3 py-1 text-sm text-neutral-200 font-space-grotesk"
+                        >
+                          {person.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
+                      No cast data available.
+                    </p>
+                  )}
+                </div>
+              </>
             )}
           </motion.div>
         </div>
