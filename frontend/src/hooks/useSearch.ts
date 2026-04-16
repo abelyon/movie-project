@@ -10,5 +10,8 @@ export function useSearch(query: string) {
     queryKey: searchQueryKey(query),
     queryFn: () => fetchSearch({ query }),
     enabled: query.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }

@@ -18,13 +18,19 @@ const SkeletonCards = ({ count = 12 }: { count?: number }) => (
   </div>
 );
 
+const SingleSkeletonCard = () => (
+  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+    <div className="aspect-2/3 w-full rounded-4xl bg-neutral-800/70 animate-pulse" />
+  </div>
+);
+
 const DiscoveryPage = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const {
     data,
-    isLoading,
+    isPending,
     isError,
     error,
     fetchNextPage,
@@ -59,7 +65,7 @@ const DiscoveryPage = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
@@ -80,11 +86,10 @@ const DiscoveryPage = () => {
     [savedList],
   );
 
-  if (isLoading) {
+  if (isPending && !data) {
     return (
       <div>
-        <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">Trending</h1>
-        <SkeletonCards />
+        <SingleSkeletonCard />
       </div>
     );
   }
@@ -92,7 +97,7 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
-  const resultsTitle = isShowingSearchResults ? `Search: ${trimmedQuery}` : "Trending";
+  const resultsTitle = isShowingSearchResults ? `Search: ${trimmedQuery}` : "";
 
   const actionButtonClass =
     "fixed right-5 bottom-5 z-50 flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-3 text-neutral-300 hover:text-white transition-colors";
@@ -130,9 +135,11 @@ const DiscoveryPage = () => {
         )}
       </AnimatePresence>
 
-      <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">
-        {resultsTitle}
-      </h1>
+      {resultsTitle ? (
+        <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">
+          {resultsTitle}
+        </h1>
+      ) : null}
 
       {isShowingSearchHint && (
         <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
