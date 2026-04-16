@@ -327,12 +327,12 @@ const DetailPage = () => {
                     Cast
                   </h2>
                   {getCast(data).length ? (
-                    <div className="mt-2 max-h-96 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="flex gap-3 pb-1">
                         {getCast(data).map((person) => (
                           <div
                             key={`cast-${person.id}`}
-                            className="rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
+                            className="w-36 shrink-0 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
                           >
                             {person.profile_path ? (
                               <img
