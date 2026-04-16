@@ -92,7 +92,7 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
-  const resultsTitle = isShowingSearchResults ? `Search: ${trimmedQuery}` : "Trending";
+  const resultsTitle = isShowingSearchResults ? `Search: ${trimmedQuery}` : "";
 
   const actionButtonClass =
     "fixed right-5 bottom-5 z-50 flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-3 text-neutral-300 hover:text-white transition-colors";
@@ -130,9 +130,11 @@ const DiscoveryPage = () => {
         )}
       </AnimatePresence>
 
-      <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">
-        {resultsTitle}
-      </h1>
+      {resultsTitle ? (
+        <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">
+          {resultsTitle}
+        </h1>
+      ) : null}
 
       {isShowingSearchHint && (
         <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
