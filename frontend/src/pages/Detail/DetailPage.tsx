@@ -10,6 +10,8 @@ import { previewItemToDetail } from "../../utils/detailPreview";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
+const PROVIDER_LOGO_SIZE = "w92";
+const CAST_PROFILE_SIZE = "w185";
 
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
   mediaType === "movie"
@@ -36,7 +38,7 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
 
 const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
 const getCast = (detail: MediaDetail) =>
-  (detail.cast ?? []).slice(0, 8).filter((p) => p?.name);
+  (detail.cast ?? []).slice(0, 12).filter((p) => p?.name);
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
@@ -294,12 +296,23 @@ const DetailPage = () => {
                   {getUSProviders(data)?.flatrate?.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => (
-                        <span
+                        <div
                           key={`stream-${provider.provider_id}`}
-                          className="rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-3 py-1 text-sm text-neutral-200 font-space-grotesk"
+                          className="rounded-2xl border-t border-neutral-600 bg-neutral-800/80 p-1.5"
+                          title={provider.provider_name}
                         >
-                          {provider.provider_name}
-                        </span>
+                          {provider.logo_path ? (
+                            <img
+                              src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
+                              alt={provider.provider_name}
+                              className="h-8 w-8 rounded-lg object-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-lg bg-neutral-700" />
+                          )}
+                        </div>
                       ))}
                     </div>
                   ) : (
@@ -314,14 +327,30 @@ const DetailPage = () => {
                     Cast
                   </h2>
                   {getCast(data).length ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                       {getCast(data).map((person) => (
-                        <span
+                        <div
                           key={`cast-${person.id}`}
-                          className="rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-3 py-1 text-sm text-neutral-200 font-space-grotesk"
+                          className="rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
                         >
-                          {person.name}
-                        </span>
+                          {person.profile_path ? (
+                            <img
+                              src={`${TMDB_IMAGE_BASE}/${CAST_PROFILE_SIZE}${person.profile_path}`}
+                              alt={person.name}
+                              className="aspect-2/3 w-full rounded-2xl object-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <div className="aspect-2/3 w-full rounded-2xl bg-neutral-700" />
+                          )}
+                          <p className="mt-2 text-sm font-space-grotesk font-semibold text-neutral-100">
+                            {person.name}
+                          </p>
+                          <p className="text-xs font-space-grotesk text-neutral-400">
+                            {person.character || "—"}
+                          </p>
+                        </div>
                       ))}
                     </div>
                   ) : (
