@@ -35,15 +35,17 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-lg bg-neutral-800 p-6 shadow-lg">
-        <h1 className="mb-6 text-xl font-semibold text-white">Create account</h1>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-6 backdrop-blur-md sm:p-8">
+        <h1 className="text-2xl font-space-grotesk font-bold text-neutral-100">Create account</h1>
+        <p className="mt-1 text-sm text-neutral-400">Join and start saving what you want to watch.</p>
+
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           {error && (
-            <p className="rounded bg-red-500/20 px-3 py-2 text-sm text-red-400">{error}</p>
+            <p className="rounded-2xl border border-red-400/30 bg-red-500/15 px-3 py-2 text-sm text-red-300">{error}</p>
           )}
           <div>
-            <label htmlFor="register-name" className="mb-1 block text-sm text-neutral-400">
+            <label htmlFor="register-name" className="mb-1.5 block text-sm font-medium text-neutral-300">
               Name
             </label>
             <input
@@ -53,12 +55,12 @@ const RegisterPage = () => {
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="name"
-              className="w-full rounded border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2.5 text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
               placeholder="Your name"
             />
           </div>
           <div>
-            <label htmlFor="register-email" className="mb-1 block text-sm text-neutral-400">
+            <label htmlFor="register-email" className="mb-1.5 block text-sm font-medium text-neutral-300">
               Email
             </label>
             <input
@@ -68,12 +70,12 @@ const RegisterPage = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2.5 text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
               placeholder="you@example.com"
             />
           </div>
           <div>
-            <label htmlFor="register-password" className="mb-1 block text-sm text-neutral-400">
+            <label htmlFor="register-password" className="mb-1.5 block text-sm font-medium text-neutral-300">
               Password
             </label>
             <input
@@ -84,11 +86,11 @@ const RegisterPage = () => {
               required
               autoComplete="new-password"
               minLength={8}
-              className="w-full rounded border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2.5 text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
             />
           </div>
           <div>
-            <label htmlFor="register-password-confirm" className="mb-1 block text-sm text-neutral-400">
+            <label htmlFor="register-password-confirm" className="mb-1.5 block text-sm font-medium text-neutral-300">
               Confirm password
             </label>
             <input
@@ -99,20 +101,21 @@ const RegisterPage = () => {
               required
               autoComplete="new-password"
               minLength={8}
-              className="w-full rounded border border-neutral-600 bg-neutral-700 px-3 py-2 text-white placeholder-neutral-500 focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2.5 text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="mt-2 rounded-2xl border-t border-neutral-500 bg-neutral-200 px-4 py-2.5 font-space-grotesk font-semibold text-neutral-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Creating account…" : "Register"}
+            {loading ? "Creating account..." : "Register"}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-neutral-400">
+
+        <p className="mt-5 text-center text-sm text-neutral-400">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-400 hover:underline">
+          <Link to="/login" className="text-neutral-200 underline-offset-4 hover:underline">
             Log in
           </Link>
         </p>
