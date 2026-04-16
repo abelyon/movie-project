@@ -303,7 +303,7 @@ const DetailPage = () => {
                 onClick={() => {
                   void (isDisliked ? actions.undislike() : actions.dislike());
                 }}
-                className={`${pill} ${isDisliked ? "bg-red-500/80 border-red-400 text-white" : "text-neutral-300 hover:text-white"}`}
+                className={`${pill} ${isDisliked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
                 title={isDisliked ? "Remove dislike" : "Dislike"}
                 whileTap={{ scale: 0.93 }}
               >
