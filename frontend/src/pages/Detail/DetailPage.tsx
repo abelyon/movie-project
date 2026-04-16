@@ -327,31 +327,33 @@ const DetailPage = () => {
                     Cast
                   </h2>
                   {getCast(data).length ? (
-                    <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                      {getCast(data).map((person) => (
-                        <div
-                          key={`cast-${person.id}`}
-                          className="rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
-                        >
-                          {person.profile_path ? (
-                            <img
-                              src={`${TMDB_IMAGE_BASE}/${CAST_PROFILE_SIZE}${person.profile_path}`}
-                              alt={person.name}
-                              className="aspect-2/3 w-full rounded-2xl object-cover"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div className="aspect-2/3 w-full rounded-2xl bg-neutral-700" />
-                          )}
-                          <p className="mt-2 text-sm font-space-grotesk font-semibold text-neutral-100">
-                            {person.name}
-                          </p>
-                          <p className="text-xs font-space-grotesk text-neutral-400">
-                            {person.character || "—"}
-                          </p>
-                        </div>
-                      ))}
+                    <div className="mt-2 max-h-96 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        {getCast(data).map((person) => (
+                          <div
+                            key={`cast-${person.id}`}
+                            className="rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
+                          >
+                            {person.profile_path ? (
+                              <img
+                                src={`${TMDB_IMAGE_BASE}/${CAST_PROFILE_SIZE}${person.profile_path}`}
+                                alt={person.name}
+                                className="aspect-2/3 w-full rounded-2xl object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            ) : (
+                              <div className="aspect-2/3 w-full rounded-2xl bg-neutral-700" />
+                            )}
+                            <p className="mt-2 text-sm font-space-grotesk font-semibold text-neutral-100">
+                              {person.name}
+                            </p>
+                            <p className="text-xs font-space-grotesk text-neutral-400">
+                              {person.character || "—"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
