@@ -41,6 +41,37 @@ export type MovieDetail = {
   release_date?: string;
   vote_average?: number;
   genres?: { id: number; name: string }[];
+  credits?: {
+    cast?: Array<{
+      id: number;
+      name: string;
+      character?: string;
+      profile_path?: string | null;
+    }>;
+  };
+  "watch/providers"?: {
+    results?: Record<
+      string,
+      {
+        flatrate?: Array<{
+          provider_id: number;
+          provider_name: string;
+          logo_path?: string | null;
+        }>;
+        rent?: Array<{
+          provider_id: number;
+          provider_name: string;
+          logo_path?: string | null;
+        }>;
+        buy?: Array<{
+          provider_id: number;
+          provider_name: string;
+          logo_path?: string | null;
+        }>;
+        link?: string;
+      }
+    >;
+  };
   runtime?: number;
   media_type: "movie";
 };
@@ -53,6 +84,37 @@ export type TvDetail = {
   first_air_date?: string;
   vote_average?: number;
   genres?: { id: number; name: string }[];
+  credits?: {
+    cast?: Array<{
+      id: number;
+      name: string;
+      character?: string;
+      profile_path?: string | null;
+    }>;
+  };
+  "watch/providers"?: {
+    results?: Record<
+      string,
+      {
+        flatrate?: Array<{
+          provider_id: number;
+          provider_name: string;
+          logo_path?: string | null;
+        }>;
+        rent?: Array<{
+          provider_id: number;
+          provider_name: string;
+          logo_path?: string | null;
+        }>;
+        buy?: Array<{
+          provider_id: number;
+          provider_name: string;
+          logo_path?: string | null;
+        }>;
+        link?: string;
+      }
+    >;
+  };
   number_of_seasons?: number;
   media_type: "tv";
 };
