@@ -34,9 +34,9 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
   return seasons != null ? `${seasons} season${seasons !== 1 ? "s" : ""}` : undefined;
 };
 
-const getUSProviders = (detail: MediaDetail) => detail.watch_providers?.results?.US;
+const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
 const getCast = (detail: MediaDetail) =>
-  (detail.credits?.cast ?? []).slice(0, 8).filter((p) => p?.name);
+  (detail.cast ?? []).slice(0, 8).filter((p) => p?.name);
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
