@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
 import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
@@ -372,47 +372,38 @@ const DetailPage = () => {
         className="fixed bottom-5 flex flex-col items-center gap-3 z-50"
         style={{ right: "max(1.25rem, calc((100vw - 56rem) / 2 + 1.25rem))" }}
       >
-        <AnimatePresence>
-          {isSaved && (
-            <motion.div
-              key="rating-buttons"
-              className="flex flex-col items-center gap-3"
-              initial={{ opacity: 0, y: 12, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.9 }}
-              transition={{ duration: 0.2, ease }}
-            >
-              <motion.button
-                onClick={() => {
-                  void (isDisliked ? actions.undislike() : actions.dislike());
-                }}
-                className={`${pill} ${isDisliked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
-                title={isDisliked ? "Remove dislike" : "Dislike"}
-                whileTap={{ scale: 0.93 }}
-              >
-                <ThumbsDown
-                  size={20}
-                  strokeWidth={2.5}
-                  fill={isDisliked ? "currentColor" : "none"}
-                />
-              </motion.button>
-              <motion.button
-                onClick={() => {
-                  void (isLiked ? actions.unlike() : actions.like());
-                }}
-                className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
-                title={isLiked ? "Remove like" : "Like"}
-                whileTap={{ scale: 0.93 }}
-              >
-                <ThumbsUp
-                  size={20}
-                  strokeWidth={2.5}
-                  fill={isLiked ? "currentColor" : "none"}
-                />
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.button
+          onClick={() => {
+            void (isDisliked ? actions.undislike() : actions.dislike());
+          }}
+          className={`${pill} ${isDisliked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
+          title={isDisliked ? "Remove dislike" : "Dislike"}
+          whileTap={{ scale: 0.93 }}
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <ThumbsDown
+            size={20}
+            strokeWidth={2.5}
+            fill={isDisliked ? "currentColor" : "none"}
+          />
+        </motion.button>
+        <motion.button
+          onClick={() => {
+            void (isLiked ? actions.unlike() : actions.like());
+          }}
+          className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
+          title={isLiked ? "Remove like" : "Like"}
+          whileTap={{ scale: 0.93 }}
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <ThumbsUp
+            size={20}
+            strokeWidth={2.5}
+            fill={isLiked ? "currentColor" : "none"}
+          />
+        </motion.button>
 
         <motion.button
           onClick={() => {
