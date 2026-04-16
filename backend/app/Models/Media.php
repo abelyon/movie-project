@@ -20,6 +20,13 @@ class Media extends Model
         'watched_at',
     ];
 
+    protected $casts = [
+        'is_saved' => 'boolean',
+        'is_liked' => 'boolean',
+        'is_disliked' => 'boolean',
+        'watched_at' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

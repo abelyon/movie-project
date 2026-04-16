@@ -80,9 +80,16 @@ class TmdbController extends Controller
 
         $response = Http::get("{$url}/movie/{$id}", [
             'api_key' => $apiKey,
+            'append_to_response' => 'credits,watch/providers',
         ]);
+        $json = $response->json();
+        $watchProviders = $json['watch/providers']['results']['US'] ?? null;
+        unset($json['watch/providers']);
+        $json['watch_providers'] = $watchProviders;
+        $json['cast'] = $json['credits']['cast'] ?? [];
+        unset($json['credits']);
 
-        return response()->json($response->json(), 200);
+        return response()->json($json, 200);
     }
 
     public function tv($id) {
@@ -91,8 +98,15 @@ class TmdbController extends Controller
 
         $response = Http::get("{$url}/tv/{$id}", [
             'api_key' => $apiKey,
+            'append_to_response' => 'credits,watch/providers',
         ]);
+        $json = $response->json();
+        $watchProviders = $json['watch/providers']['results']['US'] ?? null;
+        unset($json['watch/providers']);
+        $json['watch_providers'] = $watchProviders;
+        $json['cast'] = $json['credits']['cast'] ?? [];
+        unset($json['credits']);
 
-        return response()->json($response->json(), 200);
+        return response()->json($json, 200);
     }
 }

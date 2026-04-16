@@ -13,5 +13,8 @@ export function useInfiniteTrending() {
       const total = lastPage.total_pages ?? 1;
       return page < total ? page + 1 : undefined;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
