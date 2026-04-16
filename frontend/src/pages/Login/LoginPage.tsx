@@ -31,10 +31,11 @@ const LoginPage = () => {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-8">
       <div className="w-full max-w-md rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-6 backdrop-blur-md sm:p-8">
-        <h1 className="text-2xl font-space-grotesk font-bold text-neutral-100">Welcome back</h1>
-        <p className="mt-1 text-sm text-neutral-400">Sign in to continue browsing movies and shows.</p>
-
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <h1 className="text-2xl font-space-grotesk font-bold text-neutral-100">Welcome back</h1>
+            <p className="mt-1 text-sm text-neutral-400">Sign in to continue browsing movies and shows.</p>
+          </div>
           {error && (
             <p className="rounded-2xl border border-red-400/30 bg-red-500/15 px-3 py-2 text-sm text-red-300">{error}</p>
           )}
