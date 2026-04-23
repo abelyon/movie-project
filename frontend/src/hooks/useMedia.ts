@@ -315,10 +315,10 @@ export const useMediaStateMap = (items: { id: number; media_type: string }[]) =>
   });
 };
 
-export const useSavedList = () =>
+export const useSavedList = (options?: { withFriendsSaved?: boolean }) =>
   useQuery({
-    queryKey: ["user", "media", "saved"],
-    queryFn: getSaved,
+    queryKey: ["user", "media", "saved", options?.withFriendsSaved ? "with-friends" : "all"],
+    queryFn: () => getSaved(options),
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,

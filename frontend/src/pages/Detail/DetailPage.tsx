@@ -44,7 +44,7 @@ const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
-  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-3 cursor-pointer transition-colors";
+  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-3 cursor-pointer transition-colors";
 
 function DetailPosterBlock({
   poster,
@@ -227,14 +227,14 @@ const DetailPage = () => {
 
           {/* Info */}
           <motion.div
-            className="flex-1"
+            className="min-w-0 flex-1"
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={enterFast}
           >
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-5">
-                <h1 className="text-3xl font-space-grotesk font-bold">{title}</h1>
+                <h1 className="break-words text-3xl font-space-grotesk font-bold">{title}</h1>
               </div>
               {date && (
                 <span className="text-xl font-space-grotesk font-bold text-neutral-400 shrink-0">
@@ -369,15 +369,13 @@ const DetailPage = () => {
 
       {/* Fixed action buttons — right side, nav-pill style */}
       <div
-        className="fixed bottom-5 flex flex-col items-center gap-3 z-50"
-        style={{ right: "max(1.25rem, calc((100vw - 56rem) / 2 + 1.25rem))" }}
+        className="fixed bottom-4 right-4 z-50 flex flex-col items-center gap-2 sm:bottom-5 sm:gap-3 sm:[right:max(1.25rem,calc((100vw-56rem)/2+1.25rem))]"
       >
         <motion.button
           onClick={() => {
             void (isDisliked ? actions.undislike() : actions.dislike());
           }}
           className={`${pill} ${isDisliked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
-          title={isDisliked ? "Remove dislike" : "Dislike"}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
@@ -393,7 +391,6 @@ const DetailPage = () => {
             void (isLiked ? actions.unlike() : actions.like());
           }}
           className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
-          title={isLiked ? "Remove like" : "Like"}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
@@ -410,7 +407,6 @@ const DetailPage = () => {
             void (isSaved ? actions.unsave() : actions.save());
           }}
           className={`${pill} ${isSaved ? "bg-amber-500/80 border-amber-400 text-white" : "text-neutral-300 hover:text-white"}`}
-          title={isSaved ? "Unsave" : "Save"}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
@@ -421,7 +417,6 @@ const DetailPage = () => {
         <motion.button
           onClick={() => navigate(-1)}
           className={`${pill} text-neutral-300 hover:text-white`}
-          title="Back"
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}

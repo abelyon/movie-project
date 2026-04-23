@@ -22,8 +22,12 @@ export async function getState(
   return data ?? {};
 }
 
-export async function getSaved(): Promise<MediaItem[]> {
-  const { data } = await api.get<{ results: MediaItem[] }>("/user/media/saved");
+export async function getSaved(options?: { withFriendsSaved?: boolean }): Promise<MediaItem[]> {
+  const { data } = await api.get<{ results: MediaItem[] }>("/user/media/saved", {
+    params: options?.withFriendsSaved
+      ? { with_friends_saved: 1 }
+      : undefined,
+  });
   return data?.results ?? [];
 }
 

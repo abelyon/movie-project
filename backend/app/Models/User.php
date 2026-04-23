@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -18,7 +19,9 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'public_user_id',
         'name',
+        'username',
         'email',
         'password',
     ];
@@ -46,8 +49,36 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if (!$user->public_user_id) {
+                $user->public_user_id = self::generatePublicUserId();
+            }
+        });
+    }
+
+    public static function generatePublicUserId(): string
+    {
+        do {
+            $candidate = 'USR-'.strtoupper(bin2hex(random_bytes(3)));
+        } while (self::query()->where('public_user_id', $candidate)->exists());
+
+        return $candidate;
+    }
+
     public function media()
     {
         return $this->hasMany(Media::class);
+    }
+
+    public function outgoingFriendRequests(): HasMany
+    {
+        return $this->hasMany(FriendRequest::class, 'requester_id');
+    }
+
+    public function incomingFriendRequests(): HasMany
+    {
+        return $this->hasMany(FriendRequest::class, 'recipient_id');
     }
 }

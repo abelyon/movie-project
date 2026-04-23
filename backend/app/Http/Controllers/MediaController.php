@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FriendRequest;
 use App\Models\Media;
 use App\Http\Requests\MediaIdRequest;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,18 @@ use Illuminate\Support\Facades\Http;
 
 class MediaController extends Controller
 {
+    private function applyNeutralSavedFilter($query)
+    {
+        return $query
+            ->where('is_saved', true)
+            ->where(function ($q): void {
+                $q->where('is_liked', false)->orWhereNull('is_liked');
+            })
+            ->where(function ($q): void {
+                $q->where('is_disliked', false)->orWhereNull('is_disliked');
+            });
+    }
+
     private function getTmdbUrl(): string
     {
         return config('services.tmdb.url');
@@ -114,7 +127,49 @@ class MediaController extends Controller
     public function saved(Request $request): JsonResponse
     {
         $user = $request->user();
-        $rows = Media::where('user_id', $user->id)->where('is_saved', true)->get();
+        $rows = $this->applyNeutralSavedFilter(
+            Media::query()->where('user_id', $user->id)
+        )->get();
+
+        if ($request->boolean('with_friends_saved')) {
+            $friendIds = FriendRequest::query()
+                ->where('status', 'accepted')
+                ->where(function ($q) use ($user): void {
+                    $q->where('requester_id', $user->id)
+                        ->orWhere('recipient_id', $user->id);
+                })
+                ->get()
+                ->map(function (FriendRequest $fr) use ($user) {
+                    return $fr->requester_id === $user->id ? $fr->recipient_id : $fr->requester_id;
+                })
+                ->unique()
+                ->values();
+
+            if ($friendIds->isEmpty()) {
+                $rows = collect();
+            } else {
+                $userSavedKeys = $rows
+                    ->map(fn (Media $item) => "{$item->type}-{$item->tmdb_id}")
+                    ->unique()
+                    ->values();
+
+                if ($userSavedKeys->isEmpty()) {
+                    $rows = collect();
+                } else {
+                    $friendSharedKeys = $this->applyNeutralSavedFilter(
+                        Media::query()->whereIn('user_id', $friendIds->all())
+                    )->get()
+                        ->map(fn (Media $item) => "{$item->type}-{$item->tmdb_id}")
+                        ->intersect($userSavedKeys)
+                        ->values();
+
+                    $rows = $rows
+                        ->filter(fn (Media $item) => $friendSharedKeys->contains("{$item->type}-{$item->tmdb_id}"))
+                        ->values();
+                }
+            }
+        }
+
         $results = [];
         foreach ($rows as $row) {
             $type = $row->type === 'movie' ? 'movie' : 'tv';

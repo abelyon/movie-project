@@ -11,18 +11,40 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
-            $table->text('two_factor_secret')
-                ->after('password')
-                ->nullable();
+            if (! Schema::hasColumn('users', 'two_factor_secret')) {
+                $secret = $table->text('two_factor_secret')->nullable();
 
-            $table->text('two_factor_recovery_codes')
-                ->after('two_factor_secret')
-                ->nullable();
+                if (Schema::hasColumn('users', 'password')) {
+                    $secret->after('password');
+                }
+            }
 
-            $table->timestamp('two_factor_confirmed_at')
-                ->after('two_factor_recovery_codes')
-                ->nullable();
+            if (! Schema::hasColumn('users', 'two_factor_recovery_codes')) {
+                $recovery = $table->text('two_factor_recovery_codes')->nullable();
+
+                if (Schema::hasColumn('users', 'two_factor_secret')) {
+                    $recovery->after('two_factor_secret');
+                } elseif (Schema::hasColumn('users', 'password')) {
+                    $recovery->after('password');
+                }
+            }
+
+            if (! Schema::hasColumn('users', 'two_factor_confirmed_at')) {
+                $confirmed = $table->timestamp('two_factor_confirmed_at')->nullable();
+
+                if (Schema::hasColumn('users', 'two_factor_recovery_codes')) {
+                    $confirmed->after('two_factor_recovery_codes');
+                } elseif (Schema::hasColumn('users', 'two_factor_secret')) {
+                    $confirmed->after('two_factor_secret');
+                } elseif (Schema::hasColumn('users', 'password')) {
+                    $confirmed->after('password');
+                }
+            }
         });
     }
 
@@ -31,12 +53,28 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'two_factor_secret',
-                'two_factor_recovery_codes',
-                'two_factor_confirmed_at',
-            ]);
+            $columns = [];
+
+            if (Schema::hasColumn('users', 'two_factor_secret')) {
+                $columns[] = 'two_factor_secret';
+            }
+
+            if (Schema::hasColumn('users', 'two_factor_recovery_codes')) {
+                $columns[] = 'two_factor_recovery_codes';
+            }
+
+            if (Schema::hasColumn('users', 'two_factor_confirmed_at')) {
+                $columns[] = 'two_factor_confirmed_at';
+            }
+
+            if ($columns !== []) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

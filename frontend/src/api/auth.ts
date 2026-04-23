@@ -3,6 +3,7 @@ import api, { LARAVEL_BASE } from "./client";
 
 export type User = {
   id: number;
+  public_user_id: string;
   name: string;
   email: string;
   email_verified_at: string | null;
@@ -15,6 +16,7 @@ const authClient = axios.create({
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
   withCredentials: true,
 });

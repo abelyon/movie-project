@@ -12,13 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('media')) {
+            return;
+        }
+
         // Rename legacy columns if present.
         if (Schema::hasColumn('media', 'saved') && !Schema::hasColumn('media', 'is_saved')) {
-            DB::statement('ALTER TABLE media RENAME COLUMN saved TO is_saved');
+            // MariaDB/MySQL versions without `RENAME COLUMN` still support CHANGE.
+            DB::statement('ALTER TABLE media CHANGE saved is_saved BOOLEAN NOT NULL DEFAULT 0');
         }
 
         if (Schema::hasColumn('media', 'liked') && !Schema::hasColumn('media', 'is_liked')) {
-            DB::statement('ALTER TABLE media RENAME COLUMN liked TO is_liked');
+            DB::statement('ALTER TABLE media CHANGE liked is_liked BOOLEAN NULL');
         }
 
         // Add missing columns used by the current model/controller.
@@ -46,6 +51,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('media')) {
+            return;
+        }
+
         Schema::table('media', function (Blueprint $table) {
             if (Schema::hasColumn('media', 'watched_at')) {
                 $table->dropColumn('watched_at');
@@ -57,11 +66,11 @@ return new class extends Migration
         });
 
         if (Schema::hasColumn('media', 'is_saved') && !Schema::hasColumn('media', 'saved')) {
-            DB::statement('ALTER TABLE media RENAME COLUMN is_saved TO saved');
+            DB::statement('ALTER TABLE media CHANGE is_saved saved BOOLEAN NOT NULL DEFAULT 0');
         }
 
         if (Schema::hasColumn('media', 'is_liked') && !Schema::hasColumn('media', 'liked')) {
-            DB::statement('ALTER TABLE media RENAME COLUMN is_liked TO liked');
+            DB::statement('ALTER TABLE media CHANGE is_liked liked BOOLEAN NULL');
         }
     }
 };
