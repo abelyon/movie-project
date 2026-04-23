@@ -25,9 +25,7 @@ class AppServiceProvider extends ServiceProvider
         {
             public function toResponse($request)
             {
-                return $request->wantsJson()
-                    ? response()->json(['user' => $request->user()], 200)
-                    : redirect()->intended(config('fortify.home'));
+                return response()->json(['user' => $request->user()], 200);
             }
         });
 
@@ -35,9 +33,7 @@ class AppServiceProvider extends ServiceProvider
         {
             public function toResponse($request)
             {
-                return $request->wantsJson()
-                    ? response()->json(['user' => $request->user()], 201)
-                    : redirect()->intended(config('fortify.home'));
+                return response()->json(['user' => $request->user()], 201);
             }
         });
     }

@@ -3,6 +3,8 @@ export type MediaItem = {
   title?: string;
   name?: string;
   media_type: "movie" | "tv" | string;
+  genre_ids?: number[];
+  genres?: Array<{ id: number; name: string }>;
   poster_path: string | null;
   backdrop_path?: string | null;
   overview?: string;

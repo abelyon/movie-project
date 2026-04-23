@@ -1,0 +1,92 @@
+# Railway Deployment Guide
+
+This project is a monorepo with:
+
+- `backend` (Laravel API)
+- `frontend` (React + Vite SPA)
+
+Deploy them as **two Railway services** in one Railway project.
+
+## 1) Push code to GitHub
+
+Railway deploys from a GitHub repo. Make sure your current branch is pushed.
+
+## 2) Create a Railway project
+
+1. In Railway, click **New Project**.
+2. Choose **Deploy from GitHub repo** and select this repository.
+3. Add 2 services from the same repo:
+   - Service A root directory: `backend`
+   - Service B root directory: `frontend`
+
+`nixpacks.toml` is already added in both folders, so Railway will use the correct start commands.
+
+## 3) Add a MySQL database
+
+1. In Railway, add **MySQL** plugin/service.
+2. Copy its connection values into backend environment variables.
+
+## 4) Configure backend environment variables
+
+Set these on the `backend` Railway service:
+
+- `APP_NAME=SeeIt` (or your app name)
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- `APP_KEY=<generate with: php artisan key:generate --show>`
+- `APP_URL=https://<your-backend-domain>`
+- `FRONTEND_URL=https://<your-frontend-domain>`
+- `SANCTUM_STATEFUL_DOMAINS=<your-frontend-domain-without-https>`
+- `SESSION_DRIVER=database`
+- `CACHE_STORE=database`
+- `QUEUE_CONNECTION=database`
+- `DB_CONNECTION=mysql`
+- `DB_HOST=<from Railway MySQL>`
+- `DB_PORT=<from Railway MySQL>`
+- `DB_DATABASE=<from Railway MySQL>`
+- `DB_USERNAME=<from Railway MySQL>`
+- `DB_PASSWORD=<from Railway MySQL>`
+- `TMDB_API_KEY=<your tmdb key>`
+- `TMDB_URL=https://api.themoviedb.org/3`
+
+Optional but recommended:
+
+- `SESSION_SECURE_COOKIE=true`
+- `LOG_CHANNEL=stack`
+- `LOG_LEVEL=info`
+
+## 5) Configure frontend environment variables
+
+Set this on the `frontend` Railway service:
+
+- `VITE_API_BASE_URL=https://<your-backend-domain>/api`
+
+## 6) Deploy order
+
+1. Deploy backend first (it runs migrations on boot).
+2. After backend has a public URL, set `VITE_API_BASE_URL` in frontend.
+3. Deploy frontend.
+
+## 7) Sanctum / cookies note
+
+This app uses cookie-based auth (`withCredentials: true`).
+
+For login/session to work correctly:
+
+- `FRONTEND_URL` must match your frontend URL exactly
+- `SANCTUM_STATEFUL_DOMAINS` must contain frontend host (no protocol), e.g. `my-app.up.railway.app`
+
+If you use custom domains, prefer using domains under the same parent domain for fewer cookie issues.
+
+## 8) Quick verification
+
+After deploy:
+
+1. Open frontend URL.
+2. Register/login.
+3. Open browser devtools:
+   - `/sanctum/csrf-cookie` succeeds
+   - `/login` returns user JSON
+   - Authenticated API routes return `200`
+
+If auth fails, re-check `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, and CORS-related values.

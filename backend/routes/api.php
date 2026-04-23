@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\FriendController;
 use App\Http\Controllers\TmdbController;
 use App\Http\Controllers\MediaController;
 
@@ -21,6 +22,14 @@ Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::post('/dislike', [MediaController::class, 'dislike']);
     Route::delete('/dislike', [MediaController::class, 'undislike']);
     Route::post('/watched', [MediaController::class, 'watched']);
+});
+
+Route::middleware('auth:sanctum')->prefix('friends')->group(function () {
+    Route::get('/', [FriendController::class, 'index']);
+    Route::get('/search', [FriendController::class, 'search']);
+    Route::post('/requests', [FriendController::class, 'send']);
+    Route::post('/requests/{friendRequest}/accept', [FriendController::class, 'accept']);
+    Route::post('/requests/{friendRequest}/deny', [FriendController::class, 'deny']);
 });
 
 Route::get('/trending', [TmdbController::class, 'trending']);
