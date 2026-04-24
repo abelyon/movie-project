@@ -47,7 +47,75 @@ class MediaController extends Controller
             ->where(function ($q): void {
                 $q->where('is_saved', true)
                     ->orWhere('is_liked', true)
-                    ->orWhere('is_favorited', true);
+                    ->orWhere('is_disliked', true)
+                    ->orWhere('is_favorited', true)
+                    ->orWhereNotNull('watched_at');
+            });
+    }
+
+    /**
+     * Rank shared media for watch-together using simple point rules.
+     */
+    private function rankWatchTogetherForUsers(array $participantUserIds): \Illuminate\Support\Collection
+    {
+        if (empty($participantUserIds)) {
+            return collect();
+        }
+
+        $rows = Media::query()
+            ->whereIn('user_id', $participantUserIds)
+            ->get();
+
+        $ranked = [];
+
+        foreach ($rows as $row) {
+            $key = "{$row->type}-{$row->tmdb_id}";
+
+            if (!isset($ranked[$key])) {
+                $ranked[$key] = [
+                    'type' => $row->type,
+                    'tmdb_id' => (int) $row->tmdb_id,
+                    'score' => 0,
+                    'has_candidate_signal' => false,
+                    'blocked' => false,
+                ];
+            }
+
+            if ($row->is_saved || $row->is_favorited) {
+                $ranked[$key]['has_candidate_signal'] = true;
+            }
+
+            if ($row->is_saved) {
+                $ranked[$key]['score'] += 2;
+            }
+
+            if ($row->is_favorited) {
+                $ranked[$key]['score'] += 1;
+            }
+
+            // Kill switch for one-and-done or explicit negative signals.
+            if ($row->is_liked || $row->is_disliked) {
+                $ranked[$key]['score'] -= 100;
+                $ranked[$key]['blocked'] = true;
+            }
+
+            // Watched titles are hidden unless the same user favorited it.
+            if ($row->watched_at !== null && !$row->is_favorited) {
+                $ranked[$key]['blocked'] = true;
+            }
+        }
+
+        return collect($ranked)
+            ->filter(function (array $entry): bool {
+                return $entry['has_candidate_signal'] && !$entry['blocked'];
+            })
+            ->sortByDesc('score')
+            ->values()
+            ->map(function (array $entry): Media {
+                $media = new Media();
+                $media->type = $entry['type'];
+                $media->tmdb_id = $entry['tmdb_id'];
+                return $media;
             });
     }
 
@@ -206,34 +274,9 @@ class MediaController extends Controller
         }
 
         if ($request->boolean('with_friends_saved')) {
-            $rows = $this->applyFriendSelectedSavedFilter(
-                Media::query()->where('user_id', $user->id)
-            )->get();
             $friendIds = $this->getAcceptedFriendIds($request);
-
-            if ($friendIds->isEmpty()) {
-                $rows = collect();
-            } else {
-                $userSavedKeys = $rows
-                    ->map(fn (Media $item) => "{$item->type}-{$item->tmdb_id}")
-                    ->unique()
-                    ->values();
-
-                if ($userSavedKeys->isEmpty()) {
-                    $rows = collect();
-                } else {
-                    $friendSharedKeys = $this->applyFriendSelectedSavedFilter(
-                        Media::query()->whereIn('user_id', $friendIds->all())
-                    )->get()
-                        ->map(fn (Media $item) => "{$item->type}-{$item->tmdb_id}")
-                        ->intersect($userSavedKeys)
-                        ->values();
-
-                    $rows = $rows
-                        ->filter(fn (Media $item) => $friendSharedKeys->contains("{$item->type}-{$item->tmdb_id}"))
-                        ->values();
-                }
-            }
+            $participantIds = collect([$user->id])->merge($friendIds)->unique()->values()->all();
+            $rows = $this->rankWatchTogetherForUsers($participantIds);
         }
 
         $results = [];
