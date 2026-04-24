@@ -146,9 +146,10 @@ class MediaController extends Controller
     public function saved(Request $request): JsonResponse
     {
         $user = $request->user();
-        $rows = $this->applyNeutralSavedFilter(
-            Media::query()->where('user_id', $user->id)
-        )->get();
+        $rows = Media::query()
+            ->where('user_id', $user->id)
+            ->where('is_saved', true)
+            ->get();
 
         if ($request->boolean('with_friends_saved')) {
             $rows = $this->applyFriendSelectedSavedFilter(

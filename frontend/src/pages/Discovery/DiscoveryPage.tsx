@@ -60,12 +60,6 @@ const SkeletonCards = ({ count = 12 }: { count?: number }) => (
   </div>
 );
 
-const SingleSkeletonCard = () => (
-  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-    <div className="aspect-2/3 w-full rounded-4xl bg-neutral-800/70 animate-pulse" />
-  </div>
-);
-
 const DiscoveryPage = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -206,7 +200,7 @@ const DiscoveryPage = () => {
   if (isPending && !data) {
     return (
       <div>
-        <SingleSkeletonCard />
+        <SkeletonCards count={8} />
       </div>
     );
   }
@@ -226,14 +220,27 @@ const DiscoveryPage = () => {
   const visibleGenreOptions = filterType === "tv" ? TV_GENRES : filterType === "movie" ? MOVIE_GENRES : ALL_GENRES;
   const hasActiveFilters =
     filterType !== "all" || minRating !== 0 || yearFrom.trim() !== "" || selectedGenreIds.length > 0;
+  const hasOpenModal = showSearch || showFilter || showSort;
 
   return (
     <div>
+      {hasOpenModal && (
+        <button
+          type="button"
+          aria-label="Close open modal"
+          className="fixed inset-0 z-40 cursor-default bg-transparent"
+          onClick={() => {
+            setShowSearch(false);
+            setShowFilter(false);
+            setShowSort(false);
+          }}
+        />
+      )}
       <AnimatePresence>
         {showSearch && (
           <motion.div
             key="search-bar"
-            className="fixed top-0 left-0 right-0 z-50 p-5"
+            className="fixed top-0 left-0 right-0 z-[70] p-5"
             initial={{ opacity: 0, y: -14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -14 }}
@@ -301,13 +308,13 @@ const DiscoveryPage = () => {
 
       <div
         ref={floatingControlsRef}
-        className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3"
+        className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3"
       >
         <div className="relative">
           <AnimatePresence>
             {showFilter && (
               <motion.div
-                className="absolute right-full bottom-0 mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
+                className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
                 initial={{ opacity: 0, x: 10, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -423,6 +430,7 @@ const DiscoveryPage = () => {
             onClick={() => {
               setShowFilter((prev) => !prev);
               setShowSort(false);
+              setShowSearch(false);
             }}
             className={`${floatingActionButtonBaseClass} ${
               hasActiveFilters ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
@@ -438,7 +446,7 @@ const DiscoveryPage = () => {
           <AnimatePresence>
             {showSort && (
               <motion.div
-                className="absolute right-full bottom-0 mr-2 w-48 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md"
+                className="absolute right-full bottom-0 z-[70] mr-2 w-48 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md"
                 initial={{ opacity: 0, x: 10, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -489,6 +497,7 @@ const DiscoveryPage = () => {
             onClick={() => {
               setShowSort((prev) => !prev);
               setShowFilter(false);
+              setShowSearch(false);
             }}
             className={`${floatingActionButtonBaseClass} ${
               sortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
@@ -508,6 +517,8 @@ const DiscoveryPage = () => {
               return;
             }
             setShowSearch(true);
+            setShowFilter(false);
+            setShowSort(false);
           }}
           className={floatingActionButtonBaseClass}
           whileHover={{ scale: 1.05 }}
