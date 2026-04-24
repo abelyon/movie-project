@@ -367,4 +367,20 @@ class MediaController extends Controller
             'watched_at' => $row->watched_at?->toIso8601String(),
         ]);
     }
+
+    public function unwatched(MediaIdRequest $request): JsonResponse
+    {
+        $row = $this->updateOrCreate($request, [
+            'watched_at' => null,
+            'is_liked' => false,
+            'is_disliked' => false,
+        ]);
+        return response()->json([
+            'tmdb_id' => $row->tmdb_id,
+            'media_type' => $row->type,
+            'watched_at' => null,
+            'is_liked' => false,
+            'is_disliked' => false,
+        ]);
+    }
 }
