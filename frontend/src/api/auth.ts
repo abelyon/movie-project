@@ -34,6 +34,7 @@ export async function getCsrfCookie(): Promise<void> {
 }
 
 export async function login(email: string, password: string): Promise<{ user: User }> {
+  await getCsrfCookie();
   const { data } = await authClient.post<{ user: User }>("/login", { email, password });
   return data;
 }
@@ -46,6 +47,7 @@ export type RegisterInput = {
 };
 
 export async function register(input: RegisterInput): Promise<{ user: User }> {
+  await getCsrfCookie();
   const { data } = await authClient.post<{ user: User }>("/register", input);
   return data;
 }
