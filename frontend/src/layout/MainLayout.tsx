@@ -8,7 +8,6 @@ import {
   Bookmark,
   Compass,
   Filter,
-  Heart,
   Search,
   Star,
   User,
@@ -129,6 +128,9 @@ const MainLayout = () => {
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friendsLoaded, setFriendsLoaded] = useState(false);
+  const [showFloatingActions, setShowFloatingActions] = useState(true);
+  const scrollIdleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
@@ -143,13 +145,14 @@ const MainLayout = () => {
   }, [sFilterType]);
 
   useEffect(() => {
-    if (!sShowFriends || !isSaved) return;
+    if (!isSaved || friendsLoaded) return;
     let cancelled = false;
     setFriendsLoading(true);
     getFriendOverview()
       .then((data) => {
         if (cancelled) return;
         setFriends(data.friends ?? []);
+        setFriendsLoaded(true);
       })
       .catch(() => {
         if (!cancelled) setFriends([]);
@@ -160,7 +163,33 @@ const MainLayout = () => {
     return () => {
       cancelled = true;
     };
-  }, [sShowFriends, isSaved]);
+  }, [isSaved, friendsLoaded]);
+
+  useEffect(() => {
+    if (!isDiscovery && !isSaved) {
+      setShowFloatingActions(true);
+      return;
+    }
+
+    const onScroll = () => {
+      setShowFloatingActions(false);
+      if (scrollIdleTimerRef.current != null) {
+        window.clearTimeout(scrollIdleTimerRef.current);
+      }
+      scrollIdleTimerRef.current = window.setTimeout(() => {
+        setShowFloatingActions(true);
+      }, 1500);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollIdleTimerRef.current != null) {
+        window.clearTimeout(scrollIdleTimerRef.current);
+        scrollIdleTimerRef.current = null;
+      }
+    };
+  }, [isDiscovery, isSaved]);
 
   const hasOpenModal = isDiscovery
     ? dShowSearch || dShowFilter || dShowSort
@@ -224,7 +253,7 @@ const MainLayout = () => {
           backgroundPosition: "center center",
         }}
       />
-      <main className="relative z-10 flex-1">
+      <main className={`relative z-10 flex-1 ${user ? "pb-24" : ""}`}>
         <Outlet context={outletContext} />
       </main>
       {user && hasOpenModal && (
@@ -275,7 +304,12 @@ const MainLayout = () => {
             )}
           </AnimatePresence>
 
-          <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
+          <motion.div
+            className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3"
+            animate={{ opacity: showFloatingActions ? 1 : 0, y: showFloatingActions ? 0 : 12 }}
+            transition={{ duration: 0.2 }}
+            style={{ pointerEvents: showFloatingActions ? "auto" : "none" }}
+          >
             <div className="relative">
               <AnimatePresence>
                 {dShowFilter && (
@@ -413,12 +447,17 @@ const MainLayout = () => {
             >
               {dShowSearch ? <X size={24} strokeWidth={2.5} /> : <Search size={24} strokeWidth={2.5} />}
             </motion.button>
-          </div>
+          </motion.div>
         </>
       )}
 
       {user && isSaved && (
-        <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
+        <motion.div
+          className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3"
+          animate={{ opacity: showFloatingActions ? 1 : 0, y: showFloatingActions ? 0 : 12 }}
+          transition={{ duration: 0.2 }}
+          style={{ pointerEvents: showFloatingActions ? "auto" : "none" }}
+        >
           <div className="relative">
             <AnimatePresence>
               {sShowFilter && (
@@ -492,7 +531,14 @@ const MainLayout = () => {
               {sShowFriends && (
                 <motion.div className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
                   {friendsLoading ? (
-                    <p className="mt-3 text-sm text-neutral-400">Loading friends...</p>
+                    <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      {Array.from({ length: 3 }).map((_, idx) => (
+                        <div key={idx} className="w-20 shrink-0 rounded-2xl px-2 py-2">
+                          <div className="mx-auto h-9 w-9 rounded-full bg-neutral-700/80 animate-pulse" />
+                          <div className="mt-2 h-3 rounded bg-neutral-700/70 animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
                   ) : friends.length === 0 ? (
                     <p className="mt-3 text-sm text-neutral-400">No accepted friends yet.</p>
                   ) : (
@@ -560,7 +606,7 @@ const MainLayout = () => {
           >
             <User size={24} strokeWidth={2.5} />
           </motion.button>
-        </div>
+        </motion.div>
       )}
 
       {user && (
