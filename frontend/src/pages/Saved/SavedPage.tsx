@@ -67,12 +67,12 @@ const SavedPage = () => {
     filterType !== "all" || minRating !== 0 || yearFrom.trim() !== "" || selectedGenreIds.length > 0;
   const sortButtonIcon =
     sortBy === "title_asc"
-      ? <ArrowDownAZ size={20} strokeWidth={2.5} />
+      ? <ArrowDownAZ size={24} strokeWidth={2.5} />
       : sortBy === "title_desc"
-        ? <ArrowUpAZ size={20} strokeWidth={2.5} />
+        ? <ArrowUpAZ size={24} strokeWidth={2.5} />
         : sortBy === "rating_desc"
-          ? <Star size={20} strokeWidth={2.5} />
-          : <ArrowUpDown size={20} strokeWidth={2.5} />;
+          ? <Star size={24} strokeWidth={2.5} />
+          : <ArrowUpDown size={24} strokeWidth={2.5} />;
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -377,7 +377,7 @@ const SavedPage = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Users size={20} strokeWidth={2.5} />
+          <Users size={24} strokeWidth={2.5} />
         </motion.button>
       </div>
     </div>

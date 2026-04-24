@@ -217,12 +217,12 @@ const DiscoveryPage = () => {
   const resultsTitle = isShowingSearchResults ? `Search: ${trimmedQuery}` : "";
   const sortButtonIcon =
     sortBy === "title_asc"
-      ? <ArrowDownAZ size={20} strokeWidth={2.5} />
+      ? <ArrowDownAZ size={24} strokeWidth={2.5} />
       : sortBy === "title_desc"
-        ? <ArrowUpAZ size={20} strokeWidth={2.5} />
+        ? <ArrowUpAZ size={24} strokeWidth={2.5} />
         : sortBy === "rating_desc"
-          ? <Star size={20} strokeWidth={2.5} />
-          : <ArrowUpDown size={20} strokeWidth={2.5} />;
+          ? <Star size={24} strokeWidth={2.5} />
+          : <ArrowUpDown size={24} strokeWidth={2.5} />;
   const visibleGenreOptions = filterType === "tv" ? TV_GENRES : filterType === "movie" ? MOVIE_GENRES : ALL_GENRES;
   const hasActiveFilters =
     filterType !== "all" || minRating !== 0 || yearFrom.trim() !== "" || selectedGenreIds.length > 0;
@@ -301,7 +301,7 @@ const DiscoveryPage = () => {
 
       <div
         ref={floatingControlsRef}
-        className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-5 sm:[right:max(1.25rem,calc((100vw-56rem)/2+1.25rem))]"
+        className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3"
       >
         <div className="relative">
           <AnimatePresence>
@@ -430,7 +430,7 @@ const DiscoveryPage = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Filter size={20} strokeWidth={2.5} />
+            <Filter size={24} strokeWidth={2.5} />
           </motion.button>
         </div>
 
@@ -513,7 +513,7 @@ const DiscoveryPage = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          {showSearch ? <X size={20} strokeWidth={2.5} /> : <Search size={20} strokeWidth={2.5} />}
+          {showSearch ? <X size={24} strokeWidth={2.5} /> : <Search size={24} strokeWidth={2.5} />}
         </motion.button>
       </div>
     </div>

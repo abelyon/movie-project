@@ -30,15 +30,17 @@ const MainLayout = () => {
       </main>
       {user && (
         <footer className="fixed bottom-0 left-0 right-0 z-10 p-5 pointer-events-none">
-          <nav className="w-fit mx-auto bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-4 flex items-center gap-5 pointer-events-auto">
+          <nav className="mx-auto flex h-14 w-fit items-center gap-2 rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2 backdrop-blur-md pointer-events-auto">
             {routes.map((route) => {
               const active = pathname === route.path;
               return (
                 <motion.div key={route.path} whileHover={{ scale: 1.08, rotate: 2 }} whileTap={{ scale: 0.94, rotate: -10 }}>
                   <Link
                     to={route.path}
-                    className={`relative flex items-center justify-center ${
-                      active ? "text-neutral-100" : "text-neutral-400"
+                    className={`relative flex h-12 w-12 items-center justify-center rounded-3xl transition-colors ${
+                      active
+                        ? "text-neutral-100"
+                        : "text-neutral-400 hover:text-neutral-200"
                     }`}
                   >
                     <route.icon size={24} strokeWidth={2.5} className="relative z-10" />
