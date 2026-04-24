@@ -369,7 +369,7 @@ const DetailPage = () => {
 
       {/* Fixed action buttons — right side, nav-pill style */}
       <div
-        className="fixed bottom-4 right-4 z-50 flex flex-col items-center gap-2 sm:bottom-5 sm:gap-3 sm:[right:max(1.25rem,calc((100vw-56rem)/2+1.25rem))]"
+        className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-2 sm:bottom-5 sm:gap-3"
       >
         <motion.button
           onClick={() => {
