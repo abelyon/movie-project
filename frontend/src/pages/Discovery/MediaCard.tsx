@@ -14,10 +14,12 @@ const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boole
   const queryClient = useQueryClient();
 
   const prefetchDetail = () => {
-    if (item.media_type !== "movie" && item.media_type !== "tv") return;
+    const mt = item.media_type;
+    if (mt !== "movie" && mt !== "tv") return;
+    const kind = mt as "movie" | "tv";
     void queryClient.prefetchQuery({
-      queryKey: detailQueryKey(item.media_type, item.id),
-      queryFn: () => fetchDetail(item.media_type, item.id),
+      queryKey: detailQueryKey(kind, item.id),
+      queryFn: () => fetchDetail(kind, item.id),
       staleTime: 5 * 60 * 1000,
     });
   };
