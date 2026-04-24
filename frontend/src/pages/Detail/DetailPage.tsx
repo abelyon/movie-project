@@ -13,7 +13,6 @@ const POSTER_SIZE = "w780";
 const PROVIDER_LOGO_SIZE = "w92";
 const CAST_PROFILE_SIZE = "w185";
 
-
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
   mediaType === "movie"
     ? ((detail as MovieDetail).title ?? "")
@@ -376,7 +375,7 @@ const DetailPage = () => {
           animate={{ opacity: 1, y: 0 }}
         >
           <ThumbsDown
-            size={20}
+            size={32}
             strokeWidth={2.5}
             fill={isDisliked ? "currentColor" : "none"}
           />
@@ -391,7 +390,7 @@ const DetailPage = () => {
           animate={{ opacity: 1, y: 0 }}
         >
           <ThumbsUp
-            size={20}
+            size={32}
             strokeWidth={2.5}
             fill={isLiked ? "currentColor" : "none"}
           />
@@ -406,7 +405,7 @@ const DetailPage = () => {
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Bookmark size={20} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
+          <Bookmark size={32} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
         </motion.button>
 
         <motion.button
@@ -416,7 +415,7 @@ const DetailPage = () => {
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <ArrowLeft size={20} strokeWidth={2.5} />
+          <ArrowLeft size={32} strokeWidth={2.5} />
         </motion.button>
       </div>
     </div>
