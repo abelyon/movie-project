@@ -3,6 +3,9 @@
 use Laravel\Sanctum\Sanctum;
 
 $frontendUrl = env('FRONTEND_URL');
+if (is_string($frontendUrl)) {
+    $frontendUrl = trim($frontendUrl, " \t\n\r\0\x0B\"'");
+}
 $frontendHost = $frontendUrl ? parse_url($frontendUrl, PHP_URL_HOST) : null;
 $frontendPort = $frontendUrl ? parse_url($frontendUrl, PHP_URL_PORT) : null;
 $frontendStateful = $frontendHost

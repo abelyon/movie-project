@@ -2,6 +2,20 @@
 
 use Illuminate\Support\Str;
 
+$secureEnv = env('SESSION_SECURE_COOKIE');
+if (is_string($secureEnv)) {
+    $secureEnv = trim($secureEnv, " \t\n\r\0\x0B\"'");
+}
+$secureCookie = filter_var($secureEnv, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+
+$sameSiteEnv = env('SESSION_SAME_SITE');
+if (is_string($sameSiteEnv)) {
+    $sameSiteEnv = strtolower(trim($sameSiteEnv, " \t\n\r\0\x0B\"'"));
+}
+$sameSite = in_array($sameSiteEnv, ['lax', 'strict', 'none'], true)
+    ? $sameSiteEnv
+    : (env('APP_ENV') === 'production' ? 'none' : 'lax');
+
 return [
 
     /*
@@ -169,7 +183,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
+    'secure' => $secureCookie ?? (env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------
@@ -199,7 +213,7 @@ return [
     |
     */
 
-    'same_site' => env('SESSION_SAME_SITE', env('APP_ENV') === 'production' ? 'none' : 'lax'),
+    'same_site' => $sameSite,
 
     /*
     |--------------------------------------------------------------------------
