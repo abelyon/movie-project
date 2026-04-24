@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Local env (VITE_* is baked in at build time — never commit real URLs/secrets)
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
