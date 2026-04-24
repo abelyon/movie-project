@@ -201,7 +201,7 @@ const MainLayout = () => {
         yearFrom: sYearFrom,
         selectedFriendIds,
         showFriendsSocial,
-        withFriendsSaved: selectedFriendIds.length > 0,
+        withFriendsSaved: !showFriendsSocial && selectedFriendIds.length > 0,
         setFilterType: setSFilterType,
         setSelectedGenreIds: setSSelectedGenreIds,
         setMinRating: setSMinRating,
@@ -547,7 +547,16 @@ const MainLayout = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFriends((prev) => !prev); setSShowFilter(false); setSShowSort(false); setShowFriendsSocial(false); }} className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button
+              type="button"
+              onClick={() => {
+                setSShowFriends((prev) => !prev);
+                setSShowFilter(false);
+                setSShowSort(false);
+                setShowFriendsSocial(false);
+              }}
+              className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+            >
               <AnimatedNavIcon>
                 <Users size={24} strokeWidth={2.5} />
               </AnimatedNavIcon>
