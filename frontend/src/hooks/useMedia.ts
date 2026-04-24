@@ -11,6 +11,8 @@ import {
   undislikeMedia,
   favoriteMedia,
   unfavoriteMedia,
+  watchedMedia,
+  unwatchedMedia,
   stateKey,
   type UserMediaState,
 } from "../api/userMedia";
@@ -201,6 +203,8 @@ export const useMediaActions = (
       undislike: noop,
       favorite: noop,
       unfavorite: noop,
+      watched: noop,
+      unwatched: noop,
     };
   }
 
@@ -339,6 +343,38 @@ export const useMediaActions = (
       patchLocalAndGrid({ is_favorited: false });
       try {
         await unfavoriteMedia(tmdbId, mediaType);
+        scheduleListSync(qc);
+      } catch {
+        qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
+      }
+    },
+    watched: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({ watched_at: new Date().toISOString() });
+      try {
+        await watchedMedia(tmdbId, mediaType);
+        scheduleListSync(qc);
+      } catch {
+        qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
+      }
+    },
+    unwatched: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({
+        watched_at: null,
+        is_liked: false,
+        is_disliked: false,
+      });
+      try {
+        await unwatchedMedia(tmdbId, mediaType);
         scheduleListSync(qc);
       } catch {
         qc.setQueryData(qKey, prev);

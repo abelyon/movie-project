@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
 import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
-import { ArrowLeft, Bookmark, Clapperboard, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
+import { ArrowLeft, Bookmark, Clapperboard, Eye, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 import type { MediaItem } from "../../api/types";
 import { previewItemToDetail } from "../../utils/detailPreview";
 
@@ -45,8 +45,8 @@ const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
   "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
-const actionButtonInactive = "text-neutral-300 hover:text-white";
-const actionButtonActive = "bg-emerald-500/80 border-emerald-400 text-white hover:text-white";
+const actionButtonInactive = "text-neutral-400 hover:text-neutral-200";
+const actionButtonActive = "text-neutral-100 hover:text-white";
 
 function DetailPosterBlock({
   poster,
@@ -209,6 +209,7 @@ const DetailPage = () => {
   const isLiked = userState?.is_liked ?? false;
   const isDisliked = userState?.is_disliked ?? false;
   const isFavorited = userState?.is_favorited ?? false;
+  const isWatched = Boolean(userState?.watched_at);
 
   return (
     <div className="text-white overflow-hidden">
@@ -369,7 +370,7 @@ const DetailPage = () => {
         className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3"
       >
         <AnimatePresence initial={false}>
-          {isSaved && (
+          {isWatched && (
             <>
             <motion.button
               onClick={() => {
@@ -385,7 +386,6 @@ const DetailPage = () => {
               <ThumbsDown
                 size={24}
                 strokeWidth={2.5}
-                fill={isDisliked ? "currentColor" : "none"}
               />
             </motion.button>
             <motion.button
@@ -402,7 +402,6 @@ const DetailPage = () => {
               <ThumbsUp
                 size={24}
                 strokeWidth={2.5}
-                fill={isLiked ? "currentColor" : "none"}
               />
             </motion.button>
             </>
@@ -411,14 +410,14 @@ const DetailPage = () => {
 
         <motion.button
           onClick={() => {
-            void (isSaved ? actions.unsave() : actions.save());
+            void (isWatched ? actions.unwatched() : actions.watched());
           }}
-          className={`${pill} ${isSaved ? actionButtonActive : actionButtonInactive}`}
+          className={`${pill} ${isWatched ? actionButtonActive : actionButtonInactive}`}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Bookmark size={24} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
+          <Eye size={24} strokeWidth={2.5} />
         </motion.button>
 
         <motion.button
@@ -430,7 +429,19 @@ const DetailPage = () => {
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Heart size={24} strokeWidth={2.5} fill={isFavorited ? "currentColor" : "none"} />
+          <Heart size={24} strokeWidth={2.5} />
+        </motion.button>
+
+        <motion.button
+          onClick={() => {
+            void (isSaved ? actions.unsave() : actions.save());
+          }}
+          className={`${pill} ${isSaved ? actionButtonActive : actionButtonInactive}`}
+          whileTap={{ scale: 0.93 }}
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Bookmark size={24} strokeWidth={2.5} />
         </motion.button>
 
         <motion.button

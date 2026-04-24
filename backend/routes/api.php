@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::post('/favorite', [MediaController::class, 'favorite']);
     Route::delete('/favorite', [MediaController::class, 'unfavorite']);
     Route::post('/watched', [MediaController::class, 'watched']);
+    Route::delete('/watched', [MediaController::class, 'unwatched']);
 });
 
 Route::middleware('auth:sanctum')->prefix('friends')->group(function () {

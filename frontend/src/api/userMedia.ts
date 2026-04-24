@@ -82,3 +82,11 @@ export async function unfavoriteMedia(tmdbId: number, mediaType: string) {
   await getCsrfCookie();
   await api.delete("/user/media/favorite", { data: { tmdb_id: tmdbId, media_type: mediaType } });
 }
+export async function watchedMedia(tmdbId: number, mediaType: string) {
+  await getCsrfCookie();
+  await api.post("/user/media/watched", { tmdb_id: tmdbId, media_type: mediaType });
+}
+export async function unwatchedMedia(tmdbId: number, mediaType: string) {
+  await getCsrfCookie();
+  await api.delete("/user/media/watched", { data: { tmdb_id: tmdbId, media_type: mediaType } });
+}
