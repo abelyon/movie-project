@@ -81,6 +81,8 @@ For login/session to work correctly:
 
 - `FRONTEND_URL` must match your frontend URL exactly
 - `SANCTUM_STATEFUL_DOMAINS` must contain frontend host (no protocol), e.g. `my-app.up.railway.app`
+- if frontend and backend are different subdomains, set `SESSION_DOMAIN` to a shared parent domain (for Railway, typically `.up.railway.app`)
+- keep `SESSION_SECURE_COOKIE=true` in production
 
 If you use custom domains, prefer using domains under the same parent domain for fewer cookie issues.
 
