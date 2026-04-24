@@ -129,8 +129,6 @@ const MainLayout = () => {
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
-  const [showFloatingActions, setShowFloatingActions] = useState(true);
-  const scrollIdleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
@@ -164,32 +162,6 @@ const MainLayout = () => {
       cancelled = true;
     };
   }, [isSaved, friendsLoaded]);
-
-  useEffect(() => {
-    if (!isDiscovery && !isSaved) {
-      setShowFloatingActions(true);
-      return;
-    }
-
-    const onScroll = () => {
-      setShowFloatingActions(false);
-      if (scrollIdleTimerRef.current != null) {
-        window.clearTimeout(scrollIdleTimerRef.current);
-      }
-      scrollIdleTimerRef.current = window.setTimeout(() => {
-        setShowFloatingActions(true);
-      }, 1500);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (scrollIdleTimerRef.current != null) {
-        window.clearTimeout(scrollIdleTimerRef.current);
-        scrollIdleTimerRef.current = null;
-      }
-    };
-  }, [isDiscovery, isSaved]);
 
   const hasOpenModal = isDiscovery
     ? dShowSearch || dShowFilter || dShowSort
@@ -304,12 +276,7 @@ const MainLayout = () => {
             )}
           </AnimatePresence>
 
-          <motion.div
-            className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3"
-            animate={{ opacity: showFloatingActions ? 1 : 0, y: showFloatingActions ? 0 : 12 }}
-            transition={{ duration: 0.2 }}
-            style={{ pointerEvents: showFloatingActions ? "auto" : "none" }}
-          >
+          <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
             <div className="relative">
               <AnimatePresence>
                 {dShowFilter && (
@@ -447,17 +414,12 @@ const MainLayout = () => {
             >
               {dShowSearch ? <X size={24} strokeWidth={2.5} /> : <Search size={24} strokeWidth={2.5} />}
             </motion.button>
-          </motion.div>
+          </div>
         </>
       )}
 
       {user && isSaved && (
-        <motion.div
-          className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3"
-          animate={{ opacity: showFloatingActions ? 1 : 0, y: showFloatingActions ? 0 : 12 }}
-          transition={{ duration: 0.2 }}
-          style={{ pointerEvents: showFloatingActions ? "auto" : "none" }}
-        >
+        <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
           <div className="relative">
             <AnimatePresence>
               {sShowFilter && (
@@ -606,7 +568,7 @@ const MainLayout = () => {
           >
             <User size={24} strokeWidth={2.5} />
           </motion.button>
-        </motion.div>
+        </div>
       )}
 
       {user && (
