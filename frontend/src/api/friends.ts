@@ -1,4 +1,5 @@
 import api from "./client";
+import { getCsrfCookie } from "./auth";
 
 export type FriendUser = {
   id: number;
@@ -47,6 +48,7 @@ export async function searchUserByPublicId(userId: string): Promise<FriendSearch
 }
 
 export async function sendFriendRequest(userId: string): Promise<FriendRequestRow> {
+  await getCsrfCookie();
   const { data } = await api.post<{ request: FriendRequestRow }>("/friends/requests", {
     user_id: userId,
   });
@@ -54,6 +56,7 @@ export async function sendFriendRequest(userId: string): Promise<FriendRequestRo
 }
 
 export async function acceptFriendRequest(requestId: number): Promise<FriendRequestRow> {
+  await getCsrfCookie();
   const { data } = await api.post<{ request: FriendRequestRow }>(
     `/friends/requests/${requestId}/accept`,
   );
@@ -61,6 +64,7 @@ export async function acceptFriendRequest(requestId: number): Promise<FriendRequ
 }
 
 export async function denyFriendRequest(requestId: number): Promise<FriendRequestRow> {
+  await getCsrfCookie();
   const { data } = await api.post<{ request: FriendRequestRow }>(
     `/friends/requests/${requestId}/deny`,
   );
