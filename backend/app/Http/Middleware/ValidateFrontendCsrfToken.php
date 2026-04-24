@@ -20,6 +20,10 @@ class ValidateFrontendCsrfToken extends ValidateCsrfToken
         'login',
         'register',
         'logout',
+        'api/user/media/save',
+        'api/user/media/like',
+        'api/user/media/dislike',
+        'api/user/media/watched',
     ];
 }
 
