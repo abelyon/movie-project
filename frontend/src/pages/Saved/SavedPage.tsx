@@ -137,7 +137,7 @@ const SavedPage = () => {
     return sorted;
   }, [filteredSaved, sortBy]);
 
-  if (isLoading && !saved?.length) {
+  if (isLoading && (saved ?? []).length === 0) {
     return (
       <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
         {Array.from({ length: 8 }).map((_, idx) => (
