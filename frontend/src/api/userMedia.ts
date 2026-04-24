@@ -26,15 +26,19 @@ export async function getState(
 
 export async function getSaved(options?: {
   withFriendsSaved?: boolean;
+  withFriendsSocial?: boolean;
   friendIds?: number[];
 }): Promise<MediaItem[]> {
+  const friendIdsParam = options?.friendIds?.length
+    ? { friend_ids: options.friendIds.join(",") }
+    : {};
+
   const { data } = await api.get<{ results: MediaItem[] }>("/user/media/saved", {
-    params: options?.withFriendsSaved
+    params: options?.withFriendsSaved || options?.withFriendsSocial
       ? {
-          with_friends_saved: 1,
-          ...(options.friendIds?.length
-            ? { friend_ids: options.friendIds.join(",") }
-            : {}),
+          ...(options.withFriendsSaved ? { with_friends_saved: 1 } : {}),
+          ...(options.withFriendsSocial ? { with_friends_social: 1 } : {}),
+          ...friendIdsParam,
         }
       : undefined,
   });

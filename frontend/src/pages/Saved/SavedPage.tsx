@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Filter, Star, Users } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Filter, Heart, Star, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useSavedList } from "../../hooks/useMedia";
 import { getFriendOverview, type FriendUser } from "../../api/friends";
@@ -61,11 +61,13 @@ const SavedPage = () => {
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
+  const [showFriendsSocial, setShowFriendsSocial] = useState(false);
   const friendsFilterOn = selectedFriendIds.length > 0;
   const hasOpenModal = showFriends || showFilter || showSort;
   const floatingControlsRef = useRef<HTMLDivElement>(null);
   const { data: saved, isLoading, isError, error } = useSavedList({
     withFriendsSaved: friendsFilterOn,
+    withFriendsSocial: showFriendsSocial,
     friendIds: selectedFriendIds,
   });
 
@@ -195,7 +197,9 @@ const SavedPage = () => {
           <p className="text-neutral-400">
             {saved?.length
               ? "No saved items match your current sort/filter settings."
-              : friendsFilterOn
+              : showFriendsSocial
+                ? "No shared saved/liked/favorited media found for you and your selected friends."
+                : friendsFilterOn
                 ? "No shared saved items found (without likes/dislikes)."
                 : "No saved items yet. Tap the bookmark on any movie or show's detail page."}
           </p>
@@ -481,6 +485,19 @@ const SavedPage = () => {
             <Users size={24} strokeWidth={2.5} />
           </motion.button>
         </div>
+
+        <motion.button
+          type="button"
+          onClick={() => setShowFriendsSocial((prev) => !prev)}
+          className={`${floatingActionButtonBaseClass} ${
+            showFriendsSocial ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
+          }`}
+          aria-pressed={showFriendsSocial}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Heart size={24} strokeWidth={2.5} fill={showFriendsSocial ? "currentColor" : "none"} />
+        </motion.button>
       </div>
     </div>
   );
