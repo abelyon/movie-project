@@ -367,36 +367,40 @@ const DetailPage = () => {
       <div
         className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3"
       >
-        <motion.button
-          onClick={() => {
-            void (isDisliked ? actions.undislike() : actions.dislike());
-          }}
-          className={`${pill} ${isDisliked ? actionButtonActive : actionButtonInactive}`}
-          whileTap={{ scale: 0.93 }}
-          initial={{ opacity: 1, y: 0 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <ThumbsDown
-            size={24}
-            strokeWidth={2.5}
-            fill={isDisliked ? "currentColor" : "none"}
-          />
-        </motion.button>
-        <motion.button
-          onClick={() => {
-            void (isLiked ? actions.unlike() : actions.like());
-          }}
-          className={`${pill} ${isLiked ? actionButtonActive : actionButtonInactive}`}
-          whileTap={{ scale: 0.93 }}
-          initial={{ opacity: 1, y: 0 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <ThumbsUp
-            size={24}
-            strokeWidth={2.5}
-            fill={isLiked ? "currentColor" : "none"}
-          />
-        </motion.button>
+        {isSaved && (
+          <>
+            <motion.button
+              onClick={() => {
+                void (isDisliked ? actions.undislike() : actions.dislike());
+              }}
+              className={`${pill} ${isDisliked ? actionButtonActive : actionButtonInactive}`}
+              whileTap={{ scale: 0.93 }}
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <ThumbsDown
+                size={24}
+                strokeWidth={2.5}
+                fill={isDisliked ? "currentColor" : "none"}
+              />
+            </motion.button>
+            <motion.button
+              onClick={() => {
+                void (isLiked ? actions.unlike() : actions.like());
+              }}
+              className={`${pill} ${isLiked ? actionButtonActive : actionButtonInactive}`}
+              whileTap={{ scale: 0.93 }}
+              initial={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <ThumbsUp
+                size={24}
+                strokeWidth={2.5}
+                fill={isLiked ? "currentColor" : "none"}
+              />
+            </motion.button>
+          </>
+        )}
 
         <motion.button
           onClick={() => {
