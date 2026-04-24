@@ -13,6 +13,7 @@ const POSTER_SIZE = "w780";
 const PROVIDER_LOGO_SIZE = "w92";
 const CAST_PROFILE_SIZE = "w185";
 
+
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
   mediaType === "movie"
     ? ((detail as MovieDetail).title ?? "")
@@ -290,9 +291,6 @@ const DetailPage = () => {
             {!isPreviewOnly && (
               <>
                 <div className="mt-6">
-                  <h2 className="text-sm uppercase tracking-wide text-neutral-400 font-space-grotesk">
-                    Streaming
-                  </h2>
                   {getUSProviders(data)?.flatrate?.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => (
@@ -323,9 +321,6 @@ const DetailPage = () => {
                 </div>
 
                 <div className="mt-6">
-                  <h2 className="text-sm uppercase tracking-wide text-neutral-400 font-space-grotesk">
-                    Cast
-                  </h2>
                   {getCast(data).length ? (
                     <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       <div className="flex gap-3 pb-1">
@@ -389,7 +384,7 @@ const DetailPage = () => {
         <motion.button
           onClick={() => {
             void (isLiked ? actions.unlike() : actions.like());
-          }}
+          }} 
           className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
