@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
 import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
-import { ArrowLeft, Bookmark, Clapperboard, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
+import { ArrowLeft, Bookmark, Clapperboard, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 import type { MediaItem } from "../../api/types";
 import { previewItemToDetail } from "../../utils/detailPreview";
 
@@ -208,6 +208,7 @@ const DetailPage = () => {
   const isSaved = userState?.is_saved ?? false;
   const isLiked = userState?.is_liked ?? false;
   const isDisliked = userState?.is_disliked ?? false;
+  const isFavorited = userState?.is_favorited ?? false;
 
   return (
     <div className="text-white overflow-hidden">
@@ -418,6 +419,18 @@ const DetailPage = () => {
           animate={{ opacity: 1, y: 0 }}
         >
           <Bookmark size={24} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
+        </motion.button>
+
+        <motion.button
+          onClick={() => {
+            void (isFavorited ? actions.unfavorite() : actions.favorite());
+          }}
+          className={`${pill} ${isFavorited ? actionButtonActive : actionButtonInactive}`}
+          whileTap={{ scale: 0.93 }}
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Heart size={24} strokeWidth={2.5} fill={isFavorited ? "currentColor" : "none"} />
         </motion.button>
 
         <motion.button
