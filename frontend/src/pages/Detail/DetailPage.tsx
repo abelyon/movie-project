@@ -45,6 +45,8 @@ const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
   "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
+const actionButtonInactive = "text-neutral-300 hover:text-white";
+const actionButtonActive = "bg-emerald-500/80 border-emerald-400 text-white hover:text-white";
 
 function DetailPosterBlock({
   poster,
@@ -369,13 +371,13 @@ const DetailPage = () => {
           onClick={() => {
             void (isDisliked ? actions.undislike() : actions.dislike());
           }}
-          className={`${pill} ${isDisliked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
+          className={`${pill} ${isDisliked ? actionButtonActive : actionButtonInactive}`}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <ThumbsDown
-            size={32}
+            size={24}
             strokeWidth={2.5}
             fill={isDisliked ? "currentColor" : "none"}
           />
@@ -383,14 +385,14 @@ const DetailPage = () => {
         <motion.button
           onClick={() => {
             void (isLiked ? actions.unlike() : actions.like());
-          }} 
-          className={`${pill} ${isLiked ? "bg-green-500/80 border-green-400 text-white" : "text-neutral-300 hover:text-white"}`}
+          }}
+          className={`${pill} ${isLiked ? actionButtonActive : actionButtonInactive}`}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <ThumbsUp
-            size={32}
+            size={24}
             strokeWidth={2.5}
             fill={isLiked ? "currentColor" : "none"}
           />
@@ -400,22 +402,22 @@ const DetailPage = () => {
           onClick={() => {
             void (isSaved ? actions.unsave() : actions.save());
           }}
-          className={`${pill} ${isSaved ? "bg-amber-500/80 border-amber-400 text-white" : "text-neutral-300 hover:text-white"}`}
+          className={`${pill} ${isSaved ? actionButtonActive : actionButtonInactive}`}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Bookmark size={32} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
+          <Bookmark size={24} strokeWidth={2.5} fill={isSaved ? "currentColor" : "none"} />
         </motion.button>
 
         <motion.button
           onClick={() => navigate(-1)}
-          className={`${pill} text-neutral-300 hover:text-white`}
+          className={`${pill} ${actionButtonInactive}`}
           whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <ArrowLeft size={32} strokeWidth={2.5} />
+          <ArrowLeft size={24} strokeWidth={2.5} />
         </motion.button>
       </div>
     </div>

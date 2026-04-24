@@ -30,7 +30,7 @@ const MainLayout = () => {
       </main>
       {user && (
         <footer className="fixed bottom-0 left-0 right-0 z-10 p-5 pointer-events-none">
-          <nav className="w-fit mx-auto bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-3 flex items-center gap-5 pointer-events-auto">
+          <nav className="w-fit mx-auto bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-4 flex items-center gap-5 pointer-events-auto">
             {routes.map((route) => {
               const active = pathname === route.path;
               return (
@@ -41,7 +41,7 @@ const MainLayout = () => {
                       active ? "text-neutral-100" : "text-neutral-400"
                     }`}
                   >
-                    <route.icon size={20} strokeWidth={2.5} className="relative z-10" />
+                    <route.icon size={24} strokeWidth={2.5} className="relative z-10" />
                   </Link>
                 </motion.div>
               );
