@@ -1,6 +1,9 @@
 <?php
 
 $frontend = env('FRONTEND_URL');
+if (is_string($frontend)) {
+    $frontend = trim($frontend, " \t\n\r\0\x0B\"'");
+}
 $allowedOrigins = array_values(array_unique(array_filter([
     $frontend ? rtrim($frontend, '/') : null,
     'http://localhost:5173',
