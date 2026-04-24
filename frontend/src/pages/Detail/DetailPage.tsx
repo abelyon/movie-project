@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
 import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
@@ -367,16 +367,19 @@ const DetailPage = () => {
       <div
         className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3"
       >
-        {isSaved && (
-          <>
+        <AnimatePresence initial={false}>
+          {isSaved && (
+            <>
             <motion.button
               onClick={() => {
                 void (isDisliked ? actions.undislike() : actions.dislike());
               }}
               className={`${pill} ${isDisliked ? actionButtonActive : actionButtonInactive}`}
+              initial={{ opacity: 0, scale: 0.92, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 8 }}
+              transition={{ duration: 0.18, ease }}
               whileTap={{ scale: 0.93 }}
-              initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: 1, y: 0 }}
             >
               <ThumbsDown
                 size={24}
@@ -389,9 +392,11 @@ const DetailPage = () => {
                 void (isLiked ? actions.unlike() : actions.like());
               }}
               className={`${pill} ${isLiked ? actionButtonActive : actionButtonInactive}`}
+              initial={{ opacity: 0, scale: 0.92, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 8 }}
+              transition={{ duration: 0.18, ease, delay: 0.03 }}
               whileTap={{ scale: 0.93 }}
-              initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: 1, y: 0 }}
             >
               <ThumbsUp
                 size={24}
@@ -399,8 +404,9 @@ const DetailPage = () => {
                 fill={isLiked ? "currentColor" : "none"}
               />
             </motion.button>
-          </>
-        )}
+            </>
+          )}
+        </AnimatePresence>
 
         <motion.button
           onClick={() => {

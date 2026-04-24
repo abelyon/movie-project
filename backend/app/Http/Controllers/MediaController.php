@@ -127,11 +127,9 @@ class MediaController extends Controller
     public function saved(Request $request): JsonResponse
     {
         $user = $request->user();
-        // Personal Saved tab should include all saved items (including liked/disliked).
-        $rows = Media::query()
-            ->where('user_id', $user->id)
-            ->where('is_saved', true)
-            ->get();
+        $rows = $this->applyNeutralSavedFilter(
+            Media::query()->where('user_id', $user->id)
+        )->get();
 
         if ($request->boolean('with_friends_saved')) {
             $friendIds = FriendRequest::query()
