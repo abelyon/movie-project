@@ -62,6 +62,7 @@ const SavedPage = () => {
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const friendsFilterOn = selectedFriendIds.length > 0;
+  const hasOpenModal = showFriends || showFilter || showSort;
   const floatingControlsRef = useRef<HTMLDivElement>(null);
   const { data: saved, isLoading, isError, error } = useSavedList({
     withFriendsSaved: friendsFilterOn,
@@ -177,6 +178,18 @@ const SavedPage = () => {
 
   return (
     <div>
+      {hasOpenModal && (
+        <button
+          type="button"
+          aria-label="Close open modal"
+          className="fixed inset-0 z-40 cursor-default bg-transparent"
+          onClick={() => {
+            setShowFriends(false);
+            setShowFilter(false);
+            setShowSort(false);
+          }}
+        />
+      )}
       {!processedSaved.length ? (
         <div className="p-5">
           <p className="text-neutral-400">
@@ -197,13 +210,13 @@ const SavedPage = () => {
 
       <div
         ref={floatingControlsRef}
-        className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3"
+        className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3"
       >
         <div className="relative">
           <AnimatePresence>
             {showFilter && (
               <motion.div
-                className="absolute right-full bottom-0 mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
+                className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
                 initial={{ opacity: 0, x: 10, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -317,6 +330,7 @@ const SavedPage = () => {
             onClick={() => {
               setShowFilter((prev) => !prev);
               setShowSort(false);
+              setShowFriends(false);
             }}
             className={`${floatingActionButtonBaseClass} ${
               hasActiveFilters ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
@@ -332,7 +346,7 @@ const SavedPage = () => {
           <AnimatePresence>
             {showSort && (
               <motion.div
-                className="absolute right-full bottom-0 mr-2 w-48 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md"
+                className="absolute right-full bottom-0 z-[70] mr-2 w-48 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md"
                 initial={{ opacity: 0, x: 10, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -383,6 +397,7 @@ const SavedPage = () => {
             onClick={() => {
               setShowSort((prev) => !prev);
               setShowFilter(false);
+              setShowFriends(false);
             }}
             className={`${floatingActionButtonBaseClass} ${
               sortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
@@ -398,7 +413,7 @@ const SavedPage = () => {
           <AnimatePresence>
             {showFriends && (
               <motion.div
-                className="absolute right-full bottom-0 mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
+                className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
                 initial={{ opacity: 0, x: 10, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 10, scale: 0.98 }}

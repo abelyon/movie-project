@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import type { MediaItem } from "../../api/types";
+import { getState, stateKey } from "../../api/userMedia";
 import { Bookmark, Clapperboard, Tv } from "lucide-react";
 import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
 
@@ -24,14 +25,64 @@ const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boole
     });
   };
 
+  const prefetchUserMediaState = () => {
+    const mt = item.media_type;
+    if (mt !== "movie" && mt !== "tv") return;
+    void queryClient.prefetchQuery({
+      queryKey: ["user", "media", "state", stateKey(item.id, mt)],
+      queryFn: async () => {
+        const map = await getState([{ id: item.id, media_type: mt }]);
+        return map[stateKey(item.id, mt)] ?? {
+          is_saved: false,
+          is_liked: false,
+          is_disliked: false,
+          is_favorited: false,
+          watched_at: null,
+        };
+      },
+      staleTime: 30_000,
+    });
+  };
+
+  const prefetchForDetail = () => {
+    prefetchDetail();
+    prefetchUserMediaState();
+  };
+
+  const openDetail = async () => {
+    prefetchForDetail();
+    await Promise.allSettled([
+      queryClient.ensureQueryData({
+        queryKey: detailQueryKey(item.media_type, item.id),
+        queryFn: () => fetchDetail(item.media_type as "movie" | "tv", item.id),
+        staleTime: 5 * 60 * 1000,
+      }),
+      queryClient.ensureQueryData({
+        queryKey: ["user", "media", "state", stateKey(item.id, item.media_type)],
+        queryFn: async () => {
+          const map = await getState([{ id: item.id, media_type: item.media_type }]);
+          return map[stateKey(item.id, item.media_type)] ?? {
+            is_saved: false,
+            is_liked: false,
+            is_disliked: false,
+            is_favorited: false,
+            watched_at: null,
+          };
+        },
+        staleTime: 30_000,
+      }),
+    ]);
+    navigate(`/${item.media_type}/${item.id}`, { state: { preview: item } });
+  };
+
   return (
     <motion.div
-      onClick={() =>
-        navigate(`/${item.media_type}/${item.id}`, { state: { preview: item } })
-      }
-      onMouseEnter={prefetchDetail}
-      onFocus={prefetchDetail}
-      onTouchStart={prefetchDetail}
+      onClick={() => {
+        void openDetail();
+      }}
+      onMouseEnter={prefetchForDetail}
+      onFocus={prefetchForDetail}
+      onTouchStart={prefetchForDetail}
       className="relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full"
       initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
