@@ -19,7 +19,7 @@ Railway deploys from a GitHub repo. Make sure your current branch is pushed.
    - Service A root directory: `backend`
    - Service B root directory: `frontend`
 
-`nixpacks.toml` is already added in both folders, so Railway will use the correct start commands.
+This repo does **not** use Nixpacks config files. Railway infers build and start from each root (for example Node/Vite for `frontend`, PHP/Laravel for `backend`). If a service needs an override, set **Build Command**, **Start Command**, or **Release Command** (for migrations) in that service’s **Settings** in the Railway dashboard—for example a backend release: `php artisan migrate --force`.
 
 ## 3) Add a MySQL database
 
@@ -63,7 +63,7 @@ Set this on the `frontend` Railway service:
 
 ## 6) Deploy order
 
-1. Deploy backend first (it runs migrations on boot).
+1. Deploy backend first. Run database migrations via a **Release Command** or your chosen start workflow (see section 2).
 2. After backend has a public URL, set `VITE_API_BASE_URL` in frontend.
 3. Deploy frontend.
 
