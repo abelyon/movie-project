@@ -1,5 +1,12 @@
 <?php
 
+$frontend = env('FRONTEND_URL');
+$allowedOrigins = array_values(array_unique(array_filter([
+    $frontend ? rtrim($frontend, '/') : null,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+])));
+
 return [
 
     /*
@@ -21,7 +28,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://frontend-production-1003.up.railway.app' , 'http://localhost:5173A'],
+    'allowed_origins' => $allowedOrigins,
 
     'allowed_origins_patterns' => [],
 

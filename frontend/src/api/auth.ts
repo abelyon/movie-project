@@ -11,31 +11,16 @@ export type User = {
   updated_at: string;
 };
 
-const authClient = axios.create({
-  baseURL: LARAVEL_BASE,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    "X-Requested-With": "XMLHttpRequest",
-  },
-  withCredentials: true,
-});
-
-authClient.interceptors.request.use((config) => {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-  if (match) {
-    config.headers["X-XSRF-TOKEN"] = decodeURIComponent(match[1]);
-  }
-  return config;
-});
-
 export async function getCsrfCookie(): Promise<void> {
-  await authClient.get("/sanctum/csrf-cookie");
+  await axios.get("/sanctum/csrf-cookie", {
+    withCredentials: true,
+    baseURL: LARAVEL_BASE || undefined,
+  });
 }
 
 export async function login(email: string, password: string): Promise<{ user: User }> {
   await getCsrfCookie();
-  const { data } = await authClient.post<{ user: User }>("/login", { email, password });
+  const { data } = await api.post<{ user: User }>(`${LARAVEL_BASE}/login`, { email, password });
   return data;
 }
 
@@ -48,12 +33,12 @@ export type RegisterInput = {
 
 export async function register(input: RegisterInput): Promise<{ user: User }> {
   await getCsrfCookie();
-  const { data } = await authClient.post<{ user: User }>("/register", input);
+  const { data } = await api.post<{ user: User }>(`${LARAVEL_BASE}/register`, input);
   return data;
 }
 
 export async function logout(): Promise<void> {
-  await authClient.post("/logout");
+  await api.post(`${LARAVEL_BASE}/logout`);
 }
 
 export async function getCurrentUser(): Promise<User | null> {
