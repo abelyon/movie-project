@@ -6,6 +6,7 @@ export type UserMediaState = {
   is_saved: boolean;
   is_liked: boolean;
   is_disliked: boolean;
+  is_favorited: boolean;
   watched_at: string | null;
 };
 
@@ -23,10 +24,18 @@ export async function getState(
   return data ?? {};
 }
 
-export async function getSaved(options?: { withFriendsSaved?: boolean }): Promise<MediaItem[]> {
+export async function getSaved(options?: {
+  withFriendsSaved?: boolean;
+  friendIds?: number[];
+}): Promise<MediaItem[]> {
   const { data } = await api.get<{ results: MediaItem[] }>("/user/media/saved", {
     params: options?.withFriendsSaved
-      ? { with_friends_saved: 1 }
+      ? {
+          with_friends_saved: 1,
+          ...(options.friendIds?.length
+            ? { friend_ids: options.friendIds.join(",") }
+            : {}),
+        }
       : undefined,
   });
   return data?.results ?? [];
@@ -60,4 +69,12 @@ export async function dislikeMedia(tmdbId: number, mediaType: string) {
 export async function undislikeMedia(tmdbId: number, mediaType: string) {
   await getCsrfCookie();
   await api.delete("/user/media/dislike", { data: { tmdb_id: tmdbId, media_type: mediaType } });
+}
+export async function favoriteMedia(tmdbId: number, mediaType: string) {
+  await getCsrfCookie();
+  await api.post("/user/media/favorite", { tmdb_id: tmdbId, media_type: mediaType });
+}
+export async function unfavoriteMedia(tmdbId: number, mediaType: string) {
+  await getCsrfCookie();
+  await api.delete("/user/media/favorite", { data: { tmdb_id: tmdbId, media_type: mediaType } });
 }

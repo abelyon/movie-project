@@ -117,6 +117,7 @@ class MediaController extends Controller
                 'is_saved' => $row ? $row->is_saved : false,
                 'is_liked' => $row ? $row->is_liked : false,
                 'is_disliked' => $row ? $row->is_disliked : false,
+                'is_favorited' => $row ? $row->is_favorited : false,
                 'watched_at' => $row && $row->watched_at ? $row->watched_at->toIso8601String() : null,
             ];
         }
@@ -132,6 +133,14 @@ class MediaController extends Controller
         )->get();
 
         if ($request->boolean('with_friends_saved')) {
+            $requestedFriendIds = $request->query('friend_ids', []);
+            if (!is_array($requestedFriendIds)) {
+                $requestedFriendIds = $requestedFriendIds !== ''
+                    ? explode(',', (string) $requestedFriendIds)
+                    : [];
+            }
+            $requestedFriendIds = array_values(array_unique(array_map('intval', $requestedFriendIds)));
+
             $friendIds = FriendRequest::query()
                 ->where('status', 'accepted')
                 ->where(function ($q) use ($user): void {
@@ -144,6 +153,12 @@ class MediaController extends Controller
                 })
                 ->unique()
                 ->values();
+
+            if (!empty($requestedFriendIds)) {
+                $friendIds = $friendIds
+                    ->filter(fn (int $id): bool => in_array($id, $requestedFriendIds, true))
+                    ->values();
+            }
 
             if ($friendIds->isEmpty()) {
                 $rows = collect();
@@ -265,6 +280,30 @@ class MediaController extends Controller
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
             'is_disliked' => false,
+        ]);
+    }
+
+    public function favorite(MediaIdRequest $request): JsonResponse
+    {
+        $row = $this->updateOrCreate($request, [
+            'is_saved' => true,
+            'is_favorited' => true,
+        ]);
+        return response()->json([
+            'tmdb_id' => $row->tmdb_id,
+            'media_type' => $row->type,
+            'is_favorited' => true,
+            'is_saved' => true,
+        ]);
+    }
+
+    public function unfavorite(MediaIdRequest $request): JsonResponse
+    {
+        $row = $this->updateOrCreate($request, ['is_favorited' => false]);
+        return response()->json([
+            'tmdb_id' => $row->tmdb_id,
+            'media_type' => $row->type,
+            'is_favorited' => false,
         ]);
     }
 

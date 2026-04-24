@@ -23,6 +23,7 @@ class ValidateFrontendCsrfToken extends ValidateCsrfToken
         'api/user/media/save',
         'api/user/media/like',
         'api/user/media/dislike',
+        'api/user/media/favorite',
         'api/user/media/watched',
     ];
 }

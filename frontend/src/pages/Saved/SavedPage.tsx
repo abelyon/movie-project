@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownAZ, ArrowUpAZ, ArrowUpDown, Filter, Star, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useSavedList } from "../../hooks/useMedia";
+import { getFriendOverview, type FriendUser } from "../../api/friends";
 import { floatingActionButtonBaseClass } from "../../constants/floatingActionButton";
 import MediaCard from "../Discovery/MediaCard";
 
@@ -47,7 +48,7 @@ const ALL_GENRES = [...MOVIE_GENRES, ...TV_GENRES].reduce<Array<{ id: number; na
 );
 
 const SavedPage = () => {
-  const [friendsFilterOn, setFriendsFilterOn] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState<"default" | "title_asc" | "title_desc" | "rating_desc">(
@@ -57,9 +58,14 @@ const SavedPage = () => {
   const [selectedGenreIds, setSelectedGenreIds] = useState<number[]>([]);
   const [minRating, setMinRating] = useState<0 | 6 | 7 | 8>(0);
   const [yearFrom, setYearFrom] = useState("");
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
+  const friendsFilterOn = selectedFriendIds.length > 0;
   const floatingControlsRef = useRef<HTMLDivElement>(null);
   const { data: saved, isLoading, isError, error } = useSavedList({
     withFriendsSaved: friendsFilterOn,
+    friendIds: selectedFriendIds,
   });
 
   const visibleGenreOptions = filterType === "tv" ? TV_GENRES : filterType === "movie" ? MOVIE_GENRES : ALL_GENRES;
@@ -79,12 +85,33 @@ const SavedPage = () => {
       if (!floatingControlsRef.current?.contains(target)) {
         setShowFilter(false);
         setShowSort(false);
+        setShowFriends(false);
       }
     };
 
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
+
+  useEffect(() => {
+    if (!showFriends) return;
+    let cancelled = false;
+    setFriendsLoading(true);
+    getFriendOverview()
+      .then((data) => {
+        if (cancelled) return;
+        setFriends(data.friends ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setFriends([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFriendsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showFriends]);
 
   const filteredSaved = useMemo(
     () =>
@@ -170,7 +197,7 @@ const SavedPage = () => {
 
       <div
         ref={floatingControlsRef}
-        className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 sm:bottom-5 sm:[right:max(1.25rem,calc((100vw-56rem)/2+1.25rem))]"
+        className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3"
       >
         <div className="relative">
           <AnimatePresence>
@@ -297,7 +324,7 @@ const SavedPage = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Filter size={20} strokeWidth={2.5} />
+            <Filter size={24} strokeWidth={2.5} />
           </motion.button>
         </div>
 
@@ -367,18 +394,78 @@ const SavedPage = () => {
           </motion.button>
         </div>
 
-        <motion.button
-          type="button"
-          onClick={() => setFriendsFilterOn((prev) => !prev)}
-          className={`${floatingActionButtonBaseClass} ${
-            friendsFilterOn ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
-          }`}
-          aria-pressed={friendsFilterOn}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Users size={24} strokeWidth={2.5} />
-        </motion.button>
+        <div className="relative">
+          <AnimatePresence>
+            {showFriends && (
+              <motion.div
+                className="absolute right-full bottom-0 mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
+                initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Watch together with</p>
+                {friendsLoading ? (
+                  <p className="mt-3 text-sm text-neutral-400">Loading friends...</p>
+                ) : friends.length === 0 ? (
+                  <p className="mt-3 text-sm text-neutral-400">No accepted friends yet.</p>
+                ) : (
+                  <div className="mt-3 flex max-h-44 flex-wrap gap-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {friends.map((friend) => {
+                      const isActive = selectedFriendIds.includes(friend.id);
+                      return (
+                        <button
+                          key={friend.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedFriendIds((prev) =>
+                              prev.includes(friend.id)
+                                ? prev.filter((id) => id !== friend.id)
+                                : [...prev, friend.id],
+                            )
+                          }
+                          className={`rounded-2xl px-2.5 py-1 text-xs transition ${
+                            isActive
+                              ? "bg-white border border-white text-neutral-900"
+                              : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"
+                          }`}
+                        >
+                          {friend.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedFriendIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFriendIds([])}
+                    className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
+                  >
+                    Clear friends
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.button
+            type="button"
+            onClick={() => {
+              setShowFriends((prev) => !prev);
+              setShowFilter(false);
+              setShowSort(false);
+            }}
+            className={`${floatingActionButtonBaseClass} ${
+              friendsFilterOn ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""
+            }`}
+            aria-pressed={friendsFilterOn}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Users size={24} strokeWidth={2.5} />
+          </motion.button>
+        </div>
       </div>
     </div>
   );
