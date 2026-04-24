@@ -17,6 +17,7 @@ class Media extends Model
         'is_saved',
         'is_liked',
         'is_disliked',
+        'is_favorited',
         'watched_at',
     ];
 
@@ -24,6 +25,7 @@ class Media extends Model
         'is_saved' => 'boolean',
         'is_liked' => 'boolean',
         'is_disliked' => 'boolean',
+        'is_favorited' => 'boolean',
         'watched_at' => 'datetime',
     ];
 

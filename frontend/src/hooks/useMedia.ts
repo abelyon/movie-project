@@ -9,6 +9,8 @@ import {
   unlikeMedia,
   dislikeMedia,
   undislikeMedia,
+  favoriteMedia,
+  unfavoriteMedia,
   stateKey,
   type UserMediaState,
 } from "../api/userMedia";
@@ -39,6 +41,7 @@ const DEFAULT_STATE: UserMediaState = {
   is_saved: false,
   is_liked: false,
   is_disliked: false,
+  is_favorited: false,
   watched_at: null,
 };
 
@@ -189,7 +192,16 @@ export const useMediaActions = (
   const noop = async () => {};
 
   if (!valid) {
-    return { save: noop, unsave: noop, like: noop, unlike: noop, dislike: noop, undislike: noop };
+    return {
+      save: noop,
+      unsave: noop,
+      like: noop,
+      unlike: noop,
+      dislike: noop,
+      undislike: noop,
+      favorite: noop,
+      unfavorite: noop,
+    };
   }
 
   return {
@@ -214,7 +226,12 @@ export const useMediaActions = (
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
       const prevSaved = snapshotSavedList(qc);
-      patchLocalAndGrid({ is_saved: false, is_liked: false, is_disliked: false });
+      patchLocalAndGrid({
+        is_saved: false,
+        is_liked: false,
+        is_disliked: false,
+        is_favorited: false,
+      });
       optimisticRemoveFromSavedList(qc, tmdbId, mediaType);
       try {
         await unsaveMedia(tmdbId, mediaType);
@@ -299,6 +316,37 @@ export const useMediaActions = (
         }
       }
     },
+    favorite: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
+      const prevBatches = snapshotBatchMaps();
+      const prevSaved = snapshotSavedList(qc);
+      patchLocalAndGrid({ is_saved: true, is_favorited: true });
+      optimisticUpsertSavedList(qc, savedPreview());
+      try {
+        await favoriteMedia(tmdbId, mediaType);
+        scheduleListSync(qc);
+      } catch {
+        qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
+        restoreSavedListSnapshot(qc, prevSaved);
+      }
+    },
+    unfavorite: async () => {
+      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
+      const prevBatches = snapshotBatchMaps();
+      patchLocalAndGrid({ is_favorited: false });
+      try {
+        await unfavoriteMedia(tmdbId, mediaType);
+        scheduleListSync(qc);
+      } catch {
+        qc.setQueryData(qKey, prev);
+        for (const { key, data } of prevBatches) {
+          qc.setQueryData(key, data);
+        }
+      }
+    },
   };
 };
 
@@ -315,9 +363,17 @@ export const useMediaStateMap = (items: { id: number; media_type: string }[]) =>
   });
 };
 
-export const useSavedList = (options?: { withFriendsSaved?: boolean }) =>
+export const useSavedList = (options?: { withFriendsSaved?: boolean; friendIds?: number[] }) =>
   useQuery({
-    queryKey: ["user", "media", "saved", options?.withFriendsSaved ? "with-friends" : "all"],
+    queryKey: [
+      "user",
+      "media",
+      "saved",
+      options?.withFriendsSaved ? "with-friends" : "all",
+      options?.withFriendsSaved && "friendIds" in (options ?? {})
+        ? ((options as { friendIds?: number[] }).friendIds ?? []).slice().sort((a, b) => a - b).join(",")
+        : "",
+    ],
     queryFn: () => getSaved(options),
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
