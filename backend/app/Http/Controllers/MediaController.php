@@ -23,6 +23,24 @@ class MediaController extends Controller
             });
     }
 
+    private function applyFriendSelectedSavedFilter($query)
+    {
+        return $query
+            ->where('is_saved', true)
+            ->where(function ($q): void {
+                $q->where('is_favorited', true)
+                    ->orWhere(function ($nested): void {
+                        $nested
+                            ->where(function ($liked): void {
+                                $liked->where('is_liked', false)->orWhereNull('is_liked');
+                            })
+                            ->where(function ($disliked): void {
+                                $disliked->where('is_disliked', false)->orWhereNull('is_disliked');
+                            });
+                    });
+            });
+    }
+
     private function getTmdbUrl(): string
     {
         return config('services.tmdb.url');
@@ -133,6 +151,10 @@ class MediaController extends Controller
         )->get();
 
         if ($request->boolean('with_friends_saved')) {
+            $rows = $this->applyFriendSelectedSavedFilter(
+                Media::query()->where('user_id', $user->id)
+            )->get();
+
             $requestedFriendIds = $request->query('friend_ids', []);
             if (!is_array($requestedFriendIds)) {
                 $requestedFriendIds = $requestedFriendIds !== ''
@@ -171,7 +193,7 @@ class MediaController extends Controller
                 if ($userSavedKeys->isEmpty()) {
                     $rows = collect();
                 } else {
-                    $friendSharedKeys = $this->applyNeutralSavedFilter(
+                    $friendSharedKeys = $this->applyFriendSelectedSavedFilter(
                         Media::query()->whereIn('user_id', $friendIds->all())
                     )->get()
                         ->map(fn (Media $item) => "{$item->type}-{$item->tmdb_id}")
