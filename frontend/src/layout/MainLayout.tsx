@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { floatingActionButtonBaseClass } from "../constants/floatingActionButton";
+import { AnimatedNavIcon } from "../components/AnimatedNavIcon";
 import { getFriendOverview, type FriendUser } from "../api/friends";
 
 const routes = [
@@ -163,11 +164,10 @@ const MainLayout = () => {
     };
   }, [isSaved, friendsLoaded]);
 
-  const hasOpenModal = isDiscovery
-    ? dShowSearch || dShowFilter || dShowSort
-    : isSaved
-      ? sShowFriends || sShowFilter || sShowSort
-      : false;
+  /** Full-screen backdrop; omit discovery search so the grid stays clickable while searching. */
+  const hasModalBackdrop =
+    (isDiscovery && (dShowFilter || dShowSort)) ||
+    (isSaved && (sShowFriends || sShowFilter || sShowSort));
 
   const sortButtonIcon = (sortBy: SortKind) =>
     sortBy === "title_asc"
@@ -228,13 +228,12 @@ const MainLayout = () => {
       <main className={`relative z-10 flex-1 ${user ? "pb-24" : ""}`}>
         <Outlet context={outletContext} />
       </main>
-      {user && hasOpenModal && (
+      {user && hasModalBackdrop && (
         <button
           type="button"
           aria-label="Close open modal"
           className="fixed inset-0 z-40 cursor-default bg-transparent"
           onClick={() => {
-            setDShowSearch(false);
             setDShowFilter(false);
             setDShowSort(false);
             setSShowFriends(false);
@@ -346,15 +345,15 @@ const MainLayout = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <motion.button
+              <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
-                <Filter size={24} strokeWidth={2.5} />
-              </motion.button>
+                <AnimatedNavIcon>
+                  <Filter size={24} strokeWidth={2.5} />
+                </AnimatedNavIcon>
+              </button>
             </div>
 
             <div className="relative">
@@ -385,18 +384,16 @@ const MainLayout = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <motion.button
+              <button
                 type="button"
                 onClick={() => { setDShowSort((prev) => !prev); setDShowFilter(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className={`${floatingActionButtonBaseClass} ${dSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
-                {sortButtonIcon(dSortBy)}
-              </motion.button>
+                <AnimatedNavIcon>{sortButtonIcon(dSortBy)}</AnimatedNavIcon>
+              </button>
             </div>
 
-            <motion.button
+            <button
               type="button"
               onClick={() => {
                 if (dShowSearch) {
@@ -409,11 +406,11 @@ const MainLayout = () => {
                 setDShowSort(false);
               }}
               className={floatingActionButtonBaseClass}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
-              {dShowSearch ? <X size={24} strokeWidth={2.5} /> : <Search size={24} strokeWidth={2.5} />}
-            </motion.button>
+              <AnimatedNavIcon>
+                {dShowSearch ? <X size={24} strokeWidth={2.5} /> : <Search size={24} strokeWidth={2.5} />}
+              </AnimatedNavIcon>
+            </button>
           </div>
         </>
       )}
@@ -461,9 +458,11 @@ const MainLayout = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <motion.button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Filter size={24} strokeWidth={2.5} />
-            </motion.button>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+              <AnimatedNavIcon>
+                <Filter size={24} strokeWidth={2.5} />
+              </AnimatedNavIcon>
+            </button>
           </div>
 
           <div className="relative">
@@ -483,9 +482,9 @@ const MainLayout = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <motion.button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              {sortButtonIcon(sSortBy)}
-            </motion.button>
+            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+              <AnimatedNavIcon>{sortButtonIcon(sSortBy)}</AnimatedNavIcon>
+            </button>
           </div>
 
           <div className="relative">
@@ -548,12 +547,14 @@ const MainLayout = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <motion.button type="button" onClick={() => { setSShowFriends((prev) => !prev); setSShowFilter(false); setSShowSort(false); setShowFriendsSocial(false); }} className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Users size={24} strokeWidth={2.5} />
-            </motion.button>
+            <button type="button" onClick={() => { setSShowFriends((prev) => !prev); setSShowFilter(false); setSShowSort(false); setShowFriendsSocial(false); }} className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+              <AnimatedNavIcon>
+                <Users size={24} strokeWidth={2.5} />
+              </AnimatedNavIcon>
+            </button>
           </div>
 
-          <motion.button
+          <button
             type="button"
             onClick={() =>
               setShowFriendsSocial((prev) => {
@@ -562,12 +563,12 @@ const MainLayout = () => {
                 return next;
               })
             }
-            className={`${floatingActionButtonBaseClass} ${showFriendsSocial ? "bg-emerald-500/80 border-emerald-400 text-white hover:text-white" : ""}`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className={`${floatingActionButtonBaseClass} ${showFriendsSocial ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
           >
-            <User size={24} strokeWidth={2.5} />
-          </motion.button>
+            <AnimatedNavIcon>
+              <User size={24} strokeWidth={2.5} />
+            </AnimatedNavIcon>
+          </button>
         </div>
       )}
 
@@ -577,18 +578,19 @@ const MainLayout = () => {
             {routes.map((route) => {
               const active = pathname === route.path;
               return (
-                <motion.div key={route.path} whileHover={{ scale: 1.08, rotate: 2 }} whileTap={{ scale: 0.94, rotate: -10 }}>
-                  <Link
-                    to={route.path}
-                    className={`relative flex h-12 w-12 items-center justify-center rounded-3xl transition-colors ${
-                      active
-                        ? "text-neutral-100"
-                        : "text-neutral-400 hover:text-neutral-200"
-                    }`}
-                  >
+                <Link
+                  key={route.path}
+                  to={route.path}
+                  className={`relative flex h-12 w-12 items-center justify-center rounded-3xl transition-colors ${
+                    active
+                      ? "text-neutral-100"
+                      : "text-neutral-400"
+                  }`}
+                >
+                  <AnimatedNavIcon>
                     <route.icon size={24} strokeWidth={2.5} className="relative z-10" />
-                  </Link>
-                </motion.div>
+                  </AnimatedNavIcon>
+                </Link>
               );
             })}
           </nav>

@@ -141,16 +141,9 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
-  const resultsTitle = isShowingSearchResults ? `Search: ${trimmedQuery}` : "";
 
   return (
     <div>
-      {resultsTitle ? (
-        <h1 className="px-5 pt-5 text-xl font-space-grotesk font-bold text-neutral-200">
-          {resultsTitle}
-        </h1>
-      ) : null}
-
       {isShowingSearchHint && (
         <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
       )}

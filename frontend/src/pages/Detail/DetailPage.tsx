@@ -7,6 +7,7 @@ import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
 import { ArrowLeft, Bookmark, Clapperboard, Eye, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 import type { MediaItem } from "../../api/types";
 import { previewItemToDetail } from "../../utils/detailPreview";
+import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
@@ -45,8 +46,8 @@ const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
   "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
-const actionButtonInactive = "text-neutral-400 hover:text-neutral-200";
-const actionButtonActive = "text-neutral-100 hover:text-white";
+const actionButtonInactive = "text-neutral-400";
+const actionButtonActive = "text-neutral-100";
 
 function DetailPosterBlock({
   poster,
@@ -381,12 +382,10 @@ const DetailPage = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 8 }}
               transition={{ duration: 0.18, ease }}
-              whileTap={{ scale: 0.93 }}
             >
-              <ThumbsDown
-                size={24}
-                strokeWidth={2.5}
-              />
+              <AnimatedNavIcon>
+                <ThumbsDown size={24} strokeWidth={2.5} />
+              </AnimatedNavIcon>
             </motion.button>
             <motion.button
               onClick={() => {
@@ -397,12 +396,10 @@ const DetailPage = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 8 }}
               transition={{ duration: 0.18, ease, delay: 0.03 }}
-              whileTap={{ scale: 0.93 }}
             >
-              <ThumbsUp
-                size={24}
-                strokeWidth={2.5}
-              />
+              <AnimatedNavIcon>
+                <ThumbsUp size={24} strokeWidth={2.5} />
+              </AnimatedNavIcon>
             </motion.button>
             </>
           )}
@@ -413,11 +410,12 @@ const DetailPage = () => {
             void (isWatched ? actions.unwatched() : actions.watched());
           }}
           className={`${pill} ${isWatched ? actionButtonActive : actionButtonInactive}`}
-          whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Eye size={24} strokeWidth={2.5} />
+          <AnimatedNavIcon>
+            <Eye size={24} strokeWidth={2.5} />
+          </AnimatedNavIcon>
         </motion.button>
 
         <motion.button
@@ -425,11 +423,12 @@ const DetailPage = () => {
             void (isFavorited ? actions.unfavorite() : actions.favorite());
           }}
           className={`${pill} ${isFavorited ? actionButtonActive : actionButtonInactive}`}
-          whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Heart size={24} strokeWidth={2.5} />
+          <AnimatedNavIcon>
+            <Heart size={24} strokeWidth={2.5} />
+          </AnimatedNavIcon>
         </motion.button>
 
         <motion.button
@@ -437,21 +436,23 @@ const DetailPage = () => {
             void (isSaved ? actions.unsave() : actions.save());
           }}
           className={`${pill} ${isSaved ? actionButtonActive : actionButtonInactive}`}
-          whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Bookmark size={24} strokeWidth={2.5} />
+          <AnimatedNavIcon>
+            <Bookmark size={24} strokeWidth={2.5} />
+          </AnimatedNavIcon>
         </motion.button>
 
         <motion.button
           onClick={() => navigate(-1)}
           className={`${pill} ${actionButtonInactive}`}
-          whileTap={{ scale: 0.93 }}
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <ArrowLeft size={24} strokeWidth={2.5} />
+          <AnimatedNavIcon>
+            <ArrowLeft size={24} strokeWidth={2.5} />
+          </AnimatedNavIcon>
         </motion.button>
       </div>
     </div>
