@@ -44,7 +44,7 @@ const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
-  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-3 cursor-pointer transition-colors";
+  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
 
 function DetailPosterBlock({
   poster,
@@ -369,7 +369,7 @@ const DetailPage = () => {
 
       {/* Fixed action buttons — right side, nav-pill style */}
       <div
-        className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-2 sm:bottom-5 sm:gap-3"
+        className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3"
       >
         <motion.button
           onClick={() => {
