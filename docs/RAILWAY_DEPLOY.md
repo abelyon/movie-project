@@ -65,12 +65,12 @@ Set this on the `frontend` Railway service (same value the build step must see):
 
 Do **not** rely on a committed `frontend/.env` for production; keep secrets and machine-specific URLs out of git. Use Railway **Variables** (or a build-time secret store) so the backend URL is present when Railpack runs `npm run build`.
 
-On the **backend** service, set **`FRONTEND_URL`** to your SPA origin (for example `https://<your-frontend-service>.up.railway.app`). CORS uses this value so the API allows credentialed requests from that origin.
+On the **backend** service, set `**FRONTEND_URL`** to your SPA origin (for example `https://<your-frontend-service>.up.railway.app`). CORS uses this value so the API allows credentialed requests from that origin.
 
 ## 6) Deploy order
 
 1. Deploy backend first. Run database migrations via a **Release Command** or your chosen start workflow (see section 2).
-2. After the backend has a public URL, set **`VITE_API_BASE_URL`** on the **frontend** service, then **redeploy the frontend** so a new build picks it up.
+2. After the backend has a public URL, set `**VITE_API_BASE_URL`** on the **frontend** service, then **redeploy the frontend** so a new build picks it up.
 3. Changing this variable alone does not update an old deploy until you trigger a new build.
 
 ## 7) Sanctum / cookies note

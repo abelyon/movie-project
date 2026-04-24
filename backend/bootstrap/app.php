@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             | Request::HEADER_X_FORWARDED_PORT
             | Request::HEADER_X_FORWARDED_PROTO
             | Request::HEADER_X_FORWARDED_AWS_ELB);
+        $middleware->web(replace: [
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class
+                => \App\Http\Middleware\ValidateFrontendCsrfToken::class,
+        ]);
         $middleware->statefulApi();
         $middleware->api(replace: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class
