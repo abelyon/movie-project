@@ -41,6 +41,49 @@ class MediaController extends Controller
             });
     }
 
+    private function applySocialLibraryFilter($query)
+    {
+        return $query
+            ->where(function ($q): void {
+                $q->where('is_saved', true)
+                    ->orWhere('is_liked', true)
+                    ->orWhere('is_favorited', true);
+            });
+    }
+
+    private function getAcceptedFriendIds(Request $request): \Illuminate\Support\Collection
+    {
+        $user = $request->user();
+        $requestedFriendIds = $request->query('friend_ids', []);
+        if (!is_array($requestedFriendIds)) {
+            $requestedFriendIds = $requestedFriendIds !== ''
+                ? explode(',', (string) $requestedFriendIds)
+                : [];
+        }
+        $requestedFriendIds = array_values(array_unique(array_map('intval', $requestedFriendIds)));
+
+        $friendIds = FriendRequest::query()
+            ->where('status', 'accepted')
+            ->where(function ($q) use ($user): void {
+                $q->where('requester_id', $user->id)
+                    ->orWhere('recipient_id', $user->id);
+            })
+            ->get()
+            ->map(function (FriendRequest $fr) use ($user) {
+                return $fr->requester_id === $user->id ? $fr->recipient_id : $fr->requester_id;
+            })
+            ->unique()
+            ->values();
+
+        if (!empty($requestedFriendIds)) {
+            $friendIds = $friendIds
+                ->filter(fn (int $id): bool => in_array($id, $requestedFriendIds, true))
+                ->values();
+        }
+
+        return $friendIds;
+    }
+
     private function getTmdbUrl(): string
     {
         return config('services.tmdb.url');
@@ -151,37 +194,22 @@ class MediaController extends Controller
             ->where('is_saved', true)
             ->get();
 
+        if ($request->boolean('with_friends_social')) {
+            $friendIds = $this->getAcceptedFriendIds($request);
+            $sourceUserIds = collect([$user->id])->merge($friendIds)->unique()->values();
+
+            $rows = $this->applySocialLibraryFilter(
+                Media::query()->whereIn('user_id', $sourceUserIds->all())
+            )->get()
+                ->unique(fn (Media $item): string => "{$item->type}-{$item->tmdb_id}")
+                ->values();
+        }
+
         if ($request->boolean('with_friends_saved')) {
             $rows = $this->applyFriendSelectedSavedFilter(
                 Media::query()->where('user_id', $user->id)
             )->get();
-
-            $requestedFriendIds = $request->query('friend_ids', []);
-            if (!is_array($requestedFriendIds)) {
-                $requestedFriendIds = $requestedFriendIds !== ''
-                    ? explode(',', (string) $requestedFriendIds)
-                    : [];
-            }
-            $requestedFriendIds = array_values(array_unique(array_map('intval', $requestedFriendIds)));
-
-            $friendIds = FriendRequest::query()
-                ->where('status', 'accepted')
-                ->where(function ($q) use ($user): void {
-                    $q->where('requester_id', $user->id)
-                        ->orWhere('recipient_id', $user->id);
-                })
-                ->get()
-                ->map(function (FriendRequest $fr) use ($user) {
-                    return $fr->requester_id === $user->id ? $fr->recipient_id : $fr->requester_id;
-                })
-                ->unique()
-                ->values();
-
-            if (!empty($requestedFriendIds)) {
-                $friendIds = $friendIds
-                    ->filter(fn (int $id): bool => in_array($id, $requestedFriendIds, true))
-                    ->values();
-            }
+            $friendIds = $this->getAcceptedFriendIds($request);
 
             if ($friendIds->isEmpty()) {
                 $rows = collect();

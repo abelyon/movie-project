@@ -363,14 +363,19 @@ export const useMediaStateMap = (items: { id: number; media_type: string }[]) =>
   });
 };
 
-export const useSavedList = (options?: { withFriendsSaved?: boolean; friendIds?: number[] }) =>
+export const useSavedList = (options?: {
+  withFriendsSaved?: boolean;
+  withFriendsSocial?: boolean;
+  friendIds?: number[];
+}) =>
   useQuery({
     queryKey: [
       "user",
       "media",
       "saved",
+      options?.withFriendsSocial ? "with-friends-social" :
       options?.withFriendsSaved ? "with-friends" : "all",
-      options?.withFriendsSaved && "friendIds" in (options ?? {})
+      (options?.withFriendsSaved || options?.withFriendsSocial) && "friendIds" in (options ?? {})
         ? ((options as { friendIds?: number[] }).friendIds ?? []).slice().sort((a, b) => a - b).join(",")
         : "",
     ],
