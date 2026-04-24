@@ -26,19 +26,14 @@ const LARAVEL_BASE =
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
-  withCredentials: true,
-});
-
-api.interceptors.request.use((config) => {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-  if (match) {
-    config.headers["X-XSRF-TOKEN"] = decodeURIComponent(match[1]);
-  }
-  return config;
 });
 
 export default api;
