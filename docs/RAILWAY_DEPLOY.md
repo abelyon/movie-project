@@ -16,8 +16,8 @@ Railway deploys from a GitHub repo. Make sure your current branch is pushed.
 1. In Railway, click **New Project**.
 2. Choose **Deploy from GitHub repo** and select this repository.
 3. Add 2 services from the same repo:
-   - Service A root directory: `backend`
-   - Service B root directory: `frontend`
+  - Service A root directory: `backend`
+  - Service B root directory: `frontend`
 
 This repo does **not** use Nixpacks config files. Railway infers build and start from each root (for example Node/Vite for `frontend`, PHP/Laravel for `backend`). If a service needs an override, set **Build Command**, **Start Command**, or **Release Command** (for migrations) in that service’s **Settings** in the Railway dashboard—for example a backend release: `php artisan migrate --force`.
 
@@ -57,15 +57,19 @@ Optional but recommended:
 
 ## 5) Configure frontend environment variables
 
-Set this on the `frontend` Railway service:
+Vite reads `VITE_*` variables **when `npm run build` runs**, and replaces them in the JavaScript bundle. They are **not** read at runtime from the server. If the production URL is missing during that build, the app can end up calling `localhost` (and the browser will block that from a public site as **loopback / private network** access).
+
+Set this on the `frontend` Railway service (same value the build step must see):
 
 - `VITE_API_BASE_URL=https://<your-backend-domain>/api`
+
+Do **not** rely on a committed `frontend/.env` for production; keep secrets and machine-specific URLs out of git. Use Railway **Variables** (or a build-time secret store) so the backend URL is present when Railpack runs `npm run build`.
 
 ## 6) Deploy order
 
 1. Deploy backend first. Run database migrations via a **Release Command** or your chosen start workflow (see section 2).
-2. After backend has a public URL, set `VITE_API_BASE_URL` in frontend.
-3. Deploy frontend.
+2. After the backend has a public URL, add **`VITE_API_BASE_URL`** on the **frontend** service with that full API base (including `/api`), then **redeploy the frontend** so a new build picks it up.
+3. Changing this variable alone does not update an old deploy until you trigger a new build.
 
 ## 7) Sanctum / cookies note
 
@@ -85,8 +89,8 @@ After deploy:
 1. Open frontend URL.
 2. Register/login.
 3. Open browser devtools:
-   - `/sanctum/csrf-cookie` succeeds
-   - `/login` returns user JSON
-   - Authenticated API routes return `200`
+  - `/sanctum/csrf-cookie` succeeds
+  - `/login` returns user JSON
+  - Authenticated API routes return `200`
 
 If auth fails, re-check `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, and CORS-related values.
