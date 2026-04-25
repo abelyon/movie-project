@@ -27,9 +27,10 @@ const DiscoveryPage = () => {
     filterType: "all" as const,
     selectedGenreIds: [] as number[],
     minRating: 0 as const,
+    watchedFilter: "all" as const,
     yearFrom: "",
   };
-  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, yearFrom } = discoveryControls;
+  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, yearFrom } = discoveryControls;
   const {
     data,
     isPending,
@@ -129,6 +130,16 @@ const DiscoveryPage = () => {
     () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
     [savedList],
   );
+  const visibleResults = useMemo(
+    () =>
+      results.filter((item) => {
+        if (watchedFilter === "all") return true;
+        const key = stateKey(item.id, item.media_type);
+        const watched = Boolean(stateMap?.[key]?.watched_at);
+        return watchedFilter === "watched" ? watched : !watched;
+      }),
+    [results, stateMap, watchedFilter],
+  );
 
   if (isPending && !data) {
     return (
@@ -148,10 +159,10 @@ const DiscoveryPage = () => {
         <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
       )}
 
-      {isShowingSearchResults && isSearchLoading && results.length === 0 && <SkeletonCards count={8} />}
+      {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
 
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-        {results.map((item) => (
+        {visibleResults.map((item) => (
           (() => {
             const key = stateKey(item.id, item.media_type);
             const isSaved = (stateMap?.[key]?.is_saved ?? false) || savedSet.has(key);
