@@ -54,11 +54,12 @@ class MediaController extends Controller
     }
 
     /**
-     * Rank shared media for watch-together from group reactions (saved, liked, favorited, disliked).
+     * Rank shared media for watch-together from group reactions.
      *
-     * Pool: any participant has saved, liked, favorited, or disliked the title.
+     * Favorites are treated as personal markers only and do not affect candidate selection or scoring.
+     * Pool: any participant has saved, liked, or disliked the title.
      * Block: if any participant disliked it (group veto).
-     * Score: +2 saved, +3 favorited, +1 liked per participant (likes/dislikes shape ordering, not blanket removal).
+     * Score: +2 saved, +1 liked per participant.
      */
     private function rankWatchTogetherForUsers(array $participantUserIds): \Illuminate\Support\Collection
     {
@@ -85,7 +86,7 @@ class MediaController extends Controller
                 ];
             }
 
-            if ($row->is_saved || $row->is_favorited || $row->is_liked || $row->is_disliked) {
+            if ($row->is_saved || $row->is_liked || $row->is_disliked) {
                 $ranked[$key]['has_candidate_signal'] = true;
             }
 
@@ -95,10 +96,6 @@ class MediaController extends Controller
 
             if ($row->is_saved) {
                 $ranked[$key]['score'] += 2;
-            }
-
-            if ($row->is_favorited) {
-                $ranked[$key]['score'] += 3;
             }
 
             if ($row->is_liked) {

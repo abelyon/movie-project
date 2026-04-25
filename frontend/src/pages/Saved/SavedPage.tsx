@@ -12,6 +12,7 @@ const SavedPage = () => {
     filterType: "all" as const,
     selectedGenreIds: [] as number[],
     minRating: 0 as const,
+    watchedFilter: "all" as const,
     yearFrom: "",
     selectedFriendIds: [] as number[],
     showFriendsSocial: false,
@@ -22,6 +23,7 @@ const SavedPage = () => {
     filterType,
     selectedGenreIds,
     minRating,
+    watchedFilter,
     yearFrom,
     selectedFriendIds,
     showFriendsSocial,
@@ -33,12 +35,6 @@ const SavedPage = () => {
     withFriendsSocial: showFriendsSocial,
     friendIds: selectedFriendIds,
   });
-
-  /** In default Saved list, every row is the user's save — use for bookmark before state batch loads. */
-  const userOnlySavedKeySet = useMemo(() => {
-    if (withFriendsSaved || showFriendsSocial) return new Set<string>();
-    return new Set((saved ?? []).map((item) => stateKey(item.id, item.media_type)));
-  }, [saved, withFriendsSaved, showFriendsSocial]);
 
   const filteredSaved = useMemo(
     () =>
@@ -92,6 +88,16 @@ const SavedPage = () => {
   }, [filteredSaved, sortBy]);
 
   const { data: stateMap } = useMediaStateMap(processedSaved);
+  const visibleSaved = useMemo(
+    () =>
+      processedSaved.filter((item) => {
+        if (watchedFilter === "all") return true;
+        const key = stateKey(item.id, item.media_type);
+        const watched = Boolean(stateMap?.[key]?.watched_at);
+        return watchedFilter === "watched" ? watched : !watched;
+      }),
+    [processedSaved, stateMap, watchedFilter],
+  );
 
   if (isLoading && (saved ?? []).length === 0) {
     return (
@@ -106,7 +112,7 @@ const SavedPage = () => {
 
   return (
     <div>
-      {!processedSaved.length ? (
+      {!visibleSaved.length ? (
         <div className="p-5">
           <p className="text-neutral-400">
             {saved?.length
@@ -114,24 +120,15 @@ const SavedPage = () => {
               : showFriendsSocial
                 ? "No shared saved/liked/favorited media found for you and your selected friends."
                 : withFriendsSaved
-                ? "No suggestions yet. Pick friends with overlapping saved, liked, or favorited titles (dislikes are excluded for everyone)."
+                ? "No suggestions yet. Pick friends with overlapping saved or liked titles (dislikes are excluded for everyone)."
                 : "No saved items yet. Tap the bookmark on any movie or show's detail page."}
           </p>
         </div>
       ) : (
         <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-          {processedSaved.map((item) => {
-            const key = stateKey(item.id, item.media_type);
-            const isSavedForUser =
-              (stateMap?.[key]?.is_saved ?? false) || userOnlySavedKeySet.has(key);
-            return (
-              <MediaCard
-                key={`${item.media_type}-${item.id}`}
-                item={item}
-                isSaved={isSavedForUser}
-              />
-            );
-          })}
+          {visibleSaved.map((item) => (
+            <MediaCard key={`${item.media_type}-${item.id}`} item={item} />
+          ))}
         </div>
       )}
 

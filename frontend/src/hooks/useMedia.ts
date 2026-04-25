@@ -56,6 +56,11 @@ const isBatchStateQueryKey = (key: readonly unknown[]) =>
   key[2] === "state" &&
   key[3] === "batch";
 
+const isSavedListQueryKey = (key: readonly unknown[]) =>
+  key[0] === "user" &&
+  key[1] === "media" &&
+  key[2] === "saved";
+
 /** Discovery/search grids read batched state; keep them in sync with detail actions */
 const patchBatchStateMaps = (
   qc: ReturnType<typeof useQueryClient>,
@@ -74,14 +79,19 @@ const patchBatchStateMaps = (
   );
 };
 
-const SAVED_LIST_KEY = ["user", "media", "saved"] as const;
-
-const snapshotSavedList = (
+const snapshotSavedLists = (
   qc: ReturnType<typeof useQueryClient>,
-): MediaItem[] | undefined => {
-  const data = qc.getQueryData<MediaItem[]>(SAVED_LIST_KEY);
-  return data?.map((item) => ({ ...item }));
-};
+): Array<{ key: readonly unknown[]; data: MediaItem[] | undefined }> =>
+  qc
+    .getQueryCache()
+    .findAll({ predicate: (q) => isSavedListQueryKey(q.queryKey) })
+    .map((q) => {
+      const data = q.state.data as MediaItem[] | undefined;
+      return {
+        key: q.queryKey,
+        data: data?.map((item) => ({ ...item })),
+      };
+    });
 
 /** Remove item from cached Saved list so Saved tab updates before refetch */
 const optimisticRemoveFromSavedList = (
@@ -89,12 +99,15 @@ const optimisticRemoveFromSavedList = (
   tmdbId: number,
   mediaType: string,
 ) => {
-  qc.setQueryData<MediaItem[]>(SAVED_LIST_KEY, (old) => {
-    if (!old) return old;
-    return old.filter(
-      (item) => !(item.id === tmdbId && item.media_type === mediaType),
-    );
-  });
+  qc.setQueriesData<MediaItem[]>(
+    { predicate: (q) => isSavedListQueryKey(q.queryKey) },
+    (old) => {
+      if (!old) return old;
+      return old.filter(
+        (item) => !(item.id === tmdbId && item.media_type === mediaType),
+      );
+    },
+  );
 };
 
 /** Add or move item to front of Saved list cache (save / like / dislike) */
@@ -102,23 +115,32 @@ const optimisticUpsertSavedList = (
   qc: ReturnType<typeof useQueryClient>,
   preview: MediaItem,
 ) => {
-  qc.setQueryData<MediaItem[]>(SAVED_LIST_KEY, (old) => {
-    const rest = (old ?? []).filter(
-      (item) =>
-        !(item.id === preview.id && item.media_type === preview.media_type),
-    );
-    return [preview, ...rest];
-  });
+  qc.setQueriesData<MediaItem[]>(
+    { predicate: (q) => isSavedListQueryKey(q.queryKey) },
+    (old) => {
+      const rest = (old ?? []).filter(
+        (item) =>
+          !(item.id === preview.id && item.media_type === preview.media_type),
+      );
+      return [preview, ...rest];
+    },
+  );
 };
 
-const restoreSavedListSnapshot = (
+const restoreSavedListsSnapshot = (
   qc: ReturnType<typeof useQueryClient>,
-  prev: MediaItem[] | undefined,
+  prev: Array<{ key: readonly unknown[]; data: MediaItem[] | undefined }>,
 ) => {
-  if (prev === undefined) {
-    qc.removeQueries({ queryKey: SAVED_LIST_KEY });
-  } else {
-    qc.setQueryData(SAVED_LIST_KEY, prev);
+  if (prev.length === 0) {
+    return;
+  }
+
+  for (const { key, data } of prev) {
+    if (data === undefined) {
+      qc.removeQueries({ queryKey: key, exact: true });
+    } else {
+      qc.setQueryData(key, data);
+    }
   }
 };
 
@@ -212,7 +234,7 @@ export const useMediaActions = (
     save: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedList(qc);
+      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({ is_saved: true });
       optimisticUpsertSavedList(qc, savedPreview());
       try {
@@ -223,13 +245,13 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListSnapshot(qc, prevSaved);
+        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     unsave: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedList(qc);
+      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({
         is_saved: false,
         is_liked: false,
@@ -245,13 +267,13 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListSnapshot(qc, prevSaved);
+        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     like: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedList(qc);
+      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({
         is_saved: true,
         is_liked: true,
@@ -267,7 +289,7 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListSnapshot(qc, prevSaved);
+        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     unlike: async () => {
@@ -287,7 +309,7 @@ export const useMediaActions = (
     dislike: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedList(qc);
+      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({
         is_saved: true,
         is_disliked: true,
@@ -303,7 +325,7 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListSnapshot(qc, prevSaved);
+        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     undislike: async () => {
@@ -323,7 +345,7 @@ export const useMediaActions = (
     favorite: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedList(qc);
+      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({ is_saved: true, is_favorited: true });
       optimisticUpsertSavedList(qc, savedPreview());
       try {
@@ -334,7 +356,7 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListSnapshot(qc, prevSaved);
+        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     unfavorite: async () => {
