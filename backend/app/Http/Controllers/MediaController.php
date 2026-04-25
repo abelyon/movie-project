@@ -54,7 +54,11 @@ class MediaController extends Controller
     }
 
     /**
-     * Rank shared media for watch-together using simple point rules.
+     * Rank shared media for watch-together from group reactions (saved, liked, favorited, disliked).
+     *
+     * Pool: any participant has saved, liked, favorited, or disliked the title.
+     * Block: if any participant disliked it (group veto).
+     * Score: +2 saved, +3 favorited, +1 liked per participant (likes/dislikes shape ordering, not blanket removal).
      */
     private function rankWatchTogetherForUsers(array $participantUserIds): \Illuminate\Support\Collection
     {
@@ -81,8 +85,12 @@ class MediaController extends Controller
                 ];
             }
 
-            if ($row->is_saved || $row->is_favorited) {
+            if ($row->is_saved || $row->is_favorited || $row->is_liked || $row->is_disliked) {
                 $ranked[$key]['has_candidate_signal'] = true;
+            }
+
+            if ($row->is_disliked) {
+                $ranked[$key]['blocked'] = true;
             }
 
             if ($row->is_saved) {
@@ -90,18 +98,11 @@ class MediaController extends Controller
             }
 
             if ($row->is_favorited) {
+                $ranked[$key]['score'] += 3;
+            }
+
+            if ($row->is_liked) {
                 $ranked[$key]['score'] += 1;
-            }
-
-            // Kill switch for one-and-done or explicit negative signals.
-            if ($row->is_liked || $row->is_disliked) {
-                $ranked[$key]['score'] -= 100;
-                $ranked[$key]['blocked'] = true;
-            }
-
-            // Watched titles are hidden unless the same user favorited it.
-            if ($row->watched_at !== null && !$row->is_favorited) {
-                $ranked[$key]['blocked'] = true;
             }
         }
 

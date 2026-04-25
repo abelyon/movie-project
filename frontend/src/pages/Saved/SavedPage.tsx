@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
-import { useSavedList } from "../../hooks/useMedia";
+import { stateKey } from "../../api/userMedia";
+import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import MediaCard from "../Discovery/MediaCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
@@ -32,6 +33,12 @@ const SavedPage = () => {
     withFriendsSocial: showFriendsSocial,
     friendIds: selectedFriendIds,
   });
+
+  /** In default Saved list, every row is the user's save — use for bookmark before state batch loads. */
+  const userOnlySavedKeySet = useMemo(() => {
+    if (withFriendsSaved || showFriendsSocial) return new Set<string>();
+    return new Set((saved ?? []).map((item) => stateKey(item.id, item.media_type)));
+  }, [saved, withFriendsSaved, showFriendsSocial]);
 
   const filteredSaved = useMemo(
     () =>
@@ -84,6 +91,8 @@ const SavedPage = () => {
     return sorted;
   }, [filteredSaved, sortBy]);
 
+  const { data: stateMap } = useMediaStateMap(processedSaved);
+
   if (isLoading && (saved ?? []).length === 0) {
     return (
       <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
@@ -105,15 +114,24 @@ const SavedPage = () => {
               : showFriendsSocial
                 ? "No shared saved/liked/favorited media found for you and your selected friends."
                 : withFriendsSaved
-                ? "No shared saved items found (without likes/dislikes)."
+                ? "No suggestions yet. Pick friends with overlapping saved, liked, or favorited titles (dislikes are excluded for everyone)."
                 : "No saved items yet. Tap the bookmark on any movie or show's detail page."}
           </p>
         </div>
       ) : (
         <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-          {processedSaved.map((item) => (
-            <MediaCard key={`${item.media_type}-${item.id}`} item={item} isSaved />
-          ))}
+          {processedSaved.map((item) => {
+            const key = stateKey(item.id, item.media_type);
+            const isSavedForUser =
+              (stateMap?.[key]?.is_saved ?? false) || userOnlySavedKeySet.has(key);
+            return (
+              <MediaCard
+                key={`${item.media_type}-${item.id}`}
+                item={item}
+                isSaved={isSavedForUser}
+              />
+            );
+          })}
         </div>
       )}
 
