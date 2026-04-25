@@ -56,11 +56,12 @@ class MediaController extends Controller
     private function scoreUserRow(Media $row): float
     {
         $score = 0;
-        if ($row->is_liked) {
-            $score += 5;
-        }
         if ($row->is_saved) {
             $score += 3;
+        }
+        if ($row->is_liked) {
+            // Treat liked+watched as lower priority than unseen picks.
+            $score += $row->watched_at !== null ? 1.0 : 3.0;
         }
         if ($row->watched_at !== null) {
             // Keep watched as a weaker interest signal than saved.
@@ -178,6 +179,10 @@ class MediaController extends Controller
             if ($item['saved_count'] > 0) {
                 $togetherScore += 2.0;
             }
+            // Prioritize titles not watched by the group yet.
+            $unwatchedCount = max(0, $participantCount - (int) $item['watched_count']);
+            $togetherScore += ($unwatchedCount / max(1, $participantCount)) * 2.0;
+            $togetherScore -= ($item['watched_count'] / max(1, $participantCount)) * 1.5;
             if ($item['watched_count'] === $participantCount && $item['liked_count'] === 0) {
                 $togetherScore -= 2.5;
             }
