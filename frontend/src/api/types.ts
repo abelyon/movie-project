@@ -11,6 +11,9 @@ export type MediaItem = {
   release_date?: string;
   first_air_date?: string;
   vote_average?: number;
+  together_score?: number | null;
+  suggestion_pool?: "direct" | "group_interest" | "genre_affinity" | "discovery" | string | null;
+  suggestion_badges?: string[];
 };
 
 export type TrendingResponse = {

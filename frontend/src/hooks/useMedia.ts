@@ -144,12 +144,18 @@ const restoreSavedListsSnapshot = (
   }
 };
 
-/** Defer list refetch so React paints optimistic cache updates first */
-const scheduleListSync = (qc: ReturnType<typeof useQueryClient>) => {
-  queueMicrotask(() => {
-    void qc.invalidateQueries({ queryKey: ["user", "media", "saved"] });
-    void qc.invalidateQueries({ queryKey: ["user", "media", "liked"] });
-  });
+/** Refresh saved/liked list variants right after a successful media mutation. */
+const refreshListsNow = async (qc: ReturnType<typeof useQueryClient>) => {
+  await Promise.allSettled([
+    qc.invalidateQueries({
+      queryKey: ["user", "media", "saved"],
+      refetchType: "all",
+    }),
+    qc.invalidateQueries({
+      queryKey: ["user", "media", "liked"],
+      refetchType: "all",
+    }),
+  ]);
 };
 
 export const useMediaState = (tmdbId: number | undefined, mediaType: string | undefined) => {
@@ -239,7 +245,7 @@ export const useMediaActions = (
       optimisticUpsertSavedList(qc, savedPreview());
       try {
         await saveMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -261,7 +267,7 @@ export const useMediaActions = (
       optimisticRemoveFromSavedList(qc, tmdbId, mediaType);
       try {
         await unsaveMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -283,7 +289,7 @@ export const useMediaActions = (
       optimisticUpsertSavedList(qc, savedPreview());
       try {
         await likeMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -298,7 +304,7 @@ export const useMediaActions = (
       patchLocalAndGrid({ is_liked: false });
       try {
         await unlikeMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -319,7 +325,7 @@ export const useMediaActions = (
       optimisticUpsertSavedList(qc, savedPreview());
       try {
         await dislikeMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -334,7 +340,7 @@ export const useMediaActions = (
       patchLocalAndGrid({ is_disliked: false });
       try {
         await undislikeMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -350,7 +356,7 @@ export const useMediaActions = (
       optimisticUpsertSavedList(qc, savedPreview());
       try {
         await favoriteMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -365,7 +371,7 @@ export const useMediaActions = (
       patchLocalAndGrid({ is_favorited: false });
       try {
         await unfavoriteMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -379,7 +385,7 @@ export const useMediaActions = (
       patchLocalAndGrid({ watched_at: new Date().toISOString() });
       try {
         await watchedMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {
@@ -397,7 +403,7 @@ export const useMediaActions = (
       });
       try {
         await unwatchedMedia(tmdbId, mediaType);
-        scheduleListSync(qc);
+        await refreshListsNow(qc);
       } catch {
         qc.setQueryData(qKey, prev);
         for (const { key, data } of prevBatches) {

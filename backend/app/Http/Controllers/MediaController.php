@@ -53,13 +53,62 @@ class MediaController extends Controller
             });
     }
 
+    private function scoreUserRow(Media $row): float
+    {
+        $score = 0;
+        if ($row->is_liked) {
+            $score += 5;
+        }
+        if ($row->is_saved) {
+            $score += 3;
+        }
+        if ($row->watched_at !== null) {
+            // Keep watched as a weaker interest signal than saved.
+            $score += 0.5;
+        }
+        if ($row->is_disliked) {
+            $score -= 10;
+        }
+        return $score;
+    }
+
+    private function discoverByGenre(string $type, int $genreId, int $page = 1): array
+    {
+        $response = Http::get("{$this->getTmdbUrl()}/discover/{$type}", [
+            'api_key' => $this->getTmdbKey(),
+            'include_genres' => $genreId,
+            'sort_by' => 'vote_average.desc',
+            'vote_count.gte' => 200,
+            'page' => $page,
+        ]);
+
+        if ($response->failed()) {
+            return [];
+        }
+
+        return $response->json('results') ?? [];
+    }
+
+    private function trendingFallback(): array
+    {
+        $response = Http::get("{$this->getTmdbUrl()}/trending/all/day", [
+            'api_key' => $this->getTmdbKey(),
+            'page' => 1,
+        ]);
+        if ($response->failed()) {
+            return [];
+        }
+        return $response->json('results') ?? [];
+    }
+
     /**
-     * Rank shared media for watch-together from group reactions.
+     * Multi-pool watch-together recommendations.
      *
-     * Favorites are treated as personal markers only and do not affect candidate selection or scoring.
-     * Pool: any participant has saved, liked, or disliked the title.
-     * Block: if any participant disliked it (group veto).
-     * Score: +2 saved, +1 liked per participant.
+     * - Weighted user actions: liked +5, saved +3, watched +1, disliked -10.
+     * - Favorites are user markers only and do not affect ranking.
+     * - Pool A: direct overlap in saved/liked for all participants.
+     * - Pool B: genre affinity from liked titles.
+     * - Pool C: trending fallback with disliked-genre suppression.
      */
     private function rankWatchTogetherForUsers(array $participantUserIds): \Illuminate\Support\Collection
     {
@@ -67,54 +116,112 @@ class MediaController extends Controller
             return collect();
         }
 
+        $participantCount = count($participantUserIds);
         $rows = Media::query()
             ->whereIn('user_id', $participantUserIds)
             ->get();
 
-        $ranked = [];
-
+        $byKey = [];
         foreach ($rows as $row) {
-            $key = "{$row->type}-{$row->tmdb_id}";
+            // Ignore stale rows that carry no active reaction signal.
+            if (
+                !$row->is_saved &&
+                !$row->is_liked &&
+                !$row->is_disliked &&
+                $row->watched_at === null
+            ) {
+                continue;
+            }
 
-            if (!isset($ranked[$key])) {
-                $ranked[$key] = [
+            $key = "{$row->type}-{$row->tmdb_id}";
+            if (!isset($byKey[$key])) {
+                $byKey[$key] = [
                     'type' => $row->type,
                     'tmdb_id' => (int) $row->tmdb_id,
-                    'score' => 0,
-                    'has_candidate_signal' => false,
-                    'blocked' => false,
+                    'sum' => 0,
+                    'saved_count' => 0,
+                    'liked_count' => 0,
+                    'watched_count' => 0,
+                    'disliked_count' => 0,
+                    'users' => [],
                 ];
             }
-
-            if ($row->is_saved || $row->is_liked || $row->is_disliked) {
-                $ranked[$key]['has_candidate_signal'] = true;
-            }
-
-            if ($row->is_disliked) {
-                $ranked[$key]['blocked'] = true;
-            }
-
+            $byKey[$key]['sum'] += $this->scoreUserRow($row);
             if ($row->is_saved) {
-                $ranked[$key]['score'] += 2;
+                $byKey[$key]['saved_count']++;
             }
-
             if ($row->is_liked) {
-                $ranked[$key]['score'] += 1;
+                $byKey[$key]['liked_count']++;
+            }
+            if ($row->watched_at !== null) {
+                $byKey[$key]['watched_count']++;
+            }
+            if ($row->is_disliked) {
+                $byKey[$key]['disliked_count']++;
+            }
+            if ($row->is_saved || $row->is_liked) {
+                $byKey[$key]['users'][(int) $row->user_id] = true;
             }
         }
 
-        return collect($ranked)
-            ->filter(function (array $entry): bool {
-                return $entry['has_candidate_signal'] && !$entry['blocked'];
-            })
-            ->sortByDesc('score')
-            ->values()
-            ->map(function (array $entry): Media {
-                $media = new Media();
-                $media->type = $entry['type'];
-                $media->tmdb_id = $entry['tmdb_id'];
-                return $media;
-            });
+        $direct = collect();
+        $groupInterest = collect();
+        foreach ($byKey as $key => $item) {
+            if ($item['disliked_count'] > 0) {
+                continue;
+            }
+            $isFullOverlap = count($item['users']) === $participantCount;
+
+            $confidence = 1 + (max(0, $item['saved_count'] - 1) * 0.15);
+            $togetherScore = ($item['sum'] / max(1, $participantCount)) * $confidence;
+            // Ensure titles saved by at least one participant rank above equal-score non-saved titles.
+            if ($item['saved_count'] > 0) {
+                $togetherScore += 2.0;
+            }
+            if ($item['watched_count'] === $participantCount && $item['liked_count'] === 0) {
+                $togetherScore -= 2.5;
+            }
+
+            $badges = [];
+            if ($item['watched_count'] > 0 && $item['watched_count'] < $participantCount) {
+                $badges[] = 'New for some';
+            }
+            if ($item['watched_count'] === 0) {
+                $badges[] = 'New to all of you';
+            }
+            if ($item['liked_count'] >= max(1, intdiv($participantCount + 1, 2))) {
+                $badges[] = "Matches everyone's taste";
+            }
+            if ($item['saved_count'] > 0) {
+                $badges[] = "On {$item['saved_count']} watchlist(s)";
+            }
+            $entry = [
+                'type' => $item['type'],
+                'tmdb_id' => $item['tmdb_id'],
+                'together_score' => round($togetherScore, 3),
+                'pool' => $isFullOverlap ? 'direct' : 'group_interest',
+                'badges' => $badges,
+            ];
+
+            if ($isFullOverlap) {
+                $direct->push($entry);
+            } else {
+                // Keep partial-overlap saved/liked titles visible after direct matches.
+                $groupInterest->push($entry);
+            }
+        }
+        $direct = $direct->sortByDesc('together_score')->values();
+        $groupInterest = $groupInterest->sortByDesc('together_score')->values();
+
+        $usedKeys = $direct
+            ->concat($groupInterest)
+            ->map(fn (array $i): string => "{$i['type']}-{$i['tmdb_id']}")
+            ->flip();
+        $interactedKeys = collect(array_keys($byKey))->flip();
+
+        return $direct
+            ->concat($groupInterest)
+            ->values();
     }
 
     private function getAcceptedFriendIds(Request $request): \Illuminate\Support\Collection
@@ -279,9 +386,16 @@ class MediaController extends Controller
 
         $results = [];
         foreach ($rows as $row) {
-            $type = $row->type === 'movie' ? 'movie' : 'tv';
-            $item = $this->fetchFromTmdb($type, (int) $row->tmdb_id);
+            $isRankedRow = is_array($row);
+            $type = ($isRankedRow ? ($row['type'] ?? 'movie') : $row->type) === 'movie' ? 'movie' : 'tv';
+            $tmdbId = (int) ($isRankedRow ? ($row['tmdb_id'] ?? 0) : $row->tmdb_id);
+            $item = $this->fetchFromTmdb($type, $tmdbId);
             if ($item) {
+                if ($isRankedRow) {
+                    $item['together_score'] = $row['together_score'] ?? null;
+                    $item['suggestion_pool'] = $row['pool'] ?? null;
+                    $item['suggestion_badges'] = $row['badges'] ?? [];
+                }
                 $results[] = $item;
             }
         }

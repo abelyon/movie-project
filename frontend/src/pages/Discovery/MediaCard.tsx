@@ -83,7 +83,7 @@ const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boole
       onMouseEnter={prefetchForDetail}
       onFocus={prefetchForDetail}
       onTouchStart={prefetchForDetail}
-      className="relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full"
+      className="relative m-auto flex flex-col items-center justify-center rounded-4xl cursor-pointer aspect-2/3 w-full"
       initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: false, amount: 0.15, margin: "0px 0px -40px 0px" }}
@@ -91,7 +91,7 @@ const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boole
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <div className="relative w-full h-full wmin-h-[280px] bg-neutral-800/80">
+      <div className="relative w-full h-full wmin-h-[280px] overflow-hidden rounded-4xl bg-neutral-800/80">
         <motion.img
           src={`${TMDB_IMAGE_BASE_URL}${item.poster_path ?? ""}`}
           alt={item.title ?? item.name ?? ""}
