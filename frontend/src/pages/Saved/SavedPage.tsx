@@ -13,6 +13,7 @@ const SavedPage = () => {
     selectedGenreIds: [] as number[],
     minRating: 0 as const,
     watchedFilter: "all" as const,
+    favoriteFilter: "all" as const,
     yearFrom: "",
     selectedFriendIds: [] as number[],
     showFriendsSocial: false,
@@ -24,6 +25,7 @@ const SavedPage = () => {
     selectedGenreIds,
     minRating,
     watchedFilter,
+    favoriteFilter,
     yearFrom,
     selectedFriendIds,
     showFriendsSocial,
@@ -91,12 +93,13 @@ const SavedPage = () => {
   const visibleSaved = useMemo(
     () =>
       processedSaved.filter((item) => {
-        if (watchedFilter === "all") return true;
         const key = stateKey(item.id, item.media_type);
+        if (favoriteFilter === "favorited" && !stateMap?.[key]?.is_favorited) return false;
+        if (watchedFilter === "all") return true;
         const watched = Boolean(stateMap?.[key]?.watched_at);
         return watchedFilter === "watched" ? watched : !watched;
       }),
-    [processedSaved, stateMap, watchedFilter],
+    [favoriteFilter, processedSaved, stateMap, watchedFilter],
   );
 
   if (isLoading && (saved ?? []).length === 0) {

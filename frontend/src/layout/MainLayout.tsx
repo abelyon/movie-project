@@ -70,6 +70,7 @@ type SortKind = "default" | "title_asc" | "title_desc" | "rating_desc";
 type FilterType = "all" | "movie" | "tv";
 type MinRating = 0 | 6 | 7 | 8;
 type WatchFilter = "all" | "watched" | "unwatched";
+type FavoriteFilter = "all" | "favorited";
 
 export type MainLayoutOutletContext = {
   discoveryControls: {
@@ -80,6 +81,7 @@ export type MainLayoutOutletContext = {
     selectedGenreIds: number[];
     minRating: MinRating;
     watchedFilter: WatchFilter;
+    favoriteFilter: FavoriteFilter;
     yearFrom: string;
     setFilterType: (value: FilterType) => void;
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
@@ -92,6 +94,7 @@ export type MainLayoutOutletContext = {
     selectedGenreIds: number[];
     minRating: MinRating;
     watchedFilter: WatchFilter;
+    favoriteFilter: FavoriteFilter;
     yearFrom: string;
     selectedFriendIds: number[];
     showFriendsSocial: boolean;
@@ -117,6 +120,7 @@ const MainLayout = () => {
   const [dSelectedGenreIds, setDSelectedGenreIds] = useState<number[]>([]);
   const [dMinRating, setDMinRating] = useState<MinRating>(0);
   const [dWatchedFilter, setDWatchedFilter] = useState<WatchFilter>("all");
+  const [dFavoriteFilter, setDFavoriteFilter] = useState<FavoriteFilter>("all");
   const [dYearFrom, setDYearFrom] = useState("");
   const [dQuery, setDQuery] = useState("");
   const dSearchInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +133,7 @@ const MainLayout = () => {
   const [sSelectedGenreIds, setSSelectedGenreIds] = useState<number[]>([]);
   const [sMinRating, setSMinRating] = useState<MinRating>(0);
   const [sWatchedFilter, setSWatchedFilter] = useState<WatchFilter>("all");
+  const [sFavoriteFilter, setSFavoriteFilter] = useState<FavoriteFilter>("all");
   const [sYearFrom, setSYearFrom] = useState("");
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
@@ -193,6 +198,7 @@ const MainLayout = () => {
         selectedGenreIds: dSelectedGenreIds,
         minRating: dMinRating,
         watchedFilter: dWatchedFilter,
+        favoriteFilter: dFavoriteFilter,
         yearFrom: dYearFrom,
         setFilterType: setDFilterType,
         setSelectedGenreIds: setDSelectedGenreIds,
@@ -205,6 +211,7 @@ const MainLayout = () => {
         selectedGenreIds: sSelectedGenreIds,
         minRating: sMinRating,
         watchedFilter: sWatchedFilter,
+        favoriteFilter: sFavoriteFilter,
         yearFrom: sYearFrom,
         selectedFriendIds,
         showFriendsSocial,
@@ -216,8 +223,8 @@ const MainLayout = () => {
       },
     }),
     [
-      dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dYearFrom,
-      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sYearFrom, selectedFriendIds, showFriendsSocial,
+      dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
+      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom, selectedFriendIds, showFriendsSocial,
     ],
   );
 
@@ -337,6 +344,16 @@ const MainLayout = () => {
                       placeholder="e.g. 2018"
                       className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none"
                     />
+                    <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-favorite-filter">Favorite status</label>
+                    <select
+                      id="layout-favorite-filter"
+                      value={dFavoriteFilter}
+                      onChange={(e) => setDFavoriteFilter(e.target.value as FavoriteFilter)}
+                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                    >
+                      <option value="all">All</option>
+                      <option value="favorited">Favorited</option>
+                    </select>
                     <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                     <div className="mt-2 flex max-h-40 flex-wrap gap-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -355,7 +372,7 @@ const MainLayout = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
+                      onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
                       className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
                     >
                       Clear filters
@@ -366,7 +383,7 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>
                   <Filter size={24} strokeWidth={2.5} />
@@ -470,6 +487,16 @@ const MainLayout = () => {
                   </select>
                   <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-year-from">Year from</label>
                   <input id="saved-layout-year-from" inputMode="numeric" value={sYearFrom} onChange={(e) => setSYearFrom(e.target.value.replace(/[^\d]/g, "").slice(0, 4))} placeholder="e.g. 2018" className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none" />
+                  <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-favorite-filter">Favorite status</label>
+                  <select
+                    id="saved-layout-favorite-filter"
+                    value={sFavoriteFilter}
+                    onChange={(e) => setSFavoriteFilter(e.target.value as FavoriteFilter)}
+                    className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                  >
+                    <option value="all">All</option>
+                    <option value="favorited">Favorited</option>
+                  </select>
                   <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                   <div className="mt-2 flex max-h-40 flex-wrap gap-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {(sFilterType === "tv" ? TV_GENRES : sFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -481,13 +508,13 @@ const MainLayout = () => {
                       );
                     })}
                   </div>
-                  <button type="button" onClick={() => { setSFilterType("all"); setSMinRating(0); setSWatchedFilter("all"); setSYearFrom(""); setSSelectedGenreIds([]); }} className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
+                  <button type="button" onClick={() => { setSFilterType("all"); setSMinRating(0); setSWatchedFilter("all"); setSFavoriteFilter("all"); setSYearFrom(""); setSSelectedGenreIds([]); }} className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
                     Clear filters
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>
                 <Filter size={24} strokeWidth={2.5} />
               </AnimatedNavIcon>
