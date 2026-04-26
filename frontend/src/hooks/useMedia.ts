@@ -338,9 +338,7 @@ export const useMediaActions = (
     favorite: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedLists(qc);
-      patchLocalAndGrid({ is_saved: true, is_favorited: true });
-      optimisticUpsertSavedList(qc, savedPreview());
+      patchLocalAndGrid({ is_favorited: true });
       try {
         await favoriteMedia(tmdbId, mediaType);
         await refreshListsNow(qc);
@@ -349,7 +347,6 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     unfavorite: async () => {
