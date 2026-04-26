@@ -258,12 +258,7 @@ export const useMediaActions = (
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
       const prevSaved = snapshotSavedLists(qc);
-      patchLocalAndGrid({
-        is_saved: false,
-        is_liked: false,
-        is_disliked: false,
-        is_favorited: false,
-      });
+      patchLocalAndGrid({ is_saved: false });
       optimisticRemoveFromSavedList(qc, tmdbId, mediaType);
       try {
         await unsaveMedia(tmdbId, mediaType);
