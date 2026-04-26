@@ -50,6 +50,11 @@ export async function getLiked(): Promise<MediaItem[]> {
   return data?.results ?? [];
 }
 
+export async function getFavorited(): Promise<MediaItem[]> {
+  const { data } = await api.get<{ results: MediaItem[] }>("/user/media/favorited");
+  return data?.results ?? [];
+}
+
 export async function saveMedia(tmdbId: number, mediaType: string) {
   await getCsrfCookie();
   await api.post("/user/media/save", { tmdb_id: tmdbId, media_type: mediaType });

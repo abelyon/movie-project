@@ -422,6 +422,21 @@ class MediaController extends Controller
         return response()->json(['results' => $results]);
     }
 
+    public function favorited(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $rows = Media::where('user_id', $user->id)->where('is_favorited', true)->get();
+        $results = [];
+        foreach ($rows as $row) {
+            $type = $row->type === 'movie' ? 'movie' : 'tv';
+            $item = $this->fetchFromTmdb($type, (int) $row->tmdb_id);
+            if ($item) {
+                $results[] = $item;
+            }
+        }
+        return response()->json(['results' => $results]);
+    }
+
     public function save(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['is_saved' => true]);

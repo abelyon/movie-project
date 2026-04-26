@@ -15,6 +15,7 @@ Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::get('/state', [MediaController::class, 'state']);
     Route::get('/saved', [MediaController::class, 'saved']);
     Route::get('/liked', [MediaController::class, 'liked']);
+    Route::get('/favorited', [MediaController::class, 'favorited']);
     Route::post('/save', [MediaController::class, 'save']);
     Route::delete('/save', [MediaController::class, 'unsave']);
     Route::post('/like', [MediaController::class, 'like']);
