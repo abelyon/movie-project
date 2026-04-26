@@ -10,6 +10,8 @@ import {
   searchUserByPublicId,
   sendFriendRequest,
 } from "../../api/friends";
+import { useFavoritedList } from "../../hooks/useMedia";
+import MediaCard from "../Discovery/MediaCard";
 
 const cardClass =
   "rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-5 backdrop-blur-md";
@@ -51,6 +53,7 @@ const ProfilePage = () => {
     queryKey: ["friends", "overview"],
     queryFn: getFriendOverview,
   });
+  const favoritedList = useFavoritedList();
 
   const searchMutation = useMutation({
     mutationFn: searchUserByPublicId,
@@ -139,6 +142,30 @@ const ProfilePage = () => {
             <p className="mt-1 font-space-grotesk text-neutral-100">{joinedAt}</p>
           </div>
         </div>
+      </div>
+
+      <div className={`${cardClass} mt-4`}>
+        <h2 className="font-space-grotesk text-lg font-semibold">Favorited media</h2>
+        <p className="mt-1 text-sm text-neutral-400">
+          Media you marked as favorites.
+        </p>
+        {favoritedList.isLoading ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="aspect-2/3 w-full rounded-3xl bg-neutral-700/60 animate-pulse" />
+            ))}
+          </div>
+        ) : favoritedList.isError ? (
+          <p className="mt-3 text-sm text-red-300">Could not load favorites right now.</p>
+        ) : (favoritedList.data?.length ?? 0) === 0 ? (
+          <p className="mt-3 text-sm text-neutral-500">No favorited media yet.</p>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {(favoritedList.data ?? []).map((item) => (
+              <MediaCard key={`fav-${item.media_type}-${item.id}`} item={item} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className={`${cardClass} mt-4`}>

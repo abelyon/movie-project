@@ -3,6 +3,7 @@ import {
   getState,
   getSaved,
   getLiked,
+  getFavorited,
   saveMedia,
   unsaveMedia,
   likeMedia,
@@ -438,5 +439,12 @@ export const useLikedList = () =>
   useQuery({
     queryKey: ["user", "media", "liked"],
     queryFn: getLiked,
+    staleTime: 60_000,
+  });
+
+export const useFavoritedList = () =>
+  useQuery({
+    queryKey: ["user", "media", "favorited"],
+    queryFn: getFavorited,
     staleTime: 60_000,
   });
