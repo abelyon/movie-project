@@ -28,9 +28,10 @@ const DiscoveryPage = () => {
     selectedGenreIds: [] as number[],
     minRating: 0 as const,
     watchedFilter: "all" as const,
+    favoriteFilter: "all" as const,
     yearFrom: "",
   };
-  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, yearFrom } = discoveryControls;
+  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
   const {
     data,
     isPending,
@@ -133,12 +134,13 @@ const DiscoveryPage = () => {
   const visibleResults = useMemo(
     () =>
       results.filter((item) => {
-        if (watchedFilter === "all") return true;
         const key = stateKey(item.id, item.media_type);
+        if (favoriteFilter === "favorited" && !stateMap?.[key]?.is_favorited) return false;
+        if (watchedFilter === "all") return true;
         const watched = Boolean(stateMap?.[key]?.watched_at);
         return watchedFilter === "watched" ? watched : !watched;
       }),
-    [results, stateMap, watchedFilter],
+    [favoriteFilter, results, stateMap, watchedFilter],
   );
 
   if (isPending && !data) {
