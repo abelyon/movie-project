@@ -445,7 +445,6 @@ class MediaController extends Controller
     public function like(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, [
-            'is_saved' => true,
             'is_liked' => true,
             'is_disliked' => false,
             'watched_at' => now(),
@@ -471,7 +470,6 @@ class MediaController extends Controller
     public function dislike(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, [
-            'is_saved' => true,
             'is_disliked' => true,
             'is_liked' => false,
             'watched_at' => now(),
