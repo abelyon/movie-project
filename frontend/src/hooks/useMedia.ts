@@ -279,14 +279,11 @@ export const useMediaActions = (
     like: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({
-        is_saved: true,
         is_liked: true,
         is_disliked: false,
         watched_at: new Date().toISOString(),
       });
-      optimisticUpsertSavedList(qc, savedPreview());
       try {
         await likeMedia(tmdbId, mediaType);
         await refreshListsNow(qc);
@@ -295,7 +292,6 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     unlike: async () => {
@@ -315,14 +311,11 @@ export const useMediaActions = (
     dislike: async () => {
       const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
       const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedLists(qc);
       patchLocalAndGrid({
-        is_saved: true,
         is_disliked: true,
         is_liked: false,
         watched_at: new Date().toISOString(),
       });
-      optimisticUpsertSavedList(qc, savedPreview());
       try {
         await dislikeMedia(tmdbId, mediaType);
         await refreshListsNow(qc);
@@ -331,7 +324,6 @@ export const useMediaActions = (
         for (const { key, data } of prevBatches) {
           qc.setQueryData(key, data);
         }
-        restoreSavedListsSnapshot(qc, prevSaved);
       }
     },
     undislike: async () => {
