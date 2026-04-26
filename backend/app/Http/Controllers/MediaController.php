@@ -495,14 +495,13 @@ class MediaController extends Controller
     public function favorite(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, [
-            'is_saved' => true,
             'is_favorited' => true,
         ]);
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
             'is_favorited' => true,
-            'is_saved' => true,
+            'is_saved' => (bool) $row->is_saved,
         ]);
     }
 
