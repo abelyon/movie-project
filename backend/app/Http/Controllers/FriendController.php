@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class FriendController extends Controller
 {
@@ -191,9 +192,14 @@ class FriendController extends Controller
         );
 
         // Notify recipient by email when a new friend request is sent.
-        Mail::to($recipient->email)->send(
-            new FriendRequestReceivedMail($recipient, $authUser)
-        );
+        // Email failures should not fail the API request itself.
+        try {
+            Mail::to($recipient->email)->send(
+                new FriendRequestReceivedMail($recipient, $authUser)
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         return response()->json([
             'request' => $friendRequest->load('recipient:id,name,email,public_user_id'),
@@ -221,9 +227,13 @@ class FriendController extends Controller
         $recipient = $friendRequest->recipient()->first();
         if ($requester && $recipient) {
             // Notify original sender that the request was accepted.
-            Mail::to($requester->email)->send(
-                new FriendRequestAcceptedMail($requester, $recipient)
-            );
+            try {
+                Mail::to($requester->email)->send(
+                    new FriendRequestAcceptedMail($requester, $recipient)
+                );
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         return response()->json([
