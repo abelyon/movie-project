@@ -170,8 +170,9 @@ class MediaController extends Controller
             if ($row->is_disliked) {
                 $byKey[$key]['disliked_count']++;
             }
-            // "Wants to watch" is strictly from watchlist intent (saved) only.
-            if ($row->is_saved) {
+            // "Wants to watch" is primarily watchlist intent (saved). Also count
+            // the strong positive combo watched+liked+favorited.
+            if ($row->is_saved || ($row->watched_at !== null && $row->is_liked && $row->is_favorited)) {
                 $byKey[$key]['users'][(int) $row->user_id] = true;
             }
         }
@@ -180,6 +181,9 @@ class MediaController extends Controller
         $groupInterest = collect();
         foreach ($byKey as $key => $item) {
             if ($item['disliked_count'] > 0) {
+                continue;
+            }
+            if (count($item['users']) === 0) {
                 continue;
             }
             $isFullOverlap = count($item['users']) === $participantCount;
