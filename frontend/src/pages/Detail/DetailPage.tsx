@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
-import { useMediaState, useMediaActions, mediaItemFromDetail, useSavedList } from "../../hooks/useMedia";
+import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
 import { ArrowLeft, Bookmark, Clapperboard, Eye, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 import type { MediaItem } from "../../api/types";
@@ -11,7 +11,7 @@ import { previewItemToDetail } from "../../utils/detailPreview";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
-import type { MainLayoutOutletContext } from "../../layout/MainLayout";
+import { getWhoWantsToWatch } from "../../api/userMedia";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
@@ -131,10 +131,6 @@ function DetailPosterBlock({
 type DetailLocationState = { preview?: MediaItem };
 
 const DetailPage = () => {
-  const outletContext = useOutletContext<MainLayoutOutletContext | undefined>();
-  const savedControls = outletContext?.savedControls;
-  const selectedFriendIds = savedControls?.selectedFriendIds ?? [];
-  const withFriendsSaved = selectedFriendIds.length > 0;
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -169,15 +165,21 @@ const DetailPage = () => {
     media_type === "tv" ? "tv" : "movie",
     savedListPreview,
   );
-  const watchTogetherSaved = useSavedList({
-    withFriendsSaved,
-    friendIds: selectedFriendIds,
+  const whoWantsEnabled =
+    !!user &&
+    !Number.isNaN(numericId) &&
+    (media_type === "movie" || media_type === "tv");
+  const whoWants = useQuery({
+    queryKey: ["user", "media", "who-wants-to-watch", media_type, numericId],
+    queryFn: () => getWhoWantsToWatch(numericId, media_type!),
+    staleTime: 30_000,
+    enabled: whoWantsEnabled,
   });
   const friendsOverview = useQuery({
     queryKey: ["friends", "overview"],
     queryFn: getFriendOverview,
     staleTime: 60_000,
-    enabled: withFriendsSaved,
+    enabled: !!user,
   });
 
   if (!media_type || !id)
@@ -230,23 +232,20 @@ const DetailPage = () => {
   const isDisliked = userState?.is_disliked ?? false;
   const isFavorited = userState?.is_favorited ?? false;
   const isWatched = Boolean(userState?.watched_at);
-  const currentWatchTogetherItem = useMemo(
-    () =>
-      (watchTogetherSaved.data ?? []).find(
-        (item) => item.id === numericId && item.media_type === media_type,
-      ),
-    [media_type, numericId, watchTogetherSaved.data],
-  );
-  const wantNames = useMemo(() => {
+  const showWhoWantsToWatch =
+    (whoWants.data?.want_friend_user_ids?.length ?? 0) > 0;
+  const wantChips = useMemo(() => {
+    const ids = whoWants.data?.want_user_ids ?? [];
     const nameMap = new Map<number, string>();
     if (user) nameMap.set(user.id, "You");
     for (const friend of friendsOverview.data?.friends ?? []) {
       nameMap.set(friend.id, friend.name);
     }
-    return (currentWatchTogetherItem?.watch_want_user_ids ?? []).map(
-      (userId) => nameMap.get(userId) ?? `User ${userId}`,
-    );
-  }, [currentWatchTogetherItem?.watch_want_user_ids, friendsOverview.data?.friends, user]);
+    return ids.map((userId) => ({
+      userId,
+      name: nameMap.get(userId) ?? `User ${userId}`,
+    }));
+  }, [whoWants.data?.want_user_ids, friendsOverview.data?.friends, user]);
 
   return (
     <div className="text-white overflow-hidden">
@@ -328,28 +327,28 @@ const DetailPage = () => {
               )
             )}
 
-            {withFriendsSaved && currentWatchTogetherItem && (
+            {showWhoWantsToWatch && whoWants.data && (
               <div className="mt-6 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-4">
                 <h2 className="font-space-grotesk text-sm font-semibold text-neutral-100">
                   Who wants to watch
                 </h2>
                 <p className="mt-1 text-sm text-neutral-300">
-                  {(currentWatchTogetherItem.watch_want_count ?? 0) >= (currentWatchTogetherItem.watch_participant_count ?? 1)
-                    ? "All selected users want to watch this."
-                    : `${currentWatchTogetherItem.watch_want_count ?? 0}/${currentWatchTogetherItem.watch_participant_count ?? 0} selected users want to watch this.`}
+                  {(whoWants.data.watch_want_count ?? 0) >= (whoWants.data.participant_count ?? 1)
+                    ? "Everyone in your group wants to watch this."
+                    : `${whoWants.data.watch_want_count ?? 0}/${whoWants.data.participant_count ?? 0} in your group want to watch this.`}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {wantNames.length ? (
-                    wantNames.map((name) => (
+                  {wantChips.length ? (
+                    wantChips.map(({ userId, name }) => (
                       <span
-                        key={name}
+                        key={userId}
                         className="rounded-2xl border border-neutral-600 bg-neutral-900/60 px-2.5 py-1 text-xs text-neutral-200"
                       >
                         {name}
                       </span>
                     ))
                   ) : (
-                    <span className="text-xs text-neutral-400">No selected users marked interest yet.</span>
+                    <span className="text-xs text-neutral-400">No one marked interest yet.</span>
                   )}
                 </div>
               </div>
