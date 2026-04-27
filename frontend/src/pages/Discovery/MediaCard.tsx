@@ -4,12 +4,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import type { MediaItem } from "../../api/types";
 import { getState, stateKey } from "../../api/userMedia";
-import { Bookmark, Clapperboard, Tv } from "lucide-react";
+import { Bookmark, Clapperboard, Star, Tv } from "lucide-react";
 import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boolean }) => {
+type WatchTogetherMeta = {
+  wantCount: number;
+  participantCount: number;
+  wantedByNames: string[];
+};
+
+const MediaCard = ({
+  item,
+  isSaved = false,
+  watchTogetherMeta,
+}: {
+  item: MediaItem;
+  isSaved?: boolean;
+  watchTogetherMeta?: WatchTogetherMeta;
+}) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -135,6 +149,25 @@ const MediaCard = ({ item, isSaved = false }: { item: MediaItem; isSaved?: boole
           <span className="flex items-center h-9 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-white">
             <Bookmark size={20} strokeWidth={2.5} fill="currentColor" />
           </span>
+        </div>
+      )}
+      {watchTogetherMeta && watchTogetherMeta.participantCount > 0 && (
+        <div className="absolute bottom-0 right-0 p-4 flex flex-col items-start gap-2 pointer-events-none">
+          {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
+            <span
+              title="Everyone wants to watch"
+              className="flex items-center justify-center h-9 min-w-[44px] bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100"
+            >
+              <Star size={20} strokeWidth={2.5} fill="currentColor" />
+            </span>
+          ) : (
+            <span
+              title={`${watchTogetherMeta.wantCount} selected user(s) want to watch`}
+              className="flex items-center justify-center h-9 min-w-[44px] bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-md"
+            >
+              {watchTogetherMeta.wantCount}
+            </span>
+          )}
         </div>
       )}
     </motion.div>

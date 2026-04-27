@@ -14,6 +14,9 @@ export type MediaItem = {
   together_score?: number | null;
   suggestion_pool?: "direct" | "group_interest" | "genre_affinity" | "discovery" | string | null;
   suggestion_badges?: string[];
+  watch_want_count?: number | null;
+  watch_participant_count?: number | null;
+  watch_want_user_ids?: number[];
 };
 
 export type TrendingResponse = {

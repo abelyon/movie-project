@@ -8,12 +8,31 @@ function resolveApiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_BASE_URL;
   let s = typeof raw === "string" ? raw.trim() : "";
   if (!s) {
-    if (import.meta.env.DEV) return "http://127.0.0.1:8000/api";
+    if (import.meta.env.DEV) {
+      // Keep hostnames aligned in local dev (localhost vs 127.0.0.1) so Sanctum session cookies stay stateful.
+      const localHost = window.location.hostname === "localhost" ? "localhost" : "127.0.0.1";
+      return `http://${localHost}:8000/api`;
+    }
     throw new Error(
       "Missing VITE_API_BASE_URL. Set it at build time (e.g. Railway Variables) to your Laravel public URL, with or without /api.",
     );
   }
   s = s.replace(/\/+$/, "");
+  if (import.meta.env.DEV) {
+    try {
+      const parsed = new URL(s);
+      const isLoopbackHost =
+        parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+      const currentIsLoopback =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (isLoopbackHost && currentIsLoopback) {
+        parsed.hostname = window.location.hostname;
+        s = parsed.toString().replace(/\/+$/, "");
+      }
+    } catch {
+      // keep original value if env URL is not parseable
+    }
+  }
   if (!s.endsWith("/api")) {
     s = `${s}/api`;
   }

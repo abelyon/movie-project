@@ -206,6 +206,9 @@ class MediaController extends Controller
                 'together_score' => round($togetherScore, 3),
                 'pool' => $isFullOverlap ? 'direct' : 'group_interest',
                 'badges' => $badges,
+                'watch_want_count' => count($item['users']),
+                'watch_participant_count' => $participantCount,
+                'watch_want_user_ids' => array_keys($item['users']),
             ];
 
             if ($isFullOverlap) {
@@ -400,6 +403,9 @@ class MediaController extends Controller
                     $item['together_score'] = $row['together_score'] ?? null;
                     $item['suggestion_pool'] = $row['pool'] ?? null;
                     $item['suggestion_badges'] = $row['badges'] ?? [];
+                    $item['watch_want_count'] = $row['watch_want_count'] ?? null;
+                    $item['watch_participant_count'] = $row['watch_participant_count'] ?? null;
+                    $item['watch_want_user_ids'] = $row['watch_want_user_ids'] ?? [];
                 }
                 $results[] = $item;
             }
