@@ -70,3 +70,8 @@ export async function denyFriendRequest(requestId: number): Promise<FriendReques
   );
   return data.request;
 }
+
+export async function removeFriend(friendId: number): Promise<void> {
+  await getCsrfCookie();
+  await api.delete(`/friends/${friendId}`);
+}

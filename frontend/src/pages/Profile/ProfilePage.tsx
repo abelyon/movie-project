@@ -7,6 +7,7 @@ import {
   acceptFriendRequest,
   denyFriendRequest,
   getFriendOverview,
+  removeFriend,
   searchUser,
   sendFriendRequest,
 } from "../../api/friends";
@@ -84,6 +85,13 @@ const ProfilePage = () => {
 
   const denyMutation = useMutation({
     mutationFn: denyFriendRequest,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["friends", "overview"] });
+    },
+  });
+
+  const removeFriendMutation = useMutation({
+    mutationFn: removeFriend,
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["friends", "overview"] });
     },
@@ -345,6 +353,14 @@ const ProfilePage = () => {
                   <div key={friend.id} className="rounded-2xl border border-neutral-700/60 px-3 py-2">
                     <p className="font-space-grotesk text-sm text-neutral-100">{friend.name}</p>
                     <p className="text-xs text-neutral-500">{friend.public_user_id}</p>
+                    <button
+                      type="button"
+                      onClick={() => void removeFriendMutation.mutateAsync(friend.id)}
+                      disabled={removeFriendMutation.isPending}
+                      className="mt-2 rounded-xl border border-red-400/40 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {removeFriendMutation.isPending ? "Removing..." : "Remove"}
+                    </button>
                   </div>
                 ))
               )}
