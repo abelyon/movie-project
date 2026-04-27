@@ -81,6 +81,29 @@ export async function updateProfile(input: { name: string }): Promise<User> {
   return data.user;
 }
 
+export async function forgotPassword(email: string): Promise<void> {
+  await getCsrfCookie();
+  await api.post(
+    `${LARAVEL_BASE}/forgot-password`,
+    { email },
+    { headers: xsrfHeader() },
+  );
+}
+
+export async function resetPassword(input: {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}): Promise<void> {
+  await getCsrfCookie();
+  await api.post(
+    `${LARAVEL_BASE}/reset-password`,
+    input,
+    { headers: xsrfHeader() },
+  );
+}
+
 export async function getEmailVerificationStatus(): Promise<{ verified: boolean }> {
   const { data } = await api.get<{ verified: boolean }>("/email/verification-status");
   return data;
