@@ -133,6 +133,16 @@ class MediaController extends Controller
             ) {
                 continue;
             }
+            // Ignore "only watched" rows. Keep watched titles only when there is
+            // explicit intent (saved/liked/disliked) attached to that title.
+            if (
+                $row->watched_at !== null &&
+                !$row->is_saved &&
+                !$row->is_liked &&
+                !$row->is_disliked
+            ) {
+                continue;
+            }
 
             $key = "{$row->type}-{$row->tmdb_id}";
             if (!isset($byKey[$key])) {
