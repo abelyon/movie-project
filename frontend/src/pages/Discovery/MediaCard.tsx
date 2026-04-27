@@ -27,6 +27,11 @@ const MediaCard = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const everyoneWantsToWatch = Boolean(
+    watchTogetherMeta &&
+    watchTogetherMeta.participantCount > 0 &&
+    watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount,
+  );
 
   const prefetchDetail = () => {
     const mt = item.media_type;
@@ -97,7 +102,9 @@ const MediaCard = ({
       onMouseEnter={prefetchForDetail}
       onFocus={prefetchForDetail}
       onTouchStart={prefetchForDetail}
-      className="relative m-auto flex flex-col items-center justify-center rounded-4xl cursor-pointer aspect-2/3 w-full"
+      className={`relative m-auto flex flex-col items-center justify-center rounded-4xl cursor-pointer aspect-2/3 w-full ${
+        everyoneWantsToWatch ? "border-b-2 border-emerald-400" : ""
+      }`}
       initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: false, amount: 0.15, margin: "0px 0px -40px 0px" }}
