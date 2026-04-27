@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, LogOut, Mail, UserPlus, UserRound, Users, X } from "lucide-react";
@@ -10,18 +10,26 @@ import {
   searchUser,
   sendFriendRequest,
 } from "../../api/friends";
+import { updateProfile } from "../../api/auth";
 
 const cardClass =
   "rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-5 backdrop-blur-md";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, refetchUser } = useAuth();
   const qc = useQueryClient();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState("");
   const [searchUserId, setSearchUserId] = useState("");
   const [searchError, setSearchError] = useState("");
+  const [nameInput, setNameInput] = useState(user?.name ?? "");
+  const [nameError, setNameError] = useState("");
+  const [nameSaved, setNameSaved] = useState("");
+
+  useEffect(() => {
+    setNameInput(user?.name ?? "");
+  }, [user?.name]);
 
   const joinedAt = useMemo(() => {
     if (!user?.created_at) return "Unknown";
@@ -81,6 +89,19 @@ const ProfilePage = () => {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: async () => {
+      setNameSaved("Name updated.");
+      setNameError("");
+      await refetchUser();
+    },
+    onError: () => {
+      setNameSaved("");
+      setNameError("Could not update name. Use 3-255 characters.");
+    },
+  });
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearchError("");
@@ -137,6 +158,42 @@ const ProfilePage = () => {
           <div className="rounded-3xl border-t border-neutral-600 bg-neutral-900/70 p-4">
             <p className="font-space-grotesk text-xs uppercase tracking-wide text-neutral-500">Joined</p>
             <p className="mt-1 font-space-grotesk text-neutral-100">{joinedAt}</p>
+          </div>
+
+          <div className="rounded-3xl border-t border-neutral-600 bg-neutral-900/70 p-4">
+            <p className="font-space-grotesk text-xs uppercase tracking-wide text-neutral-500">Name</p>
+            <form
+              className="mt-2 flex flex-col gap-2 sm:flex-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setNameSaved("");
+                setNameError("");
+                const trimmed = nameInput.trim();
+                if (trimmed.length < 3) {
+                  setNameError("Name must be at least 3 characters.");
+                  return;
+                }
+                void updateProfileMutation.mutateAsync({
+                  name: trimmed,
+                });
+              }}
+            >
+              <input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Your display name"
+                className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 font-space-grotesk text-sm text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
+              />
+              <button
+                type="submit"
+                disabled={updateProfileMutation.isPending}
+                className="rounded-2xl border-t border-neutral-500 bg-neutral-200 px-4 py-2 font-space-grotesk text-sm font-semibold text-neutral-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {updateProfileMutation.isPending ? "Saving..." : "Save"}
+              </button>
+            </form>
+            {nameError && <p className="mt-2 text-xs text-red-300">{nameError}</p>}
+            {nameSaved && <p className="mt-2 text-xs text-emerald-300">{nameSaved}</p>}
           </div>
         </div>
       </div>

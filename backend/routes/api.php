@@ -5,10 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\TmdbController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\UserProfileController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+Route::patch('/user/profile', [UserProfileController::class, 'update'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::get('/', [MediaController::class, 'index']);
