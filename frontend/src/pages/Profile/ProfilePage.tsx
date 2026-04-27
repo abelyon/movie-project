@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, LogOut, Mail, UserPlus, UserRound, Users, X } from "lucide-react";
+import { Check, LogOut, Mail, UserPlus, Users, X } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   acceptFriendRequest,
@@ -16,6 +16,7 @@ import {
   resendVerificationEmail,
   updateProfile,
 } from "../../api/auth";
+import { userNameInitial } from "../../utils/userDisplay";
 
 const cardClass =
   "rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-5 backdrop-blur-md";
@@ -36,6 +37,8 @@ const ProfilePage = () => {
   useEffect(() => {
     setNameInput(user?.name ?? "");
   }, [user?.name]);
+
+  const avatarInitial = useMemo(() => userNameInitial(user?.name), [user?.name]);
 
   const joinedAt = useMemo(() => {
     if (!user?.created_at) return "Unknown";
@@ -169,8 +172,11 @@ const ProfilePage = () => {
             <p className="text-sm uppercase tracking-wide text-neutral-400">Profile</p>
             <h1 className="mt-1 text-3xl font-space-grotesk font-bold">{user.name}</h1>
           </div>
-          <div className="rounded-3xl border-t border-neutral-600 bg-neutral-900/70 p-3 text-neutral-200">
-            <UserRound size={22} strokeWidth={2.5} />
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border-t border-neutral-600 bg-neutral-900/70 font-space-grotesk text-xl font-semibold text-neutral-100"
+            aria-hidden
+          >
+            {avatarInitial}
           </div>
         </div>
 

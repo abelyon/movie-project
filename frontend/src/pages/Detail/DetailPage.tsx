@@ -328,7 +328,13 @@ const DetailPage = () => {
             )}
 
             {showWhoWantsToWatch && whoWants.data && (
-              <div className="mt-6 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-4">
+              <div
+                className={`mt-6 rounded-3xl border-t bg-neutral-800/80 p-4 ${
+                  (whoWants.data.watch_want_count ?? 0) >= (whoWants.data.participant_count ?? 1)
+                    ? "border-white"
+                    : "border-neutral-600"
+                }`}
+              >
                 <h2 className="font-space-grotesk text-sm font-semibold text-neutral-100">
                   Who wants to watch
                 </h2>

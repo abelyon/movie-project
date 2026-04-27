@@ -163,7 +163,7 @@ const MediaCard = ({
           {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
             <span
               title="Everyone wants to watch"
-              className="flex items-center justify-center h-9 min-w-[44px] bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100"
+              className="flex items-center justify-center h-9 min-w-[44px] bg-neutral-800/80 border-t border-white backdrop-blur-md px-3 py-2 rounded-4xl text-neutral-100"
             >
               <Star size={20} strokeWidth={2.5} fill="currentColor" />
             </span>
