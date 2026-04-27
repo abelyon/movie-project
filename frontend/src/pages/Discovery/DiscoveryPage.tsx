@@ -167,10 +167,7 @@ const DiscoveryPage = () => {
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
       {isShowingSearchResults && !isSearchLoading && visibleResults.length === 0 && (
         <div className="px-5 pt-2">
-          <p
-            role="alert"
-            className="rounded-2xl border border-amber-400/30 bg-amber-500/15 px-3 py-2 text-sm text-amber-200"
-          >
+          <p role="alert" className="text-sm text-neutral-400">
             No results found for "{trimmedQuery}". Try another title or clear some filters.
           </p>
         </div>
