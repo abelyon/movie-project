@@ -80,3 +80,18 @@ export async function updateProfile(input: { name: string }): Promise<User> {
   );
   return data.user;
 }
+
+export async function getEmailVerificationStatus(): Promise<{ verified: boolean }> {
+  const { data } = await api.get<{ verified: boolean }>("/email/verification-status");
+  return data;
+}
+
+export async function resendVerificationEmail(): Promise<{ sent: boolean; already_verified?: boolean }> {
+  await getCsrfCookie();
+  const { data } = await api.post<{ sent: boolean; already_verified?: boolean }>(
+    "/email/verification-notification",
+    undefined,
+    { headers: xsrfHeader() },
+  );
+  return data;
+}

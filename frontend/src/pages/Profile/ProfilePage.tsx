@@ -11,7 +11,11 @@ import {
   searchUser,
   sendFriendRequest,
 } from "../../api/friends";
-import { updateProfile } from "../../api/auth";
+import {
+  getEmailVerificationStatus,
+  resendVerificationEmail,
+  updateProfile,
+} from "../../api/auth";
 
 const cardClass =
   "rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-5 backdrop-blur-md";
@@ -27,6 +31,7 @@ const ProfilePage = () => {
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [nameError, setNameError] = useState("");
   const [nameSaved, setNameSaved] = useState("");
+  const [verifyMessage, setVerifyMessage] = useState("");
 
   useEffect(() => {
     setNameInput(user?.name ?? "");
@@ -59,6 +64,12 @@ const ProfilePage = () => {
   const friendsOverview = useQuery({
     queryKey: ["friends", "overview"],
     queryFn: getFriendOverview,
+  });
+  const emailVerificationStatus = useQuery({
+    queryKey: ["auth", "email-verification-status"],
+    queryFn: getEmailVerificationStatus,
+    enabled: !!user,
+    staleTime: 30_000,
   });
 
   const searchMutation = useMutation({
@@ -109,6 +120,20 @@ const ProfilePage = () => {
       setNameError("Could not update name. Use 3-255 characters.");
     },
   });
+  const resendVerificationMutation = useMutation({
+    mutationFn: resendVerificationEmail,
+    onSuccess: (result) => {
+      setVerifyMessage(
+        result.already_verified
+          ? "Your email is already verified."
+          : "Verification email sent. Check your inbox.",
+      );
+      void emailVerificationStatus.refetch();
+    },
+    onError: () => {
+      setVerifyMessage("Could not send verification email right now.");
+    },
+  });
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,6 +173,29 @@ const ProfilePage = () => {
             <UserRound size={22} strokeWidth={2.5} />
           </div>
         </div>
+
+        {!emailVerificationStatus.data?.verified && (
+          <div className="mt-4 rounded-3xl border border-amber-400/30 bg-amber-500/10 p-4">
+            <p className="font-space-grotesk text-sm font-semibold text-amber-200">
+              Verify your email
+            </p>
+            <p className="mt-1 text-sm text-amber-100/90">
+              You can keep using the app, but verifying your email is recommended for account safety.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setVerifyMessage("");
+                void resendVerificationMutation.mutateAsync();
+              }}
+              disabled={resendVerificationMutation.isPending}
+              className="mt-3 rounded-2xl border-t border-amber-300 bg-amber-200 px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resendVerificationMutation.isPending ? "Sending..." : "Resend verification email"}
+            </button>
+            {verifyMessage && <p className="mt-2 text-xs text-amber-100">{verifyMessage}</p>}
+          </div>
+        )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-3xl border-t border-neutral-600 bg-neutral-900/70 p-4">
