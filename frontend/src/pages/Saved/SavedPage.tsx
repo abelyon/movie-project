@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { stateKey } from "../../api/userMedia";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
+import { getFriendOverview } from "../../api/friends";
+import { useAuth } from "../../contexts/AuthContext";
 import MediaCard from "../Discovery/MediaCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
@@ -31,11 +34,17 @@ const SavedPage = () => {
     showFriendsSocial,
     withFriendsSaved,
   } = savedControls;
+  const { user } = useAuth();
 
   const { data: saved, isLoading, isError, error } = useSavedList({
     withFriendsSaved,
     withFriendsSocial: showFriendsSocial,
     friendIds: selectedFriendIds,
+  });
+  const friendsOverview = useQuery({
+    queryKey: ["friends", "overview"],
+    queryFn: getFriendOverview,
+    staleTime: 60_000,
   });
 
   const filteredSaved = useMemo(
@@ -90,6 +99,14 @@ const SavedPage = () => {
   }, [filteredSaved, sortBy]);
 
   const { data: stateMap } = useMediaStateMap(processedSaved);
+  const watchTogetherNameMap = useMemo(() => {
+    const map = new Map<number, string>();
+    if (user) map.set(user.id, "You");
+    for (const friend of friendsOverview.data?.friends ?? []) {
+      map.set(friend.id, friend.name);
+    }
+    return map;
+  }, [friendsOverview.data?.friends, user]);
   const visibleSaved = useMemo(
     () =>
       processedSaved.filter((item) => {
@@ -130,7 +147,21 @@ const SavedPage = () => {
       ) : (
         <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
           {visibleSaved.map((item) => (
-            <MediaCard key={`${item.media_type}-${item.id}`} item={item} />
+            <MediaCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              watchTogetherMeta={
+                withFriendsSaved && typeof item.watch_participant_count === "number"
+                  ? {
+                      wantCount: item.watch_want_count ?? 0,
+                      participantCount: item.watch_participant_count,
+                      wantedByNames: (item.watch_want_user_ids ?? []).map(
+                        (userId) => watchTogetherNameMap.get(userId) ?? `User ${userId}`,
+                      ),
+                    }
+                  : undefined
+              }
+            />
           ))}
         </div>
       )}

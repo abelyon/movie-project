@@ -294,7 +294,7 @@ const MainLayout = () => {
               <AnimatePresence>
                 {dShowFilter && (
                   <motion.div
-                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64 md:max-h-none md:overflow-visible"
+                    className="fixed inset-x-4 bottom-24 z-[70] rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-[30rem]"
                     initial={{ opacity: 0, x: 10, scale: 0.98 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -315,47 +315,57 @@ const MainLayout = () => {
                         </button>
                       ))}
                     </div>
-                    <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-min-rating">Min rating</label>
-                    <select
-                      id="layout-min-rating"
-                      value={dMinRating}
-                      onChange={(e) => setDMinRating(Number.parseInt(e.target.value, 10) as MinRating)}
-                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                    >
-                      <option value={0}>Any</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option>
-                    </select>
-                    <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-watch-filter">Watch status</label>
-                    <select
-                      id="layout-watch-filter"
-                      value={dWatchedFilter}
-                      onChange={(e) => setDWatchedFilter(e.target.value as WatchFilter)}
-                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                    >
-                      <option value="all">All</option>
-                      <option value="watched">Watched</option>
-                      <option value="unwatched">Unwatched</option>
-                    </select>
-                    <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-year-from">Year from</label>
-                    <input
-                      id="layout-year-from"
-                      inputMode="numeric"
-                      value={dYearFrom}
-                      onChange={(e) => setDYearFrom(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
-                      placeholder="e.g. 2018"
-                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none"
-                    />
-                    <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-favorite-filter">Favorite status</label>
-                    <select
-                      id="layout-favorite-filter"
-                      value={dFavoriteFilter}
-                      onChange={(e) => setDFavoriteFilter(e.target.value as FavoriteFilter)}
-                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                    >
-                      <option value="all">All</option>
-                      <option value="favorited">Favorited</option>
-                    </select>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div>
+                        <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-min-rating">Min rating</label>
+                        <select
+                          id="layout-min-rating"
+                          value={dMinRating}
+                          onChange={(e) => setDMinRating(Number.parseInt(e.target.value, 10) as MinRating)}
+                          className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                        >
+                          <option value={0}>Any</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-watch-filter">Watch status</label>
+                        <select
+                          id="layout-watch-filter"
+                          value={dWatchedFilter}
+                          onChange={(e) => setDWatchedFilter(e.target.value as WatchFilter)}
+                          className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                        >
+                          <option value="all">All</option>
+                          <option value="watched">Watched</option>
+                          <option value="unwatched">Unwatched</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-year-from">Year from</label>
+                        <input
+                          id="layout-year-from"
+                          inputMode="numeric"
+                          value={dYearFrom}
+                          onChange={(e) => setDYearFrom(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
+                          placeholder="e.g. 2018"
+                          className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-favorite-filter">Favorite status</label>
+                        <select
+                          id="layout-favorite-filter"
+                          value={dFavoriteFilter}
+                          onChange={(e) => setDFavoriteFilter(e.target.value as FavoriteFilter)}
+                          className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                        >
+                          <option value="all">All</option>
+                          <option value="favorited">Favorited</option>
+                        </select>
+                      </div>
+                    </div>
                     <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
-                    <div className="mt-2 flex max-h-40 flex-wrap gap-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="mt-2 flex flex-wrap gap-1">
                       {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
                         const active = dSelectedGenreIds.includes(genre.id);
                         return (
@@ -370,13 +380,22 @@ const MainLayout = () => {
                         );
                       })}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
-                      className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
-                    >
-                      Clear filters
-                    </button>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
+                        className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
+                      >
+                        Clear filters
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDShowFilter(false)}
+                        className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-white"
+                      >
+                        Apply
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -395,7 +414,7 @@ const MainLayout = () => {
               <AnimatePresence>
                 {dShowSort && (
                   <motion.div
-                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48 md:max-h-none md:overflow-visible"
+                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48"
                     initial={{ opacity: 0, x: 10, scale: 0.98 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -456,7 +475,7 @@ const MainLayout = () => {
             <AnimatePresence>
               {sShowFilter && (
                 <motion.div
-                  className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64 md:max-h-none md:overflow-visible"
+                  className="fixed inset-x-4 bottom-24 z-[70] rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-[30rem]"
                   initial={{ opacity: 0, x: 10, scale: 0.98 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -470,35 +489,45 @@ const MainLayout = () => {
                       </button>
                     ))}
                   </div>
-                  <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-min-rating">Min rating</label>
-                  <select id="saved-layout-min-rating" value={sMinRating} onChange={(e) => setSMinRating(Number.parseInt(e.target.value, 10) as MinRating)} className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none">
-                    <option value={0}>Any</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option>
-                  </select>
-                  <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-watch-filter">Watch status</label>
-                  <select
-                    id="saved-layout-watch-filter"
-                    value={sWatchedFilter}
-                    onChange={(e) => setSWatchedFilter(e.target.value as WatchFilter)}
-                    className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                  >
-                    <option value="all">All</option>
-                    <option value="watched">Watched</option>
-                    <option value="unwatched">Unwatched</option>
-                  </select>
-                  <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-year-from">Year from</label>
-                  <input id="saved-layout-year-from" inputMode="numeric" value={sYearFrom} onChange={(e) => setSYearFrom(e.target.value.replace(/[^\d]/g, "").slice(0, 4))} placeholder="e.g. 2018" className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none" />
-                  <label className="mt-3 block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-favorite-filter">Favorite status</label>
-                  <select
-                    id="saved-layout-favorite-filter"
-                    value={sFavoriteFilter}
-                    onChange={(e) => setSFavoriteFilter(e.target.value as FavoriteFilter)}
-                    className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                  >
-                    <option value="all">All</option>
-                    <option value="favorited">Favorited</option>
-                  </select>
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-min-rating">Min rating</label>
+                      <select id="saved-layout-min-rating" value={sMinRating} onChange={(e) => setSMinRating(Number.parseInt(e.target.value, 10) as MinRating)} className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none">
+                        <option value={0}>Any</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-watch-filter">Watch status</label>
+                      <select
+                        id="saved-layout-watch-filter"
+                        value={sWatchedFilter}
+                        onChange={(e) => setSWatchedFilter(e.target.value as WatchFilter)}
+                        className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                      >
+                        <option value="all">All</option>
+                        <option value="watched">Watched</option>
+                        <option value="unwatched">Unwatched</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-year-from">Year from</label>
+                      <input id="saved-layout-year-from" inputMode="numeric" value={sYearFrom} onChange={(e) => setSYearFrom(e.target.value.replace(/[^\d]/g, "").slice(0, 4))} placeholder="e.g. 2018" className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="saved-layout-favorite-filter">Favorite status</label>
+                      <select
+                        id="saved-layout-favorite-filter"
+                        value={sFavoriteFilter}
+                        onChange={(e) => setSFavoriteFilter(e.target.value as FavoriteFilter)}
+                        className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                      >
+                        <option value="all">All</option>
+                        <option value="favorited">Favorited</option>
+                      </select>
+                    </div>
+                  </div>
                   <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
-                  <div className="mt-2 flex max-h-40 flex-wrap gap-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="mt-2 flex flex-wrap gap-1">
                     {(sFilterType === "tv" ? TV_GENRES : sFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
                       const active = sSelectedGenreIds.includes(genre.id);
                       return (
@@ -508,9 +537,18 @@ const MainLayout = () => {
                       );
                     })}
                   </div>
-                  <button type="button" onClick={() => { setSFilterType("all"); setSMinRating(0); setSWatchedFilter("all"); setSFavoriteFilter("all"); setSYearFrom(""); setSSelectedGenreIds([]); }} className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
-                    Clear filters
-                  </button>
+                  <div className="mt-3 flex gap-2">
+                    <button type="button" onClick={() => { setSFilterType("all"); setSMinRating(0); setSWatchedFilter("all"); setSFavoriteFilter("all"); setSYearFrom(""); setSSelectedGenreIds([]); }} className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
+                      Clear filters
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSShowFilter(false)}
+                      className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-white"
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -524,7 +562,7 @@ const MainLayout = () => {
           <div className="relative">
             <AnimatePresence>
               {sShowSort && (
-                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48 md:max-h-none md:overflow-visible" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
                   {[
                     { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
                     { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
@@ -546,7 +584,7 @@ const MainLayout = () => {
           <div className="relative">
             <AnimatePresence>
               {sShowFriends && (
-                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64 md:max-h-none md:overflow-visible" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
                   {friendsLoading ? (
                     <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {Array.from({ length: 3 }).map((_, idx) => (
@@ -619,21 +657,12 @@ const MainLayout = () => {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              setShowFriendsSocial((prev) => {
-                const next = !prev;
-                if (next) setSelectedFriendIds([]);
-                return next;
-              })
-            }
-            className={`${floatingActionButtonBaseClass} ${showFriendsSocial ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+          <div
+            className={`${floatingActionButtonBaseClass} pointer-events-none opacity-0`}
+            aria-hidden
           >
-            <AnimatedNavIcon>
-              <User size={24} strokeWidth={2.5} />
-            </AnimatedNavIcon>
-          </button>
+            <User size={24} strokeWidth={2.5} />
+          </div>
         </div>
       )}
 
