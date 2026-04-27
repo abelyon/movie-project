@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\TmdbController;
 use App\Http\Controllers\MediaController;
@@ -11,6 +12,31 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 Route::patch('/user/profile', [UserProfileController::class, 'update'])->middleware('auth:sanctum');
+Route::get('/email/verification-status', function (Request $request) {
+    return response()->json([
+        'verified' => (bool) $request->user()?->hasVerifiedEmail(),
+    ]);
+})->middleware('auth:sanctum');
+Route::post('/email/verification-notification', function (Request $request) {
+    if ($request->user()?->hasVerifiedEmail()) {
+        return response()->json(['sent' => false, 'already_verified' => true]);
+    }
+
+    $request->user()->sendEmailVerificationNotification();
+    return response()->json(['sent' => true]);
+})->middleware(['auth:sanctum', 'throttle:6,1']);
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    if (!$request->user()->hasVerifiedEmail()) {
+        $request->fulfill();
+    }
+
+    $frontendUrl = rtrim((string) env('FRONTEND_URL', ''), '/');
+    if ($frontendUrl !== '') {
+        return redirect()->away($frontendUrl.'/profile?email_verified=1');
+    }
+
+    return response()->json(['verified' => true]);
+})->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])->name('verification.verify');
 
 Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::get('/', [MediaController::class, 'index']);
