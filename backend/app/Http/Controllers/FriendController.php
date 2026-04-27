@@ -253,4 +253,29 @@ class FriendController extends Controller
             ]),
         ]);
     }
+
+    public function remove(Request $request, User $friend): JsonResponse
+    {
+        $authUser = $request->user();
+        if ($friend->id === $authUser->id) {
+            throw ValidationException::withMessages([
+                'friend' => 'You cannot remove yourself.',
+            ]);
+        }
+
+        FriendRequest::query()
+            ->where('status', 'accepted')
+            ->where(function ($q) use ($authUser, $friend): void {
+                $q->where(function ($pair) use ($authUser, $friend): void {
+                    $pair->where('requester_id', $authUser->id)
+                        ->where('recipient_id', $friend->id);
+                })->orWhere(function ($pair) use ($authUser, $friend): void {
+                    $pair->where('requester_id', $friend->id)
+                        ->where('recipient_id', $authUser->id);
+                });
+            })
+            ->delete();
+
+        return response()->json(['removed' => true]);
+    }
 }

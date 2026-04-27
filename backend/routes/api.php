@@ -33,6 +33,7 @@ Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
 Route::middleware('auth:sanctum')->prefix('friends')->group(function () {
     Route::get('/', [FriendController::class, 'index']);
     Route::get('/search', [FriendController::class, 'search']);
+    Route::delete('/{friend}', [FriendController::class, 'remove']);
     Route::post('/requests', [FriendController::class, 'send']);
     Route::post('/requests/{friendRequest}/accept', [FriendController::class, 'accept']);
     Route::post('/requests/{friendRequest}/deny', [FriendController::class, 'deny']);
