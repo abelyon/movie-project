@@ -162,6 +162,16 @@ const DiscoveryPage = () => {
       )}
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
+      {isShowingSearchResults && !isSearchLoading && visibleResults.length === 0 && (
+        <div className="px-5 pt-2">
+          <p
+            role="alert"
+            className="rounded-2xl border border-amber-400/30 bg-amber-500/15 px-3 py-2 text-sm text-amber-200"
+          >
+            No results found for "{trimmedQuery}". Try another title or clear some filters.
+          </p>
+        </div>
+      )}
 
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
         {visibleResults.map((item) => (

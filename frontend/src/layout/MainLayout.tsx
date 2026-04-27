@@ -294,7 +294,7 @@ const MainLayout = () => {
               <AnimatePresence>
                 {dShowFilter && (
                   <motion.div
-                    className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
+                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64 md:max-h-none md:overflow-visible"
                     initial={{ opacity: 0, x: 10, scale: 0.98 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -395,7 +395,7 @@ const MainLayout = () => {
               <AnimatePresence>
                 {dShowSort && (
                   <motion.div
-                    className="absolute right-full bottom-0 z-[70] mr-2 w-48 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md"
+                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48 md:max-h-none md:overflow-visible"
                     initial={{ opacity: 0, x: 10, scale: 0.98 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -456,7 +456,7 @@ const MainLayout = () => {
             <AnimatePresence>
               {sShowFilter && (
                 <motion.div
-                  className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md"
+                  className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64 md:max-h-none md:overflow-visible"
                   initial={{ opacity: 0, x: 10, scale: 0.98 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 10, scale: 0.98 }}
@@ -524,7 +524,7 @@ const MainLayout = () => {
           <div className="relative">
             <AnimatePresence>
               {sShowSort && (
-                <motion.div className="absolute right-full bottom-0 z-[70] mr-2 w-48 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48 md:max-h-none md:overflow-visible" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
                   {[
                     { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
                     { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
@@ -546,7 +546,7 @@ const MainLayout = () => {
           <div className="relative">
             <AnimatePresence>
               {sShowFriends && (
-                <motion.div className="absolute right-full bottom-0 z-[70] mr-2 w-64 rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64 md:max-h-none md:overflow-visible" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
                   {friendsLoading ? (
                     <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {Array.from({ length: 3 }).map((_, idx) => (
