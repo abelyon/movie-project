@@ -55,15 +55,24 @@ class FriendController extends Controller
     public function search(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'user_id' => ['required', 'string', 'max:16'],
+            'query' => ['required', 'string', 'max:80'],
         ]);
 
         $authUser = $request->user();
-        $targetUserId = strtoupper(trim($validated['user_id']));
+        $rawQuery = trim($validated['query']);
+        $targetUserId = strtoupper($rawQuery);
+        $lowerQuery = mb_strtolower($rawQuery);
 
         $target = User::query()
             ->select(['id', 'name', 'email', 'public_user_id'])
-            ->where('public_user_id', $targetUserId)
+            ->where(function ($q) use ($targetUserId, $rawQuery): void {
+                $q->where('public_user_id', $targetUserId)
+                    ->orWhere('name', 'like', '%' . $rawQuery . '%');
+            })
+            ->orderByRaw('CASE WHEN public_user_id = ? THEN 0 ELSE 1 END', [$targetUserId])
+            ->orderByRaw('CASE WHEN LOWER(name) = ? THEN 0 ELSE 1 END', [$lowerQuery])
+            ->orderByRaw('CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END', [$lowerQuery . '%'])
+            ->orderBy('name')
             ->first();
 
         if (!$target || $target->id === $authUser->id) {

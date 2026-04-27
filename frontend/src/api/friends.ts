@@ -40,9 +40,9 @@ export async function getFriendOverview(): Promise<FriendIndexResponse> {
   return data;
 }
 
-export async function searchUserByPublicId(userId: string): Promise<FriendSearchResponse> {
+export async function searchUser(query: string): Promise<FriendSearchResponse> {
   const { data } = await api.get<FriendSearchResponse>("/friends/search", {
-    params: { user_id: userId },
+    params: { query },
   });
   return data;
 }

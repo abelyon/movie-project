@@ -127,6 +127,9 @@ const DiscoveryPage = () => {
 
   const { data: stateMap } = useMediaStateMap(results);
   const { data: savedList } = useSavedList();
+  const savedBadgeCacheRef = useRef<Record<string, boolean>>({});
+  const hasStateMap = stateMap !== undefined;
+  const hasSavedList = savedList !== undefined;
   const savedSet = useMemo(
     () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
     [savedList],
@@ -177,7 +180,11 @@ const DiscoveryPage = () => {
         {visibleResults.map((item) => (
           (() => {
             const key = stateKey(item.id, item.media_type);
-            const isSaved = (stateMap?.[key]?.is_saved ?? false) || savedSet.has(key);
+            const savedFromSources = Boolean(stateMap?.[key]?.is_saved) || savedSet.has(key);
+            const prevSaved = savedBadgeCacheRef.current[key] ?? false;
+            const canFinalizeFalse = hasStateMap && hasSavedList;
+            const isSaved = savedFromSources || (!canFinalizeFalse && prevSaved);
+            savedBadgeCacheRef.current[key] = isSaved;
             return (
           <MediaCard
             key={`${item.media_type}-${item.id}`}

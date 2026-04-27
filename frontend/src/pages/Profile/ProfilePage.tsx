@@ -7,7 +7,7 @@ import {
   acceptFriendRequest,
   denyFriendRequest,
   getFriendOverview,
-  searchUserByPublicId,
+  searchUser,
   sendFriendRequest,
 } from "../../api/friends";
 
@@ -53,7 +53,7 @@ const ProfilePage = () => {
   });
 
   const searchMutation = useMutation({
-    mutationFn: searchUserByPublicId,
+    mutationFn: searchUser,
     onError: () => setSearchError("Could not search user right now."),
   });
 
@@ -84,9 +84,9 @@ const ProfilePage = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearchError("");
-    const trimmed = searchUserId.trim().toUpperCase();
+    const trimmed = searchUserId.trim();
     if (!trimmed) {
-      setSearchError("Enter a user ID.");
+      setSearchError("Enter a user ID or name.");
       return;
     }
     await searchMutation.mutateAsync(trimmed);
@@ -144,14 +144,14 @@ const ProfilePage = () => {
       <div className={`${cardClass} mt-4`}>
         <h2 className="font-space-grotesk text-lg font-semibold">Friends</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Search by user ID and send friend requests.
+          Search by user ID or name and send friend requests.
         </p>
 
         <form onSubmit={handleSearch} className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input
             value={searchUserId}
             onChange={(e) => setSearchUserId(e.target.value)}
-            placeholder="Example: USR-1A2B3C"
+            placeholder="Example: USR-1A2B3C or Abel"
             className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2.5 font-space-grotesk text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
           />
           <button
@@ -222,7 +222,7 @@ const ProfilePage = () => {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-neutral-400">No user found for this ID.</p>
+              <p className="text-sm text-neutral-400">No user found for this ID or name.</p>
             )}
           </div>
         )}

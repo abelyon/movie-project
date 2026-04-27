@@ -160,7 +160,8 @@ class MediaController extends Controller
             if ($row->is_disliked) {
                 $byKey[$key]['disliked_count']++;
             }
-            if ($row->is_saved || $row->is_liked) {
+            // "Wants to watch" is strictly from watchlist intent (saved) only.
+            if ($row->is_saved) {
                 $byKey[$key]['users'][(int) $row->user_id] = true;
             }
         }
