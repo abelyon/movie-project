@@ -70,3 +70,13 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
 }
+
+export async function updateProfile(input: { name: string }): Promise<User> {
+  await getCsrfCookie();
+  const { data } = await api.patch<{ user: User }>(
+    "/user/profile",
+    input,
+    { headers: xsrfHeader() },
+  );
+  return data.user;
+}
