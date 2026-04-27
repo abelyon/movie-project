@@ -94,6 +94,11 @@ class FriendController extends Controller
             ->latest('id')
             ->first();
 
+        // A denied request should not block creating a new request.
+        if ($relation && $relation->status === 'denied') {
+            $relation = null;
+        }
+
         return response()->json([
             'user' => $target,
             'relationship' => $relation ? [
