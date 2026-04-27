@@ -13,6 +13,23 @@ export type UserMediaState = {
 export const stateKey = (tmdbId: number, mediaType: string) =>
   `${mediaType}-${tmdbId}`;
 
+export type WhoWantsToWatchResponse = {
+  want_user_ids: number[];
+  want_friend_user_ids: number[];
+  participant_count: number;
+  watch_want_count: number;
+};
+
+export async function getWhoWantsToWatch(
+  tmdbId: number,
+  mediaType: string,
+): Promise<WhoWantsToWatchResponse> {
+  const { data } = await api.get<WhoWantsToWatchResponse>("/user/media/who-wants-to-watch", {
+    params: { tmdb_id: tmdbId, media_type: mediaType },
+  });
+  return data;
+}
+
 export async function getState(
   items: { id: number; media_type: string }[],
 ): Promise<Record<string, UserMediaState>> {

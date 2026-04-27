@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FriendRequest;
 use App\Models\Media;
+use App\Models\User;
 use App\Http\Requests\MediaIdRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -280,6 +281,25 @@ class MediaController extends Controller
         return $friendIds;
     }
 
+    /**
+     * All accepted friend user ids for the current user (ignores friend_ids query).
+     */
+    private function getAllAcceptedFriendUserIds(User $user): \Illuminate\Support\Collection
+    {
+        return FriendRequest::query()
+            ->where('status', 'accepted')
+            ->where(function ($q) use ($user): void {
+                $q->where('requester_id', $user->id)
+                    ->orWhere('recipient_id', $user->id);
+            })
+            ->get()
+            ->map(function (FriendRequest $fr) use ($user) {
+                return $fr->requester_id === $user->id ? $fr->recipient_id : $fr->requester_id;
+            })
+            ->unique()
+            ->values();
+    }
+
     private function getTmdbUrl(): string
     {
         return config('services.tmdb.url');
@@ -380,6 +400,82 @@ class MediaController extends Controller
         }
 
         return response()->json($out);
+    }
+
+    /**
+     * Whether this user's row counts as "wants to watch" for watch-together
+     * (aligned with rankWatchTogetherForUsers).
+     */
+    private function rowIndicatesWantToWatch(Media $row): bool
+    {
+        if (
+            !$row->is_saved &&
+            !$row->is_liked &&
+            !$row->is_disliked &&
+            $row->watched_at === null
+        ) {
+            return false;
+        }
+        if (
+            $row->watched_at !== null &&
+            !$row->is_saved &&
+            !$row->is_liked &&
+            !$row->is_disliked
+        ) {
+            return false;
+        }
+        if ($row->is_disliked) {
+            return false;
+        }
+
+        return $row->is_saved
+            || ($row->watched_at !== null && $row->is_liked && $row->is_favorited);
+    }
+
+    public function whoWantsToWatch(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'tmdb_id' => ['required', 'integer', 'min:1'],
+            'media_type' => ['required', 'in:movie,tv'],
+        ]);
+
+        $user = $request->user();
+        $tmdbId = (int) $validated['tmdb_id'];
+        $mediaType = $validated['media_type'];
+
+        $friendIds = $this->getAllAcceptedFriendUserIds($user);
+        $participantIds = collect([$user->id])
+            ->merge($friendIds)
+            ->unique()
+            ->values()
+            ->all();
+
+        $rows = Media::query()
+            ->whereIn('user_id', $participantIds)
+            ->where('tmdb_id', $tmdbId)
+            ->where('type', $mediaType)
+            ->get();
+
+        $wantUserIds = [];
+        foreach ($rows as $row) {
+            if ($this->rowIndicatesWantToWatch($row)) {
+                $wantUserIds[(int) $row->user_id] = true;
+            }
+        }
+        $wantUserIdsList = array_keys($wantUserIds);
+        sort($wantUserIdsList);
+
+        $friendWantIds = array_values(array_filter(
+            $wantUserIdsList,
+            fn (int $id): bool => $id !== (int) $user->id,
+        ));
+
+        return response()->json([
+            'want_user_ids' => $wantUserIdsList,
+            'want_friend_user_ids' => $friendWantIds,
+            'participant_count' => count($participantIds),
+            'watch_want_count' => count($wantUserIdsList),
+        ]);
     }
 
     public function saved(Request $request): JsonResponse

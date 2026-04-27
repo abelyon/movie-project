@@ -156,6 +156,10 @@ const refreshListsNow = async (qc: ReturnType<typeof useQueryClient>) => {
       queryKey: ["user", "media", "liked"],
       refetchType: "all",
     }),
+    qc.invalidateQueries({
+      queryKey: ["user", "media", "who-wants-to-watch"],
+      refetchType: "all",
+    }),
   ]);
 };
 

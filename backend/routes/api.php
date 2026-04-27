@@ -41,6 +41,7 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
 Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::get('/', [MediaController::class, 'index']);
     Route::get('/state', [MediaController::class, 'state']);
+    Route::get('/who-wants-to-watch', [MediaController::class, 'whoWantsToWatch']);
     Route::get('/saved', [MediaController::class, 'saved']);
     Route::get('/liked', [MediaController::class, 'liked']);
     Route::get('/favorited', [MediaController::class, 'favorited']);
