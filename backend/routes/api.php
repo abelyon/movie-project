@@ -36,7 +36,7 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     }
 
     return response()->json(['verified' => true]);
-})->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])->name('verification.verify');
+})->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])->name('verification.verify.spa');
 
 Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::get('/', [MediaController::class, 'index']);
