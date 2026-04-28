@@ -25,6 +25,7 @@ class ValidateFrontendCsrfToken extends ValidateCsrfToken
         'forgot-password',
         'reset-password',
         'email/verification-notification',
+        'api/email/verification-notification',
         'api/user/media/save',
         'api/user/media/like',
         'api/user/media/dislike',
