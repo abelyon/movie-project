@@ -1,0 +1,20 @@
+FROM php:8.2-cli-alpine
+
+RUN apk add --no-cache \
+    git \
+    unzip \
+    libzip-dev \
+    oniguruma-dev \
+    icu-dev \
+    $PHPIZE_DEPS \
+    && docker-php-ext-install pdo_mysql bcmath pcntl
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
+
+COPY . .
+
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+
+CMD ["sh", "-lc", "php artisan reverb:start --host=0.0.0.0 --port=${PORT:-8080}"]
