@@ -1,5 +1,6 @@
 import axios from "axios";
 import { emitAppToast } from "../utils/toastBus";
+import { getVerificationGateState } from "../utils/verificationGate";
 
 /**
  * Laravel registers `routes/api.php` under the `/api` prefix.
@@ -55,6 +56,28 @@ const api = axios.create({
     Accept: "application/json",
     "X-Requested-With": "XMLHttpRequest",
   },
+});
+
+api.interceptors.request.use((config) => {
+  const method = String(config.method ?? "get").toLowerCase();
+  const isWriteAction = method !== "get";
+  const verificationState = getVerificationGateState();
+  const url = String(config.url ?? "");
+  const isProtectedMutation =
+    url.startsWith("/friends") || url.startsWith("/user/media");
+
+  if (isWriteAction && verificationState === false && isProtectedMutation) {
+    emitAppToast({
+      type: "warning",
+      title: "Email verification required",
+      message: "Verify your email to use this action.",
+    });
+
+    const blockedError = new axios.Cancel("blocked-unverified-user-action");
+    return Promise.reject(blockedError);
+  }
+
+  return config;
 });
 
 api.interceptors.response.use(
