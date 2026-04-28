@@ -1,4 +1,5 @@
 import axios from "axios";
+import { emitAppToast } from "../utils/toastBus";
 
 /**
  * Laravel registers `routes/api.php` under the `/api` prefix.
@@ -55,6 +56,24 @@ const api = axios.create({
     "X-Requested-With": "XMLHttpRequest",
   },
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status as number | undefined;
+    const message = String(error?.response?.data?.message ?? "");
+
+    if (status === 403 && /verify|verified|email/i.test(message)) {
+      emitAppToast({
+        type: "warning",
+        title: "Email verification required",
+        message: "Verify your email to use this action.",
+      });
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export default api;
 export { LARAVEL_BASE };
