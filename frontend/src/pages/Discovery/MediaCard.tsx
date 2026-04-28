@@ -103,7 +103,7 @@ const MediaCard = ({
       onFocus={prefetchForDetail}
       onTouchStart={prefetchForDetail}
       className={`relative m-auto flex flex-col items-center justify-center rounded-4xl cursor-pointer aspect-2/3 w-full ${
-        everyoneWantsToWatch ? "border-b-2 border-emerald-400" : ""
+        everyoneWantsToWatch ? "border-2 border-white" : ""
       }`}
       initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
