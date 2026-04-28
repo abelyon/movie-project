@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\User;
+use App\Http\Middleware\EnsureApiEmailIsVerified;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\TmdbController;
 use App\Http\Controllers\MediaController;
@@ -60,7 +61,7 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request, int $id, str
     return response()->json(['verified' => true]);
 })->middleware(['signed', 'throttle:6,1'])->name('verification.verify.spa');
 
-Route::middleware(['auth:sanctum', 'verified.api'])->prefix('user/media')->group(function () {
+Route::middleware(['auth:sanctum', EnsureApiEmailIsVerified::class])->prefix('user/media')->group(function () {
     Route::get('/', [MediaController::class, 'index']);
     Route::get('/state', [MediaController::class, 'state']);
     Route::get('/who-wants-to-watch', [MediaController::class, 'whoWantsToWatch']);
@@ -79,7 +80,7 @@ Route::middleware(['auth:sanctum', 'verified.api'])->prefix('user/media')->group
     Route::delete('/watched', [MediaController::class, 'unwatched']);
 });
 
-Route::middleware(['auth:sanctum', 'verified.api'])->prefix('friends')->group(function () {
+Route::middleware(['auth:sanctum', EnsureApiEmailIsVerified::class])->prefix('friends')->group(function () {
     Route::get('/', [FriendController::class, 'index']);
     Route::get('/search', [FriendController::class, 'search']);
     Route::delete('/{friend}', [FriendController::class, 'remove']);
