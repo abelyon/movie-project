@@ -62,8 +62,10 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status as number | undefined;
     const message = String(error?.response?.data?.message ?? "");
+    const method = String(error?.config?.method ?? "get").toLowerCase();
+    const isWriteAction = method !== "get";
 
-    if (status === 403 && /verify|verified|email/i.test(message)) {
+    if (isWriteAction && status === 403 && /verify|verified|email/i.test(message)) {
       emitAppToast({
         type: "warning",
         title: "Email verification required",
