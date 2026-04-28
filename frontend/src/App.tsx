@@ -12,14 +12,12 @@ import SavedPage from "./pages/Saved/SavedPage";
 import DetailPage from "./pages/Detail/DetailPage";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import RealtimeBridge from "./realtime/RealtimeBridge";
-import ToastStack from "./components/ToastStack";
 
 const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
         <RealtimeBridge />
-        <ToastStack />
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route element={<ProtectedRoute />}>
