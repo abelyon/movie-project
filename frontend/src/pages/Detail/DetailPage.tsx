@@ -12,6 +12,7 @@ import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
 import { getWhoWantsToWatch } from "../../api/userMedia";
+import { WatchTogetherUserStack } from "../../components/WatchTogetherUserStack";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
@@ -236,15 +237,17 @@ const DetailPage = () => {
     (whoWants.data?.want_friend_user_ids?.length ?? 0) > 0;
   const wantChips = useMemo(() => {
     const ids = whoWants.data?.want_user_ids ?? [];
-    const nameMap = new Map<number, string>();
-    if (user) nameMap.set(user.id, "You");
+    const friendNameById = new Map<number, string>();
     for (const friend of friendsOverview.data?.friends ?? []) {
-      nameMap.set(friend.id, friend.name);
+      friendNameById.set(friend.id, friend.name);
     }
-    return ids.map((userId) => ({
-      userId,
-      name: nameMap.get(userId) ?? `User ${userId}`,
-    }));
+    return ids.map((userId) => {
+      const isSelf = user && userId === user.id;
+      const friendName = friendNameById.get(userId);
+      const displayName = isSelf ? "You" : friendName ?? `User ${userId}`;
+      const initialFrom = isSelf ? (user.name?.trim() || "You") : friendName ?? `User ${userId}`;
+      return { userId, displayName, initialFrom };
+    });
   }, [whoWants.data?.want_user_ids, friendsOverview.data?.friends, user]);
 
   return (
@@ -345,13 +348,16 @@ const DetailPage = () => {
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {wantChips.length ? (
-                    wantChips.map(({ userId, name }) => (
-                      <span
+                    wantChips.map(({ userId, displayName, initialFrom }) => (
+                      <div
                         key={userId}
-                        className="rounded-2xl border border-neutral-600 bg-neutral-900/60 px-2.5 py-1 text-xs text-neutral-200"
+                        className="flex w-20 shrink-0 flex-col items-center rounded-2xl px-2 py-2 text-neutral-300"
                       >
-                        {name}
-                      </span>
+                        <WatchTogetherUserStack
+                          initialFrom={initialFrom}
+                          label={displayName}
+                        />
+                      </div>
                     ))
                   ) : (
                     <span className="text-xs text-neutral-400">No one marked interest yet.</span>
