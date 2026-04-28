@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { APP_TOAST_EVENT, type AppToastPayload } from "../utils/toastBus";
 
 type ToastItem = AppToastPayload & { id: number };
@@ -37,16 +38,23 @@ const ToastStack = () => {
   if (items.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-20 z-[120] flex w-[min(92vw,24rem)] flex-col gap-2">
-      {items.map((toast) => (
-        <div
+    <div className="pointer-events-none fixed top-4 left-1/2 z-[120] flex w-[min(92vw,24rem)] -translate-x-1/2 flex-col gap-2">
+      <AnimatePresence initial={false}>
+        {items.map((toast) => (
+          <motion.div
           key={toast.id}
           className={`rounded-2xl border px-4 py-3 text-sm shadow-lg backdrop-blur-md ${toneClass(toast.type)}`}
-        >
-          <p className="font-space-grotesk font-semibold">{toast.title}</p>
-          {toast.message ? <p className="mt-1 text-xs opacity-95">{toast.message}</p> : null}
-        </div>
-      ))}
+          initial={{ opacity: 0, y: -18, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -16, scale: 0.98 }}
+          transition={{ duration: 0.2 }}
+          layout
+          >
+            <p className="font-space-grotesk font-semibold">{toast.title}</p>
+            {toast.message ? <p className="mt-1 text-xs opacity-95">{toast.message}</p> : null}
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 };
