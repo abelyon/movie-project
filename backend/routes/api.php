@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Models\User;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\TmdbController;
 use App\Http\Controllers\MediaController;
@@ -41,9 +41,15 @@ Route::post('/email/verification-notification', function (Request $request) {
 
     return response()->json(['sent' => true]);
 })->middleware(['auth:sanctum', 'throttle:6,1']);
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    if (!$request->user()->hasVerifiedEmail()) {
-        $request->fulfill();
+Route::get('/email/verify/{id}/{hash}', function (Request $request, int $id, string $hash) {
+    $user = User::query()->findOrFail($id);
+
+    if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        abort(403, 'Invalid verification hash.');
+    }
+
+    if (!$user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
     }
 
     $frontendUrl = rtrim((string) env('FRONTEND_URL', ''), '/');
@@ -52,7 +58,7 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     }
 
     return response()->json(['verified' => true]);
-})->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])->name('verification.verify.spa');
+})->middleware(['signed', 'throttle:6,1'])->name('verification.verify.spa');
 
 Route::middleware('auth:sanctum')->prefix('user/media')->group(function () {
     Route::get('/', [MediaController::class, 'index']);
