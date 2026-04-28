@@ -277,7 +277,7 @@ const DetailPage = () => {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-5">
-                <h1 className="break-words text-3xl font-space-grotesk font-bold">{title}</h1>
+                <h1 className="wrap-break-word text-3xl font-space-grotesk font-bold">{title}</h1>
               </div>
               {date && (
                 <span className="text-xl font-space-grotesk font-bold text-neutral-400 shrink-0">
