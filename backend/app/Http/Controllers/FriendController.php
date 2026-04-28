@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\FriendRequestAcceptedMail;
 use App\Mail\FriendRequestReceivedMail;
 use App\Models\FriendRequest;
 use App\Models\User;
@@ -222,19 +221,6 @@ class FriendController extends Controller
             'status' => 'accepted',
             'responded_at' => now(),
         ]);
-
-        $requester = $friendRequest->requester()->first();
-        $recipient = $friendRequest->recipient()->first();
-        if ($requester && $recipient) {
-            // Notify original sender that the request was accepted.
-            try {
-                Mail::to($requester->email)->send(
-                    new FriendRequestAcceptedMail($requester, $recipient)
-                );
-            } catch (Throwable $e) {
-                report($e);
-            }
-        }
 
         return response()->json([
             'request' => $friendRequest->load([
