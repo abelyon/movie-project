@@ -3,9 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 
@@ -24,17 +22,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        VerifyEmail::createUrlUsing(function (object $notifiable): string {
-            return URL::temporarySignedRoute(
-                'verification.verify.spa',
-                now()->addMinutes(60),
-                [
-                    'id' => $notifiable->getKey(),
-                    'hash' => sha1($notifiable->getEmailForVerification()),
-                ]
-            );
-        });
-
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
             $frontendUrl = rtrim((string) env('FRONTEND_URL', ''), '/');
             if ($frontendUrl === '') {
