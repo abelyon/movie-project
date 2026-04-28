@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { floatingActionButtonBaseClass } from "../constants/floatingActionButton";
 import { AnimatedNavIcon } from "../components/AnimatedNavIcon";
 import { getFriendOverview, type FriendUser } from "../api/friends";
+import { WatchTogetherUserStack } from "../components/WatchTogetherUserStack";
 
 const routes = [
   { path: "/profile", icon: User },
@@ -618,16 +619,11 @@ const MainLayout = () => {
                                 : "text-neutral-300 hover:bg-neutral-700/60"
                             }`}
                           >
-                            <span
-                              className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                                active ? "bg-neutral-200" : "bg-neutral-700/80"
-                              }`}
-                            >
-                              <User size={18} strokeWidth={2.5} />
-                            </span>
-                            <span className="mt-1 w-full truncate text-center text-[11px]">
-                              {friend.name}
-                            </span>
+                            <WatchTogetherUserStack
+                              initialFrom={friend.name}
+                              label={friend.name}
+                              active={active}
+                            />
                           </button>
                         );
                       })}
