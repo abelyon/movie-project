@@ -18,11 +18,27 @@ Route::get('/email/verification-status', function (Request $request) {
     ]);
 })->middleware('auth:sanctum');
 Route::post('/email/verification-notification', function (Request $request) {
-    if ($request->user()?->hasVerifiedEmail()) {
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json(['sent' => false, 'message' => 'Unauthenticated.'], 401);
+    }
+
+    if ($user->hasVerifiedEmail()) {
         return response()->json(['sent' => false, 'already_verified' => true]);
     }
 
-    $request->user()->sendEmailVerificationNotification();
+    try {
+        $user->sendEmailVerificationNotification();
+    } catch (\Throwable $e) {
+        report($e);
+
+        return response()->json([
+            'sent' => false,
+            'message' => 'Verification email could not be sent right now. Please try again shortly.',
+        ], 503);
+    }
+
     return response()->json(['sent' => true]);
 })->middleware(['auth:sanctum', 'throttle:6,1']);
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
