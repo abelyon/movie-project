@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SocialSignalUpdated;
 use App\Models\FriendRequest;
 use App\Models\Media;
 use App\Models\User;
@@ -12,6 +13,16 @@ use Illuminate\Support\Facades\Http;
 
 class MediaController extends Controller
 {
+    private function emitSocialUpdate(Request $request, Media $row, string $action): void
+    {
+        event(new SocialSignalUpdated(
+            (int) $request->user()->id,
+            (int) $row->tmdb_id,
+            (string) $row->type,
+            $action
+        ));
+    }
+
     private function applyNeutralSavedFilter($query)
     {
         return $query
@@ -557,6 +568,7 @@ class MediaController extends Controller
     public function save(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['is_saved' => true]);
+        $this->emitSocialUpdate($request, $row, 'media.saved');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -567,6 +579,7 @@ class MediaController extends Controller
     public function unsave(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['is_saved' => false]);
+        $this->emitSocialUpdate($request, $row, 'media.unsaved');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -581,6 +594,7 @@ class MediaController extends Controller
             'is_disliked' => false,
             'watched_at' => now(),
         ]);
+        $this->emitSocialUpdate($request, $row, 'media.liked');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -592,6 +606,7 @@ class MediaController extends Controller
     public function unlike(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['is_liked' => false]);
+        $this->emitSocialUpdate($request, $row, 'media.unliked');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -606,6 +621,7 @@ class MediaController extends Controller
             'is_liked' => false,
             'watched_at' => now(),
         ]);
+        $this->emitSocialUpdate($request, $row, 'media.disliked');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -617,6 +633,7 @@ class MediaController extends Controller
     public function undislike(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['is_disliked' => false]);
+        $this->emitSocialUpdate($request, $row, 'media.undisliked');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -629,6 +646,7 @@ class MediaController extends Controller
         $row = $this->updateOrCreate($request, [
             'is_favorited' => true,
         ]);
+        $this->emitSocialUpdate($request, $row, 'media.favorited');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -640,6 +658,7 @@ class MediaController extends Controller
     public function unfavorite(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['is_favorited' => false]);
+        $this->emitSocialUpdate($request, $row, 'media.unfavorited');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -650,6 +669,7 @@ class MediaController extends Controller
     public function watched(MediaIdRequest $request): JsonResponse
     {
         $row = $this->updateOrCreate($request, ['watched_at' => now()]);
+        $this->emitSocialUpdate($request, $row, 'media.watched');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,
@@ -664,6 +684,7 @@ class MediaController extends Controller
             'is_liked' => false,
             'is_disliked' => false,
         ]);
+        $this->emitSocialUpdate($request, $row, 'media.unwatched');
         return response()->json([
             'tmdb_id' => $row->tmdb_id,
             'media_type' => $row->type,

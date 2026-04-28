@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\FriendRequestUpdated;
 use App\Mail\FriendRequestReceivedMail;
 use App\Models\FriendRequest;
 use App\Models\User;
@@ -200,6 +201,9 @@ class FriendController extends Controller
             report($e);
         }
 
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend_request.sent', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $recipient->id, 'friend_request.received', (int) $friendRequest->id));
+
         return response()->json([
             'request' => $friendRequest->load('recipient:id,name,email,public_user_id'),
         ], 201);
@@ -221,6 +225,9 @@ class FriendController extends Controller
             'status' => 'accepted',
             'responded_at' => now(),
         ]);
+
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend_request.accepted', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $friendRequest->requester_id, 'friend_request.accepted', (int) $friendRequest->id));
 
         return response()->json([
             'request' => $friendRequest->load([
@@ -246,6 +253,9 @@ class FriendController extends Controller
             'status' => 'denied',
             'responded_at' => now(),
         ]);
+
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend_request.denied', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $friendRequest->requester_id, 'friend_request.denied', (int) $friendRequest->id));
 
         return response()->json([
             'request' => $friendRequest->load([
@@ -276,6 +286,9 @@ class FriendController extends Controller
                 });
             })
             ->delete();
+
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend.removed', null));
+        event(new FriendRequestUpdated((int) $friend->id, 'friend.removed', null));
 
         return response()->json(['removed' => true]);
     }

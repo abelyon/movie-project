@@ -11,11 +11,13 @@ import ResetPasswordPage from "./pages/Login/ResetPasswordPage";
 import SavedPage from "./pages/Saved/SavedPage";
 import DetailPage from "./pages/Detail/DetailPage";
 import ProfilePage from "./pages/Profile/ProfilePage";
+import RealtimeBridge from "./realtime/RealtimeBridge";
 
 const App = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <RealtimeBridge />
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route element={<ProtectedRoute />}>
