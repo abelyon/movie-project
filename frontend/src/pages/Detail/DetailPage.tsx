@@ -272,54 +272,47 @@ const DetailPage = () => {
             </div>
 
             {(Boolean(data.genres?.length) ||
-              (media_type === "movie" && runtime != null && runtime > 0) ||
-              Boolean(seasonsLabel)) && (
-              <motion.p
-                className="mt-4 flex flex-wrap gap-2"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: {},
-                  visible: { transition: { staggerChildren: 0.03, delayChildren: 0 } },
-                }}
-              >
-                {(data.genres ?? []).map((genre) => (
-                  <motion.span
-                    key={genre.id}
-                    className="text-sm font-space-grotesk font-medium text-neutral-400 bg-neutral-800/80 border-t border-neutral-600 px-3 py-1 rounded-4xl"
+              Boolean(seasonsLabel) ||
+              (media_type === "movie" && runtime != null && runtime > 0)) && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+                {Boolean(data.genres?.length) && (
+                  <motion.p
+                    className="flex min-w-0 flex-1 flex-wrap gap-2"
+                    initial="hidden"
+                    animate="visible"
                     variants={{
-                      hidden: { opacity: 0, y: 4 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease } },
+                      hidden: {},
+                      visible: { transition: { staggerChildren: 0.03, delayChildren: 0 } },
                     }}
                   >
-                    {genre.name}
-                  </motion.span>
-                ))}
-                {media_type === "movie" && runtime != null && runtime > 0 && (
+                    {(data.genres ?? []).map((genre) => (
+                      <motion.span
+                        key={genre.id}
+                        className="text-sm font-space-grotesk font-medium text-neutral-400 bg-neutral-800/80 border-t border-neutral-600 px-3 py-1 rounded-4xl"
+                        variants={{
+                          hidden: { opacity: 0, y: 4 },
+                          visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease } },
+                        }}
+                      >
+                        {genre.name}
+                      </motion.span>
+                    ))}
+                  </motion.p>
+                )}
+                {((media_type === "movie" && runtime != null && runtime > 0) ||
+                  (media_type === "tv" && seasonsLabel)) && (
                   <motion.span
-                    key="runtime"
-                    className="text-sm font-space-grotesk font-medium text-neutral-400 bg-neutral-800/80 border-t border-neutral-600 px-3 py-1 rounded-4xl"
-                    variants={{
-                      hidden: { opacity: 0, y: 4 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease } },
-                    }}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, ease }}
+                    className="shrink-0 text-base font-space-grotesk font-bold text-neutral-600"
                   >
-                    {runtime} min
+                    {media_type === "movie" && runtime != null && runtime > 0
+                      ? `${runtime} M`
+                      : `${seasonsLabel} S`}
                   </motion.span>
                 )}
-                {seasonsLabel && (
-                  <motion.span
-                    key="seasons"
-                    className="text-sm font-space-grotesk font-medium text-neutral-400 bg-neutral-800/80 border-t border-neutral-600 px-3 py-1 rounded-4xl"
-                    variants={{
-                      hidden: { opacity: 0, y: 4 },
-                      visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease } },
-                    }}
-                  >
-                    {seasonsLabel}
-                  </motion.span>
-                )}
-              </motion.p>
+              </div>
             )}
 
             {isPreviewOnly && isFetching ? (
