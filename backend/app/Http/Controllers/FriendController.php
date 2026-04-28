@@ -14,16 +14,6 @@ use Throwable;
 
 class FriendController extends Controller
 {
-    private function dispatchRealtimeSafely(FriendRequestUpdated $event): void
-    {
-        try {
-            event($event);
-        } catch (Throwable $e) {
-            // Realtime should not break core friend-request flows.
-            report($e);
-        }
-    }
-
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -211,8 +201,8 @@ class FriendController extends Controller
             report($e);
         }
 
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $authUser->id, 'friend_request.sent', (int) $friendRequest->id));
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $recipient->id, 'friend_request.received', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend_request.sent', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $recipient->id, 'friend_request.received', (int) $friendRequest->id));
 
         return response()->json([
             'request' => $friendRequest->load('recipient:id,name,email,public_user_id'),
@@ -236,8 +226,8 @@ class FriendController extends Controller
             'responded_at' => now(),
         ]);
 
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $authUser->id, 'friend_request.accepted', (int) $friendRequest->id));
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $friendRequest->requester_id, 'friend_request.accepted', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend_request.accepted', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $friendRequest->requester_id, 'friend_request.accepted', (int) $friendRequest->id));
 
         return response()->json([
             'request' => $friendRequest->load([
@@ -264,8 +254,8 @@ class FriendController extends Controller
             'responded_at' => now(),
         ]);
 
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $authUser->id, 'friend_request.denied', (int) $friendRequest->id));
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $friendRequest->requester_id, 'friend_request.denied', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend_request.denied', (int) $friendRequest->id));
+        event(new FriendRequestUpdated((int) $friendRequest->requester_id, 'friend_request.denied', (int) $friendRequest->id));
 
         return response()->json([
             'request' => $friendRequest->load([
@@ -297,8 +287,8 @@ class FriendController extends Controller
             })
             ->delete();
 
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $authUser->id, 'friend.removed', null));
-        $this->dispatchRealtimeSafely(new FriendRequestUpdated((int) $friend->id, 'friend.removed', null));
+        event(new FriendRequestUpdated((int) $authUser->id, 'friend.removed', null));
+        event(new FriendRequestUpdated((int) $friend->id, 'friend.removed', null));
 
         return response()->json(['removed' => true]);
     }

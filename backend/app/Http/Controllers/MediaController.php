@@ -10,23 +10,17 @@ use App\Http\Requests\MediaIdRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Throwable;
 
 class MediaController extends Controller
 {
     private function emitSocialUpdate(Request $request, Media $row, string $action): void
     {
-        try {
-            event(new SocialSignalUpdated(
-                (int) $request->user()->id,
-                (int) $row->tmdb_id,
-                (string) $row->type,
-                $action
-            ));
-        } catch (Throwable $e) {
-            // Realtime should not break core media actions.
-            report($e);
-        }
+        event(new SocialSignalUpdated(
+            (int) $request->user()->id,
+            (int) $row->tmdb_id,
+            (string) $row->type,
+            $action
+        ));
     }
 
     private function applyNeutralSavedFilter($query)

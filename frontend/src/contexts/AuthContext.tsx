@@ -8,7 +8,6 @@ import {
 } from "react";
 import * as authApi from "../api/auth";
 import type { User } from "../api/auth";
-import { setVerificationGateState } from "../utils/verificationGate";
 
 type AuthState = {
   user: User | null;
@@ -27,10 +26,6 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    setVerificationGateState(user ? !!user.email_verified_at : null);
-  }, [user]);
 
   const refetchUser = useCallback(async () => {
     const u = await authApi.getCurrentUser();
