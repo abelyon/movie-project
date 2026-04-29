@@ -32,7 +32,10 @@ const scheme = import.meta.env.VITE_REVERB_SCHEME ?? (import.meta.env.PROD ? "ht
 const forceTLS = scheme === "https";
 
 export function createEcho(token?: string): Echo<"reverb"> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+  };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
