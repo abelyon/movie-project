@@ -22,8 +22,6 @@ class ValidateFrontendCsrfToken extends ValidateCsrfToken
         'login',
         'register',
         'logout',
-        'broadcasting/auth',
-        'broadcasting/*',
         'api/broadcasting/auth',
         'api/broadcasting/*',
         'forgot-password',
