@@ -1,6 +1,6 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
-import { LARAVEL_BASE } from "../api/client";
+import api, { LARAVEL_BASE } from "../api/client";
 
 declare global {
   interface Window {
@@ -73,6 +73,28 @@ export function createEcho(token?: string): Echo<"reverb"> {
     auth: {
       headers,
     },
+    authorizer: (channel) => ({
+      authorize: (
+        socketId: string,
+        callback: (error: Error | null, data: unknown) => void,
+      ) => {
+        void api
+          .post(
+            `${LARAVEL_BASE}/broadcasting/auth`,
+            {
+              socket_id: socketId,
+              channel_name: channel.name,
+            },
+            {
+              headers,
+            },
+          )
+          .then(({ data }) => callback(null, data))
+          .catch((error: unknown) => {
+            callback(error instanceof Error ? error : new Error("Broadcast authorization failed"), {});
+          });
+      },
+    }),
     withCredentials: true,
   });
 }
