@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
+import { getCsrfCookie } from "../api/auth";
 import { createEcho } from "./echo";
 
 const RealtimeBridge = () => {
@@ -12,19 +13,32 @@ const RealtimeBridge = () => {
       return;
     }
 
+    let disposed = false;
     const echo = createEcho();
-    const channel = echo.private(`users.${user.id}`);
 
-    channel.listen(".friend.request.updated", () => {
-      void queryClient.invalidateQueries({ queryKey: ["friends", "overview"] });
-    });
+    const setup = async () => {
+      // Ensure Sanctum/XSRF cookies are present before private channel auth.
+      await getCsrfCookie();
+      if (disposed) {
+        return;
+      }
 
-    channel.listen(".social.signal.updated", () => {
-      void queryClient.invalidateQueries({ queryKey: ["media"] });
-      void queryClient.invalidateQueries({ queryKey: ["saved"] });
-    });
+      const channel = echo.private(`users.${user.id}`);
+
+      channel.listen(".friend.request.updated", () => {
+        void queryClient.invalidateQueries({ queryKey: ["friends", "overview"] });
+      });
+
+      channel.listen(".social.signal.updated", () => {
+        void queryClient.invalidateQueries({ queryKey: ["media"] });
+        void queryClient.invalidateQueries({ queryKey: ["saved"] });
+      });
+    };
+
+    void setup();
 
     return () => {
+      disposed = true;
       echo.leave(`private-users.${user.id}`);
       echo.disconnect();
     };

@@ -74,6 +74,10 @@ const ProfilePage = () => {
     enabled: !!user,
     staleTime: 30_000,
   });
+  const isVerified =
+    !!user?.email_verified_at || emailVerificationStatus.data?.verified === true;
+  const showUnverifiedBanner =
+    !!user && !isVerified && emailVerificationStatus.status === "success";
 
   const searchMutation = useMutation({
     mutationFn: searchUser,
@@ -180,7 +184,7 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {!emailVerificationStatus.data?.verified && (
+        {showUnverifiedBanner && (
           <div className="mt-4 rounded-3xl border border-amber-400/30 bg-amber-500/10 p-4">
             <p className="font-space-grotesk text-sm font-semibold text-amber-200">
               Verify your email
