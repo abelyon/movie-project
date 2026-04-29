@@ -31,32 +31,11 @@ function resolveWsPort(): number {
 const scheme = import.meta.env.VITE_REVERB_SCHEME ?? (import.meta.env.PROD ? "https" : "http");
 const forceTLS = scheme === "https";
 
-function readCookie(name: string): string | null {
-  const key = `${name}=`;
-  const parts = document.cookie.split("; ");
-  for (const part of parts) {
-    if (part.startsWith(key)) {
-      const value = part.slice(key.length);
-      try {
-        return decodeURIComponent(value);
-      } catch {
-        return value;
-      }
-    }
-  }
-
-  return null;
-}
-
 export function createEcho(token?: string): Echo<"reverb"> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Requested-With": "XMLHttpRequest",
   };
-  const csrfToken = readCookie("XSRF-TOKEN");
-  if (csrfToken) {
-    headers["X-XSRF-TOKEN"] = csrfToken;
-  }
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
