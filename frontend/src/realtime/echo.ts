@@ -1,6 +1,9 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
+import type { ChannelAuthorizationCallback } from "pusher-js";
 import api, { LARAVEL_BASE } from "../api/client";
+
+type ChannelAuthorizationPayload = Parameters<ChannelAuthorizationCallback>[1];
 
 declare global {
   interface Window {
@@ -76,7 +79,7 @@ export function createEcho(token?: string): Echo<"reverb"> {
     authorizer: (channel) => ({
       authorize: (
         socketId: string,
-        callback: (error: Error | null, data: Pusher.ChannelAuthorizationData | null) => void,
+        callback: (error: Error | null, data: ChannelAuthorizationPayload) => void,
       ) => {
         void api
           .post(
@@ -89,7 +92,7 @@ export function createEcho(token?: string): Echo<"reverb"> {
               headers,
             },
           )
-          .then(({ data }) => callback(null, data as Pusher.ChannelAuthorizationData))
+          .then(({ data }) => callback(null, data as ChannelAuthorizationPayload))
           .catch((error: unknown) => {
             callback(error instanceof Error ? error : new Error("Broadcast authorization failed"), null);
           });
