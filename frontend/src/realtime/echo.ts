@@ -74,9 +74,12 @@ export function createEcho(token?: string): Echo<"reverb"> {
       headers,
     },
     authorizer: (channel) => ({
-      authorize: async (socketId: string, callback: (error: boolean, data: unknown) => void) => {
-        try {
-          const { data } = await api.post(
+      authorize: (
+        socketId: string,
+        callback: (error: Error | null, data: unknown) => void,
+      ) => {
+        void api
+          .post(
             `${LARAVEL_BASE}/broadcasting/auth`,
             {
               socket_id: socketId,
@@ -85,11 +88,11 @@ export function createEcho(token?: string): Echo<"reverb"> {
             {
               headers,
             },
-          );
-          callback(false, data);
-        } catch (error) {
-          callback(true, error);
-        }
+          )
+          .then(({ data }) => callback(null, data))
+          .catch((error: unknown) => {
+            callback(error instanceof Error ? error : new Error("Broadcast authorization failed"), {});
+          });
       },
     }),
     withCredentials: true,
