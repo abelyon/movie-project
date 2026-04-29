@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
-            if ($request->expectsJson() || $request->is('api/*') || $request->is('broadcasting/*')) {
+            if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'message' => 'Unauthenticated.',
                 ], Response::HTTP_UNAUTHORIZED);
