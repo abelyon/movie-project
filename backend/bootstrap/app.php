@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class
                 => \App\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
+        $middleware->redirectGuestsTo(function (Request $request): ?string {
+            return null;
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
