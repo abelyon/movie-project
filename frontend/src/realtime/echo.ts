@@ -69,7 +69,7 @@ export function createEcho(token?: string): Echo<"reverb"> {
     wssPort: resolveWsPort(),
     forceTLS,
     enabledTransports: ["ws", "wss"],
-    authEndpoint: `${LARAVEL_BASE}/broadcasting/auth`,
+    authEndpoint: `${LARAVEL_BASE}/api/broadcasting/auth`,
     auth: {
       headers,
     },
@@ -80,7 +80,7 @@ export function createEcho(token?: string): Echo<"reverb"> {
       ) => {
         void api
           .post(
-            `${LARAVEL_BASE}/broadcasting/auth`,
+            `${LARAVEL_BASE}/api/broadcasting/auth`,
             {
               socket_id: socketId,
               channel_name: channel.name,
