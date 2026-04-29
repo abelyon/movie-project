@@ -76,7 +76,7 @@ export function createEcho(token?: string): Echo<"reverb"> {
     authorizer: (channel) => ({
       authorize: (
         socketId: string,
-        callback: (error: Error | null, data: unknown) => void,
+        callback: (error: Error | null, data: Pusher.ChannelAuthorizationData | null) => void,
       ) => {
         void api
           .post(
@@ -89,9 +89,9 @@ export function createEcho(token?: string): Echo<"reverb"> {
               headers,
             },
           )
-          .then(({ data }) => callback(null, data))
+          .then(({ data }) => callback(null, data as Pusher.ChannelAuthorizationData))
           .catch((error: unknown) => {
-            callback(error instanceof Error ? error : new Error("Broadcast authorization failed"), {});
+            callback(error instanceof Error ? error : new Error("Broadcast authorization failed"), null);
           });
       },
     }),
