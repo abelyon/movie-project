@@ -15,11 +15,12 @@ Railway deploys from a GitHub repo. Make sure your current branch is pushed.
 
 1. In Railway, click **New Project**.
 2. Choose **Deploy from GitHub repo** and select this repository.
-3. Add 2 services from the same repo:
-  - Service A root directory: `backend`
-  - Service B root directory: `frontend`
+3. Add **3** services from the same repo:
+  - **API** — root directory: `backend` (Laravel HTTP API; use your usual PHP/Railpack or Dockerfile flow).
+  - **Frontend** — root directory: `frontend` (Vite build).
+  - **Reverb** — root directory: `backend`, with Docker build from **`Dockerfile.reverb`** (WebSocket server; see below).
 
-This repo does **not** use Nixpacks config files. Railway infers build and start from each root (for example Node/Vite for `frontend`, PHP/Laravel for `backend`). If a service needs an override, set **Build Command**, **Start Command**, or **Release Command** (for migrations) in that service’s **Settings** in the Railway dashboard—for example a backend release: `php artisan migrate --force`.
+This repo does **not** use Nixpacks config files in-repo. Railway infers build and start from each root. For **Reverb**, point the service at **`backend/Dockerfile.reverb`** (in the dashboard: set **Dockerfile path** to `Dockerfile.reverb` with root `backend`) so the image includes **`pcntl`** and runs `php artisan reverb:start` bound to Railway’s **`PORT`**. For the API and frontend, set **Build Command**, **Start Command**, or **Release Command** (for migrations) in that service’s **Settings** if needed—for example a backend release: `php artisan migrate --force`.
 
 ## 3) Add a MySQL database
 
@@ -49,6 +50,14 @@ Set these on the `backend` Railway service:
 - `TMDB_API_KEY=<your tmdb key>`
 - `TMDB_URL=https://api.themoviedb.org/3`
 
+Realtime (must match the **Reverb** service and the **frontend** build):
+
+- `BROADCAST_CONNECTION=reverb`
+- `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` — generate strong values; use the **same three** on the API, on the Reverb container, and expose the key to the frontend as `VITE_REVERB_APP_KEY` at build time.
+- `REVERB_HOST` — **public hostname** of the Reverb service only (no `https://`), e.g. `your-reverb.up.railway.app`.
+- `REVERB_PORT=443` and `REVERB_SCHEME=https` in production so browsers use **`wss`**.
+- `REVERB_SERVER_HOST=0.0.0.0` on the Reverb service. Prefer letting the start command use Railway’s **`PORT`** (the `Dockerfile.reverb` `CMD` passes `--port=${PORT:-8080}`).
+
 Optional but recommended:
 
 - `SESSION_SECURE_COOKIE=true`
@@ -62,16 +71,20 @@ Vite reads `VITE_*` variables **when `npm run build` runs**, and replaces them i
 Set this on the `frontend` Railway service (same value the build step must see):
 
 - `VITE_API_BASE_URL=https://<your-backend-domain>` **or** `https://<your-backend-domain>/api` (both work; `/api` is added automatically if omitted)
+- `VITE_REVERB_APP_KEY` — same value as backend `REVERB_APP_KEY`.
+- `VITE_REVERB_HOST` — same hostname as backend `REVERB_HOST` (Reverb service public host).
+- `VITE_REVERB_PORT=443` and `VITE_REVERB_SCHEME=https` in production (typical for `wss` behind Railway HTTPS).
 
 Do **not** rely on a committed `frontend/.env` for production; keep secrets and machine-specific URLs out of git. Use Railway **Variables** (or a build-time secret store) so the backend URL is present when Railpack runs `npm run build`.
 
-On the **backend** service, set `**FRONTEND_URL`** to your SPA origin (for example `https://<your-frontend-service>.up.railway.app`). CORS uses this value so the API allows credentialed requests from that origin.
+On the **backend** service, set **FRONTEND_URL** to your SPA origin (for example `https://<your-frontend-service>.up.railway.app`). CORS uses this value so the API allows credentialed requests from that origin.
 
 ## 6) Deploy order
 
-1. Deploy backend first. Run database migrations via a **Release Command** or your chosen start workflow (see section 2).
-2. After the backend has a public URL, set `**VITE_API_BASE_URL`** on the **frontend** service, then **redeploy the frontend** so a new build picks it up.
-3. Changing this variable alone does not update an old deploy until you trigger a new build.
+1. Deploy the **API** (`backend`) first. Run database migrations via a **Release Command** or your chosen start workflow (see section 2).
+2. Add the **Reverb** service (Dockerfile `Dockerfile.reverb`), assign it a **public domain**, then set **`REVERB_HOST` / `REVERB_*`** on both **API** and **Reverb** to match. Redeploy the API if it was deployed before Reverb had a hostname.
+3. After the API has a public URL, set **`VITE_API_BASE_URL`** and the **`VITE_REVERB_*`** variables on the **frontend** service, then **redeploy the frontend** so a new build picks them up.
+4. Changing `VITE_*` variables alone does not update an old deploy until you trigger a new build.
 
 ## 7) Sanctum / cookies note
 
@@ -96,5 +109,6 @@ After deploy:
   - `/sanctum/csrf-cookie` succeeds
   - `/login` returns user JSON
   - Authenticated API routes return `200`
+  - A **WebSocket** connection opens to your Reverb host (status **101** / `wss` in the Network tab) after login when realtime is active.
 
-If auth fails, re-check `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, and CORS-related values.
+If auth fails, re-check `FRONTEND_URL`, `SANCTUM_STATEFUL_DOMAINS`, and CORS-related values. If the socket never connects, re-check **`VITE_REVERB_*`** (frontend must be **rebuilt** after changes), **`REVERB_HOST`** on API and Reverb, and that the Reverb service is running and publicly reachable.
