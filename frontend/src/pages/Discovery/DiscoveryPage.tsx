@@ -5,7 +5,7 @@ import { useInfiniteTrending } from "../../hooks/useTrending";
 import { useSearch } from "../../hooks/useSearch";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { stateKey } from "../../api/userMedia";
-import { fetchDiscover, fetchPeopleSearch, type PersonSearchResult } from "../../api/tmdb";
+import { fetchPeopleSearch } from "../../api/tmdb";
 import MediaCard from "./MediaCard";
 import PeopleCard from "./PeopleCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
@@ -57,33 +57,9 @@ const DiscoveryPage = () => {
     enabled: canSearch,
     staleTime: 60_000,
   });
-  const matchedPerson: PersonSearchResult | null = useMemo(() => {
-    if (!canSearch) return null;
-    const people = peopleSearchData?.results ?? [];
-    if (people.length === 0) return null;
-    const q = trimmedQuery.toLowerCase();
-    return (
-      people.find((p) => p.name.toLowerCase() === q) ??
-      people.find((p) => p.name.toLowerCase().startsWith(q)) ??
-      people.find((p) => p.name.toLowerCase().includes(q)) ??
-      people[0] ??
-      null
-    );
-  }, [canSearch, peopleSearchData?.results, trimmedQuery]);
-  const actorMode = canSearch && matchedPerson !== null;
-  const { data: actorMovieData, isLoading: isActorMovieLoading } = useQuery({
-    queryKey: ["tmdb", "discover", "movie", "actor-search", matchedPerson?.id ?? null],
-    queryFn: () => fetchDiscover("movie", { person_id: matchedPerson!.id }),
-    enabled: actorMode,
-  });
-  const { data: actorTvData, isLoading: isActorTvLoading } = useQuery({
-    queryKey: ["tmdb", "discover", "tv", "actor-search", matchedPerson?.id ?? null],
-    queryFn: () => fetchDiscover("tv", { person_id: matchedPerson!.id }),
-    enabled: actorMode,
-  });
 
   useEffect(() => {
-    if (showSearch || actorMode) return;
+    if (showSearch) return;
     if (!hasNextPage || isFetchingNextPage) return;
     const el = sentinelRef.current;
     if (!el) return;
@@ -96,21 +72,12 @@ const DiscoveryPage = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [actorMode, fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
   const rawPeople = canSearch ? (peopleSearchData?.results ?? []) : [];
-  const actorResults = actorMode
-    ? [
-        ...(actorMovieData?.results ?? []),
-        ...(actorTvData?.results ?? []),
-      ]
-    : [];
-  const actorHasMatches = actorResults.length > 0;
-  const raw = canSearch
-    ? (actorMode && actorHasMatches ? actorResults : rawSearch)
-    : rawTrending;
+  const raw = canSearch ? rawSearch : rawTrending;
   const seenMedia = new Set<string>();
   const dedupedMediaResults = raw.filter((item) => {
     if (item.media_type !== "movie" && item.media_type !== "tv") return false;
@@ -197,7 +164,6 @@ const DiscoveryPage = () => {
 
   if (
     (canSearch && isPeopleSearchLoading) ||
-    (actorMode && (isActorMovieLoading || isActorTvLoading)) ||
     (isPending && !data)
   ) {
     return (
@@ -214,9 +180,7 @@ const DiscoveryPage = () => {
   const hasAnySearchResults = visibleResults.length > 0 || visiblePeople.length > 0;
   const searchNotice = isShowingSearchHint
     ? "Type at least 2 characters to search."
-    : isShowingSearchResults && actorMode && actorHasMatches && visibleResults.length === 0
-      ? `No movie or TV results found for actor "${matchedPerson?.name}".`
-      : isShowingSearchResults && !isSearchLoading && !isPeopleSearchLoading && !hasAnySearchResults
+    : isShowingSearchResults && !isSearchLoading && !isPeopleSearchLoading && !hasAnySearchResults
         ? `No results found for "${trimmedQuery}". Try another title or clear some filters.`
         : null;
   const showPinnedSearchNotice = showSearch && searchNotice !== null;
@@ -259,7 +223,7 @@ const DiscoveryPage = () => {
         ))}
       </div>
 
-      {!showSearch && !actorMode && (
+      {!showSearch && (
         <>
           <div ref={sentinelRef} style={{ height: 20 }} />
           {isFetchingNextPage && (
