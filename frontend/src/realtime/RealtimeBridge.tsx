@@ -33,8 +33,7 @@ const RealtimeBridge = () => {
       });
 
       channel.listen(".social.signal.updated", () => {
-        void queryClient.invalidateQueries({ queryKey: ["media"] });
-        void queryClient.invalidateQueries({ queryKey: ["saved"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media"] });
       });
     };
 
