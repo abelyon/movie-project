@@ -407,9 +407,11 @@ const DetailPage = () => {
                     <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       <div className="flex gap-3 pb-1">
                         {getCast(data).map((person) => (
-                          <div
+                          <button
+                            type="button"
                             key={`cast-${person.id}`}
-                            className="w-36 shrink-0 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
+                            onClick={() => navigate(`/person/${person.id}`)}
+                            className="w-36 shrink-0 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2 text-left cursor-pointer transition hover:bg-neutral-700/80"
                           >
                             {person.profile_path ? (
                               <img
@@ -428,7 +430,7 @@ const DetailPage = () => {
                             <p className="text-xs font-space-grotesk text-neutral-400">
                               {person.character || "—"}
                             </p>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
