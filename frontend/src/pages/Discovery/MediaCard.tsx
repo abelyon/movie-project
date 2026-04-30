@@ -33,6 +33,12 @@ const MediaCard = ({
     watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount,
   );
 
+  const showWatchTogetherBadge = Boolean(
+    watchTogetherMeta &&
+    watchTogetherMeta.participantCount > 0 &&
+    (everyoneWantsToWatch || watchTogetherMeta.wantCount >= 2),
+  );
+
   const prefetchDetail = () => {
     const mt = item.media_type;
     if (mt !== "movie" && mt !== "tv") return;
@@ -158,7 +164,7 @@ const MediaCard = ({
           </span>
         </div>
       )}
-      {watchTogetherMeta && watchTogetherMeta.participantCount > 0 && (
+      {showWatchTogetherBadge && (
         <div className="absolute bottom-0 right-0 p-4 flex flex-col items-start gap-2 pointer-events-none">
           {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
             <span
