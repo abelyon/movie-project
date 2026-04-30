@@ -204,31 +204,28 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
-  const showNoResults = isShowingSearchResults && !isSearchLoading && visibleResults.length === 0;
-  const showActorNoResults = isShowingSearchResults && actorMode && visibleResults.length === 0;
-  const showSearchNotice = isShowingSearchHint || showNoResults || showActorNoResults;
 
   return (
     <div>
-      {showSearchNotice && (
-        <div className="fixed left-0 right-0 top-[88px] z-[69] px-5">
-          <div className="mx-auto max-w-4xl rounded-2xl border border-neutral-600 bg-neutral-800/90 px-3 py-2 text-sm text-neutral-300 backdrop-blur-md">
-            {isShowingSearchHint && <p>Type at least 2 characters to search.</p>}
-            {showNoResults && (
-              <p role="alert">
-                No results found for "{trimmedQuery}". Try another title or clear some filters.
-              </p>
-            )}
-            {showActorNoResults && (
-              <p role="alert">
-                No movie or TV results found for actor "{matchedPerson?.name}".
-              </p>
-            )}
-          </div>
-        </div>
+      {isShowingSearchHint && (
+        <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
       )}
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
+      {isShowingSearchResults && !isSearchLoading && visibleResults.length === 0 && (
+        <div className="px-5 pt-2">
+          <p role="alert" className="text-sm text-neutral-400">
+            No results found for "{trimmedQuery}". Try another title or clear some filters.
+          </p>
+        </div>
+      )}
+      {isShowingSearchResults && actorMode && visibleResults.length === 0 && (
+        <div className="px-5 pt-2">
+          <p role="alert" className="text-sm text-neutral-400">
+            No movie or TV results found for actor "{matchedPerson?.name}".
+          </p>
+        </div>
+      )}
 
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
         {visibleResults.map((item) => (
