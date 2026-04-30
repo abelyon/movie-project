@@ -230,7 +230,7 @@ const DiscoveryPage = () => {
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
 
-      <div className={`p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${showSearchNotice ? "pt-24" : ""}`}>
+      <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
         {visibleResults.map((item) => (
           (() => {
             const key = stateKey(item.id, item.media_type);
