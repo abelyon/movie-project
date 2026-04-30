@@ -110,7 +110,10 @@ const DiscoveryPage = () => {
         (item.title ?? item.name ?? "").toLowerCase().includes(trimmedQuery.toLowerCase()),
       )
     : actorResults;
-  const raw = actorMode ? actorSearchFiltered : (canSearch ? rawSearch : rawTrending);
+  const actorHasMatches = actorSearchFiltered.length > 0;
+  const raw = canSearch
+    ? (actorMode && actorHasMatches ? actorSearchFiltered : rawSearch)
+    : rawTrending;
   const seen = new Set<string>();
   const dedupedResults = raw.filter((item) => {
     if (item.media_type !== "movie" && item.media_type !== "tv") return false;
@@ -206,7 +209,7 @@ const DiscoveryPage = () => {
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
   const searchNotice = isShowingSearchHint
     ? "Type at least 2 characters to search."
-    : isShowingSearchResults && actorMode && visibleResults.length === 0
+    : isShowingSearchResults && actorMode && actorHasMatches && visibleResults.length === 0
       ? `No movie or TV results found for actor "${matchedPerson?.name}".`
       : isShowingSearchResults && !isSearchLoading && visibleResults.length === 0
         ? `No results found for "${trimmedQuery}". Try another title or clear some filters.`
@@ -219,7 +222,7 @@ const DiscoveryPage = () => {
     <div className={showSearch ? "pt-20" : ""}>
       {showPinnedSearchNotice && (
         <div className="px-5 pb-5">
-          <p role="status" className="mx-auto max-w-4xl text-sm text-neutral-300">
+          <p role="status" className="mx-5 text-left text-sm text-neutral-300 font-space-grotesk">
             {searchNotice}
           </p>
         </div>
