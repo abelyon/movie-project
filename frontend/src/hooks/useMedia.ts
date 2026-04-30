@@ -62,6 +62,32 @@ const isSavedListQueryKey = (key: readonly unknown[]) =>
   key[1] === "media" &&
   key[2] === "saved";
 
+export function buildSavedListQueryKey(options?: {
+  withFriendsSaved?: boolean;
+  withFriendsSocial?: boolean;
+  friendIds?: number[];
+}) {
+  const variant =
+    options?.withFriendsSocial === true
+      ? "with-friends-social"
+      : options?.withFriendsSaved === true
+        ? "with-friends"
+        : "all";
+  const friendIdsSegment =
+    (options?.withFriendsSaved || options?.withFriendsSocial) &&
+    options != null &&
+    "friendIds" in options
+      ? (options.friendIds ?? []).slice().sort((a, b) => a - b).join(",")
+      : "";
+  return ["user", "media", "saved", variant, friendIdsSegment] as const;
+}
+
+/** Plain Saved tab (`useSavedList()` with no options). Seeded on save so first navigation has data. */
+export const DEFAULT_SAVED_LIST_QUERY_KEY = buildSavedListQueryKey();
+
+const sameQueryKey = (a: readonly unknown[], b: readonly unknown[]) =>
+  a.length === b.length && a.every((v, i) => v === b[i]);
+
 /** Discovery/search grids read batched state; keep them in sync with detail actions */
 const patchBatchStateMaps = (
   qc: ReturnType<typeof useQueryClient>,
@@ -82,8 +108,8 @@ const patchBatchStateMaps = (
 
 const snapshotSavedLists = (
   qc: ReturnType<typeof useQueryClient>,
-): Array<{ key: readonly unknown[]; data: MediaItem[] | undefined }> =>
-  qc
+): Array<{ key: readonly unknown[]; data: MediaItem[] | undefined }> => {
+  const rows = qc
     .getQueryCache()
     .findAll({ predicate: (q) => isSavedListQueryKey(q.queryKey) })
     .map((q) => {
@@ -93,6 +119,31 @@ const snapshotSavedLists = (
         data: data?.map((item) => ({ ...item })),
       };
     });
+  if (!rows.some((r) => sameQueryKey(r.key, DEFAULT_SAVED_LIST_QUERY_KEY))) {
+    const data = qc.getQueryData<MediaItem[]>(DEFAULT_SAVED_LIST_QUERY_KEY);
+    rows.push({
+      key: [...DEFAULT_SAVED_LIST_QUERY_KEY],
+      data: data === undefined ? undefined : data.map((item) => ({ ...item })),
+    });
+  }
+  return rows;
+};
+
+const mergeUpsertSaved = (old: MediaItem[] | undefined, preview: MediaItem): MediaItem[] => {
+  const rest = (old ?? []).filter(
+    (item) => !(item.id === preview.id && item.media_type === preview.media_type),
+  );
+  return [preview, ...rest];
+};
+
+const mergeRemoveSaved = (
+  old: MediaItem[] | undefined,
+  tmdbId: number,
+  mediaType: string,
+): MediaItem[] | undefined => {
+  if (!old) return old;
+  return old.filter((item) => !(item.id === tmdbId && item.media_type === mediaType));
+};
 
 /** Remove item from cached Saved list so Saved tab updates before refetch */
 const optimisticRemoveFromSavedList = (
@@ -102,12 +153,10 @@ const optimisticRemoveFromSavedList = (
 ) => {
   qc.setQueriesData<MediaItem[]>(
     { predicate: (q) => isSavedListQueryKey(q.queryKey) },
-    (old) => {
-      if (!old) return old;
-      return old.filter(
-        (item) => !(item.id === tmdbId && item.media_type === mediaType),
-      );
-    },
+    (old) => mergeRemoveSaved(old, tmdbId, mediaType),
+  );
+  qc.setQueryData<MediaItem[]>(DEFAULT_SAVED_LIST_QUERY_KEY, (old) =>
+    mergeRemoveSaved(old, tmdbId, mediaType),
   );
 };
 
@@ -118,13 +167,10 @@ const optimisticUpsertSavedList = (
 ) => {
   qc.setQueriesData<MediaItem[]>(
     { predicate: (q) => isSavedListQueryKey(q.queryKey) },
-    (old) => {
-      const rest = (old ?? []).filter(
-        (item) =>
-          !(item.id === preview.id && item.media_type === preview.media_type),
-      );
-      return [preview, ...rest];
-    },
+    (old) => mergeUpsertSaved(old, preview),
+  );
+  qc.setQueryData<MediaItem[]>(DEFAULT_SAVED_LIST_QUERY_KEY, (old) =>
+    mergeUpsertSaved(old, preview),
   );
 };
 
@@ -422,16 +468,7 @@ export const useSavedList = (options?: {
   friendIds?: number[];
 }) =>
   useQuery({
-    queryKey: [
-      "user",
-      "media",
-      "saved",
-      options?.withFriendsSocial ? "with-friends-social" :
-      options?.withFriendsSaved ? "with-friends" : "all",
-      (options?.withFriendsSaved || options?.withFriendsSocial) && "friendIds" in (options ?? {})
-        ? ((options as { friendIds?: number[] }).friendIds ?? []).slice().sort((a, b) => a - b).join(",")
-        : "",
-    ],
+    queryKey: [...buildSavedListQueryKey(options)],
     queryFn: () => getSaved(options),
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
