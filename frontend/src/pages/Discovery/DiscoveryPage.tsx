@@ -212,11 +212,13 @@ const DiscoveryPage = () => {
         ? `No results found for "${trimmedQuery}". Try another title or clear some filters.`
         : null;
   const showPinnedSearchNotice = showSearch && searchNotice !== null;
+  const cardsTopSpacingClass = showSearch && !showPinnedSearchNotice ? "pt-5" : "";
+  const cardsToRender = isShowingSearchHint ? [] : visibleResults;
 
   return (
     <div className={showSearch ? "pt-20" : ""}>
       {showPinnedSearchNotice && (
-        <div className="fixed top-[78px] left-0 right-0 z-[65] px-5">
+        <div className="px-5 pb-5">
           <p role="status" className="mx-auto max-w-4xl text-sm text-neutral-300">
             {searchNotice}
           </p>
@@ -225,8 +227,8 @@ const DiscoveryPage = () => {
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
 
-      <div className={`p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${showPinnedSearchNotice ? "pt-12" : ""}`}>
-        {visibleResults.map((item) => (
+      <div className={`p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${cardsTopSpacingClass}`}>
+        {cardsToRender.map((item) => (
           (() => {
             const key = stateKey(item.id, item.media_type);
             const savedFromSources = Boolean(stateMap?.[key]?.is_saved) || savedSet.has(key);
