@@ -24,11 +24,33 @@ export async function fetchSearch(params: {
 
 export async function fetchDiscover(
   type: "movie" | "tv",
-  params?: { page?: number; year?: number; sort_by?: string },
+  params?: { page?: number; year?: number; sort_by?: string; person_id?: number },
 ): Promise<DiscoverResponse> {
   const { data } = await api.get<DiscoverResponse>(`/discover/${type}`, {
     params: params ?? {},
   });
+  return data;
+}
+
+export type PersonSearchResult = {
+  id: number;
+  name: string;
+  known_for_department?: string;
+  profile_path?: string | null;
+};
+
+export type PersonSearchResponse = {
+  results: PersonSearchResult[];
+  page?: number;
+  total_pages?: number;
+  total_results?: number;
+};
+
+export async function fetchPeopleSearch(params: {
+  query: string;
+  page?: number;
+}): Promise<PersonSearchResponse> {
+  const { data } = await api.get<PersonSearchResponse>("/people/search", { params });
   return data;
 }
 

@@ -91,5 +91,6 @@ Route::middleware('auth:sanctum')->prefix('friends')->group(function () {
 Route::get('/trending', [TmdbController::class, 'trending']);
 Route::get('/discover/{type}', [TmdbController::class, 'discover']);
 Route::get('/search', [TmdbController::class, 'search']);
+Route::get('/people/search', [TmdbController::class, 'searchPeople']);
 Route::get('/movie/{id}', [TmdbController::class, 'movie']);
 Route::get('/tv/{id}', [TmdbController::class, 'tv']);
