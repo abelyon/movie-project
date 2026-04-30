@@ -7,6 +7,8 @@ import { fetchPerson } from "../../api/tmdb";
 import type { MediaItem } from "../../api/types";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import MediaCard from "../Discovery/MediaCard";
+import { useSavedList } from "../../hooks/useMedia";
+import { stateKey } from "../../api/userMedia";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
@@ -81,9 +83,43 @@ const PersonDetailPage = () => {
       })),
     [data?.credits],
   );
+  const { data: savedList } = useSavedList();
+  const savedSet = useMemo(
+    () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
+    [savedList],
+  );
 
   if (isLoading) {
-    return <div className="p-5 text-neutral-300">Loading person details...</div>;
+    return (
+      <div className="text-white overflow-hidden">
+        <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+            <div className="relative w-full sm:w-56 sm:shrink-0">
+              <div className="w-full h-50 sm:h-88 rounded-4xl bg-neutral-800/80 animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <div className="h-9 w-64 rounded-2xl bg-neutral-800/80 animate-pulse" />
+              <div className="mt-4 flex gap-2">
+                <div className="h-7 w-28 rounded-4xl bg-neutral-800/80 animate-pulse" />
+                <div className="h-7 w-24 rounded-4xl bg-neutral-800/80 animate-pulse" />
+                <div className="h-7 w-36 rounded-4xl bg-neutral-800/80 animate-pulse" />
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="h-4 w-full rounded bg-neutral-800/80 animate-pulse" />
+                <div className="h-4 w-[96%] rounded bg-neutral-800/80 animate-pulse" />
+                <div className="h-4 w-[90%] rounded bg-neutral-800/80 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+          {Array.from({ length: 8 }).map((_, idx) => (
+            <div key={`person-media-skel-${idx}`} className="aspect-2/3 w-full rounded-4xl bg-neutral-800/70 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (isError) {
@@ -155,7 +191,11 @@ const PersonDetailPage = () => {
       {mediaItems.length > 0 && (
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
           {mediaItems.map((item) => (
-            <MediaCard key={`${item.media_type}-${item.id}`} item={item} />
+            <MediaCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+            />
           ))}
         </div>
       )}
