@@ -25,7 +25,6 @@ const DiscoveryPage = () => {
   const discoveryControls = outletContext?.discoveryControls ?? {
     showSearch: false,
     query: "",
-    setQuery: (_value: string | ((prev: string) => string)) => {},
     sortBy: "default" as const,
     filterType: "all" as const,
     selectedGenreIds: [] as number[],
@@ -34,7 +33,7 @@ const DiscoveryPage = () => {
     favoriteFilter: "all" as const,
     yearFrom: "",
   };
-  const { showSearch, query, setQuery, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
+  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
   const {
     data,
     isPending,
@@ -70,7 +69,7 @@ const DiscoveryPage = () => {
       null
     );
   }, [canSearch, peopleSearchData?.results, trimmedQuery]);
-  const actorMode = canSearch && matchedPerson !== null && matchedPerson.name.trim().toLowerCase() === trimmedQuery.toLowerCase();
+  const actorMode = canSearch && matchedPerson !== null;
   const { data: actorMovieData, isLoading: isActorMovieLoading } = useQuery({
     queryKey: ["tmdb", "discover", "movie", "actor-search", matchedPerson?.id ?? null],
     queryFn: () => fetchDiscover("movie", { person_id: matchedPerson!.id }),
@@ -100,22 +99,6 @@ const DiscoveryPage = () => {
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
-  const searchPeople = useMemo(
-    () =>
-      (rawSearch ?? [])
-        .filter((item) => item.media_type === "person")
-        .map((item) => ({
-          id: item.id,
-          name: item.name ?? item.title ?? "",
-        }))
-        .filter((person) => person.name.length > 0)
-        .slice(0, 6),
-    [rawSearch],
-  );
-  const rawSearchMedia = useMemo(
-    () => (rawSearch ?? []).filter((item) => item.media_type === "movie" || item.media_type === "tv"),
-    [rawSearch],
-  );
   const actorResults = actorMode
     ? [
         ...(actorMovieData?.results ?? []),
@@ -127,7 +110,7 @@ const DiscoveryPage = () => {
         (item.title ?? item.name ?? "").toLowerCase().includes(trimmedQuery.toLowerCase()),
       )
     : actorResults;
-  const raw = actorMode ? actorSearchFiltered : (canSearch ? rawSearchMedia : rawTrending);
+  const raw = actorMode ? actorSearchFiltered : (canSearch ? rawSearch : rawTrending);
   const seen = new Set<string>();
   const dedupedResults = raw.filter((item) => {
     if (item.media_type !== "movie" && item.media_type !== "tv") return false;
@@ -221,12 +204,7 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
-  const showNoResults =
-    isShowingSearchResults &&
-    !isSearchLoading &&
-    !actorMode &&
-    searchPeople.length === 0 &&
-    visibleResults.length === 0;
+  const showNoResults = isShowingSearchResults && !isSearchLoading && visibleResults.length === 0;
   const showActorNoResults = isShowingSearchResults && actorMode && visibleResults.length === 0;
   const showSearchNotice = isShowingSearchHint || showNoResults || showActorNoResults;
 
@@ -251,26 +229,6 @@ const DiscoveryPage = () => {
       )}
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
-
-      {isShowingSearchResults && !actorMode && searchPeople.length > 0 && (
-        <div className="px-5 pt-2">
-          <div className="rounded-2xl border border-neutral-600 bg-neutral-800/80 px-3 py-3 backdrop-blur-md">
-            <p className="text-xs uppercase tracking-wide text-neutral-400">People</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {searchPeople.map((person) => (
-                <button
-                  key={person.id}
-                  type="button"
-                  onClick={() => setQuery(person.name)}
-                  className="rounded-2xl border border-neutral-600 px-3 py-1.5 text-sm text-neutral-100 transition hover:bg-neutral-700/70"
-                >
-                  {person.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
         {visibleResults.map((item) => (
