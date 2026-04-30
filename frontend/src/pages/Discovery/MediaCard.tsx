@@ -164,7 +164,7 @@ const MediaCard = ({
           </span>
         </div>
       )}
-      {showWatchTogetherBadge && (
+      {watchTogetherMeta && showWatchTogetherBadge && (
         <div className="absolute bottom-0 right-0 p-4 flex flex-col items-start gap-2 pointer-events-none">
           {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
             <span
