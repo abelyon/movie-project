@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -17,7 +18,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { floatingActionButtonBaseClass } from "../constants/floatingActionButton";
 import { AnimatedNavIcon } from "../components/AnimatedNavIcon";
-import { getFriendOverview, type FriendUser } from "../api/friends";
+import { getFriendOverview } from "../api/friends";
 import { WatchTogetherUserStack } from "../components/WatchTogetherUserStack";
 
 const routes = [
@@ -138,9 +139,6 @@ const MainLayout = () => {
   const [sYearFrom, setSYearFrom] = useState("");
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
-  const [friends, setFriends] = useState<FriendUser[]>([]);
-  const [friendsLoading, setFriendsLoading] = useState(false);
-  const [friendsLoaded, setFriendsLoaded] = useState(false);
 
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
@@ -154,26 +152,18 @@ const MainLayout = () => {
     setSSelectedGenreIds([]);
   }, [sFilterType]);
 
-  useEffect(() => {
-    if (!isSaved || friendsLoaded) return;
-    let cancelled = false;
-    setFriendsLoading(true);
-    getFriendOverview()
-      .then((data) => {
-        if (cancelled) return;
-        setFriends(data.friends ?? []);
-        setFriendsLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) setFriends([]);
-      })
-      .finally(() => {
-        if (!cancelled) setFriendsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isSaved, friendsLoaded]);
+  const {
+    data: friendsOverview,
+    isFetching: friendsLoading,
+    refetch: refetchFriendsOverview,
+  } = useQuery({
+    queryKey: ["friends", "overview"],
+    queryFn: getFriendOverview,
+    enabled: isSaved && sShowFriends,
+    staleTime: 30_000,
+    refetchOnMount: "always",
+  });
+  const friends = friendsOverview?.friends ?? [];
 
   /** Full-screen backdrop; omit discovery search so the grid stays clickable while searching. */
   const hasModalBackdrop =
@@ -640,7 +630,14 @@ const MainLayout = () => {
             <button
               type="button"
               onClick={() => {
-                setSShowFriends((prev) => !prev);
+                setSShowFriends((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    // Always refresh on open so newly accepted friends appear immediately.
+                    void refetchFriendsOverview();
+                  }
+                  return next;
+                });
                 setSShowFilter(false);
                 setSShowSort(false);
                 setShowFriendsSocial(false);
