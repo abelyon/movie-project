@@ -36,10 +36,20 @@ const getRuntime = (detail: MediaDetail, mediaType: string): number | undefined 
   return typeof n === "number" && !Number.isNaN(n) ? n : undefined;
 };
 
-const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undefined => {
+/** e.g. 121 → "2H 1M", 90 → "1H 30M", 45 → "45M" */
+const formatRuntimeMinutes = (minutes: number): string => {
+  if (minutes <= 0) return "";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h}H ${m}M`;
+  if (h > 0) return `${h}H`;
+  return `${m}M`;
+};
+
+const getSeasonsShort = (detail: MediaDetail, mediaType: string): string | undefined => {
   if (mediaType !== "tv") return undefined;
   const seasons = (detail as TvDetail).number_of_seasons;
-  return seasons != null ? `${seasons} season${seasons !== 1 ? "s" : ""}` : undefined;
+  return seasons != null && seasons > 0 ? `${seasons}S` : undefined;
 };
 
 const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
@@ -209,7 +219,7 @@ const DetailPage = () => {
   const title = getTitle(data, media_type);
   const date = getDate(data, media_type);
   const runtime = getRuntime(data, media_type);
-  const seasonsLabel = getSeasonsLabel(data, media_type);
+  const seasonsShort = getSeasonsShort(data, media_type);
   const poster = data.poster_path
     ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.poster_path}`
     : null;
@@ -272,7 +282,7 @@ const DetailPage = () => {
             </div>
 
             {(Boolean(data.genres?.length) ||
-              Boolean(seasonsLabel) ||
+              Boolean(seasonsShort) ||
               (media_type === "movie" && runtime != null && runtime > 0)) && (
               <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
                 {Boolean(data.genres?.length) && (
@@ -300,7 +310,7 @@ const DetailPage = () => {
                   </motion.p>
                 )}
                 {((media_type === "movie" && runtime != null && runtime > 0) ||
-                  (media_type === "tv" && seasonsLabel)) && (
+                  (media_type === "tv" && seasonsShort)) && (
                   <motion.span
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -308,8 +318,8 @@ const DetailPage = () => {
                     className="shrink-0 text-base font-space-grotesk font-bold text-neutral-600"
                   >
                     {media_type === "movie" && runtime != null && runtime > 0
-                      ? `${runtime} M`
-                      : `${seasonsLabel} S`}
+                      ? formatRuntimeMinutes(runtime)
+                      : seasonsShort}
                   </motion.span>
                 )}
               </div>
