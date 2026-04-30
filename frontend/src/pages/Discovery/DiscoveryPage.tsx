@@ -1,9 +1,11 @@
 import { useMemo, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useInfiniteTrending } from "../../hooks/useTrending";
 import { useSearch } from "../../hooks/useSearch";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { stateKey } from "../../api/userMedia";
+import { fetchDiscover } from "../../api/tmdb";
 import MediaCard from "./MediaCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
@@ -30,8 +32,9 @@ const DiscoveryPage = () => {
     watchedFilter: "all" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
+    selectedActor: null,
   };
-  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
+  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom, selectedActor } = discoveryControls;
   const {
     data,
     isPending,
@@ -48,9 +51,20 @@ const DiscoveryPage = () => {
   const { data: searchData, isLoading: isSearchLoading } = useSearch(
     canSearch ? trimmedQuery : "",
   );
+  const actorMode = selectedActor !== null;
+  const { data: actorMovieData, isLoading: isActorMovieLoading } = useQuery({
+    queryKey: ["tmdb", "discover", "movie", "actor", selectedActor?.id ?? null],
+    queryFn: () => fetchDiscover("movie", { person_id: selectedActor!.id }),
+    enabled: actorMode,
+  });
+  const { data: actorTvData, isLoading: isActorTvLoading } = useQuery({
+    queryKey: ["tmdb", "discover", "tv", "actor", selectedActor?.id ?? null],
+    queryFn: () => fetchDiscover("tv", { person_id: selectedActor!.id }),
+    enabled: actorMode,
+  });
 
   useEffect(() => {
-    if (showSearch) return;
+    if (showSearch || actorMode) return;
     if (!hasNextPage || isFetchingNextPage) return;
     const el = sentinelRef.current;
     if (!el) return;
@@ -63,11 +77,22 @@ const DiscoveryPage = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
+  }, [actorMode, fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
-  const raw = canSearch ? rawSearch : rawTrending;
+  const actorResults = actorMode
+    ? [
+        ...(actorMovieData?.results ?? []),
+        ...(actorTvData?.results ?? []),
+      ]
+    : [];
+  const actorSearchFiltered = canSearch
+    ? actorResults.filter((item) =>
+        (item.title ?? item.name ?? "").toLowerCase().includes(trimmedQuery.toLowerCase()),
+      )
+    : actorResults;
+  const raw = actorMode ? actorSearchFiltered : (canSearch ? rawSearch : rawTrending);
   const seen = new Set<string>();
   const dedupedResults = raw.filter((item) => {
     if (item.media_type !== "movie" && item.media_type !== "tv") return false;
@@ -146,7 +171,7 @@ const DiscoveryPage = () => {
     [favoriteFilter, results, stateMap, watchedFilter],
   );
 
-  if (isPending && !data) {
+  if ((actorMode && (isActorMovieLoading || isActorTvLoading)) || (isPending && !data)) {
     return (
       <div>
         <SkeletonCards count={8} />
@@ -172,6 +197,13 @@ const DiscoveryPage = () => {
           </p>
         </div>
       )}
+      {!isShowingSearchResults && actorMode && visibleResults.length === 0 && (
+        <div className="px-5 pt-2">
+          <p role="alert" className="text-sm text-neutral-400">
+            No movie or TV results found for actor "{selectedActor?.name}".
+          </p>
+        </div>
+      )}
 
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
         {visibleResults.map((item) => (
@@ -193,7 +225,7 @@ const DiscoveryPage = () => {
         ))}
       </div>
 
-      {!showSearch && (
+      {!showSearch && !actorMode && (
         <>
           <div ref={sentinelRef} style={{ height: 20 }} />
           {isFetchingNextPage && (

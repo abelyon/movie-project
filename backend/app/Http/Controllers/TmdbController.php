@@ -27,10 +27,18 @@ class TmdbController extends Controller
             'sort_by' => $request->query('sort_by', 'popularity.desc'),
         ];
 
-        if ($type === 'movie') {
-            $queryParams['primary_release_year'] = $request->query('year', 2026);
-        } elseif ($type === 'tv') {
-            $queryParams['first_air_date_year'] = $request->query('year', 2026);
+        $year = $request->query('year');
+        if ($year !== null && $year !== '') {
+            if ($type === 'movie') {
+                $queryParams['primary_release_year'] = $year;
+            } elseif ($type === 'tv') {
+                $queryParams['first_air_date_year'] = $year;
+            }
+        }
+
+        $personId = $request->query('person_id');
+        if ($personId !== null && $personId !== '') {
+            $queryParams['with_people'] = $personId;
         }
 
         $response = Http::get("{$url}/discover/{$type}", $queryParams);
@@ -38,6 +46,37 @@ class TmdbController extends Controller
         if ($response->failed()) {
             return response()->json([
                 'message' => 'Failed to fetch data from TMDB',
+            ], $response->status());
+        }
+
+        return response()->json($response->json(), 200);
+    }
+
+    public function searchPeople(Request $request)
+    {
+        $apiKey = config('services.tmdb.api_key');
+        $url = config('services.tmdb.url');
+        $query = trim((string) $request->query('query', ''));
+
+        if (strlen($query) < 2) {
+            return response()->json([
+                'results' => [],
+                'page' => 1,
+                'total_pages' => 0,
+                'total_results' => 0,
+            ], 200);
+        }
+
+        $response = Http::get("{$url}/search/person", [
+            'api_key' => $apiKey,
+            'query' => $query,
+            'page' => $request->query('page', 1),
+            'include_adult' => false,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Failed to fetch people from TMDB',
             ], $response->status());
         }
 
