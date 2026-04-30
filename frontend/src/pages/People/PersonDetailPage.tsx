@@ -105,18 +105,6 @@ const PersonDetailPage = () => {
   return (
     <div className="text-white overflow-hidden">
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <motion.button
-          type="button"
-          onClick={() => navigate(-1)}
-          className={`mb-4 ${pill} ${actionButtonInactive}`}
-          initial={{ opacity: 1, y: 0 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <AnimatedNavIcon>
-            <ArrowLeft size={24} strokeWidth={2.5} />
-          </AnimatedNavIcon>
-        </motion.button>
-
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <PersonPosterBlock image={poster} name={data.name} />
 
@@ -171,6 +159,20 @@ const PersonDetailPage = () => {
           ))}
         </div>
       )}
+
+      <div className="fixed bottom-5 right-5 z-[60] flex flex-col gap-3">
+        <motion.button
+          type="button"
+          onClick={() => navigate(-1)}
+          className={`${pill} ${actionButtonInactive}`}
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <AnimatedNavIcon>
+            <ArrowLeft size={24} strokeWidth={2.5} />
+          </AnimatedNavIcon>
+        </motion.button>
+      </div>
     </div>
   );
 };
