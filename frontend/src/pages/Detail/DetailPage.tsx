@@ -46,10 +46,12 @@ const formatRuntimeMinutes = (minutes: number): string => {
   return `${m}M`;
 };
 
-const getSeasonsShort = (detail: MediaDetail, mediaType: string): string | undefined => {
+const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undefined => {
   if (mediaType !== "tv") return undefined;
   const seasons = (detail as TvDetail).number_of_seasons;
-  return seasons != null && seasons > 0 ? `${seasons}S` : undefined;
+  return seasons != null && seasons > 0
+    ? `${seasons} Season${seasons === 1 ? "" : "s"}`
+    : undefined;
 };
 
 const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
@@ -219,7 +221,7 @@ const DetailPage = () => {
   const title = getTitle(data, media_type);
   const date = getDate(data, media_type);
   const runtime = getRuntime(data, media_type);
-  const seasonsShort = getSeasonsShort(data, media_type);
+  const seasonsLabel = getSeasonsLabel(data, media_type);
   const poster = data.poster_path
     ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.poster_path}`
     : null;
@@ -282,7 +284,7 @@ const DetailPage = () => {
             </div>
 
             {(Boolean(data.genres?.length) ||
-              Boolean(seasonsShort) ||
+              Boolean(seasonsLabel) ||
               (media_type === "movie" && runtime != null && runtime > 0)) && (
               <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
                 {Boolean(data.genres?.length) && (
@@ -310,7 +312,7 @@ const DetailPage = () => {
                   </motion.p>
                 )}
                 {((media_type === "movie" && runtime != null && runtime > 0) ||
-                  (media_type === "tv" && seasonsShort)) && (
+                  (media_type === "tv" && seasonsLabel)) && (
                   <motion.span
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -319,7 +321,7 @@ const DetailPage = () => {
                   >
                     {media_type === "movie" && runtime != null && runtime > 0
                       ? formatRuntimeMinutes(runtime)
-                      : seasonsShort}
+                      : seasonsLabel}
                   </motion.span>
                 )}
               </div>
