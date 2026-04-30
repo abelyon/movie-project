@@ -5,11 +5,15 @@ import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { fetchPerson } from "../../api/tmdb";
 import type { MediaItem } from "../../api/types";
+import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import MediaCard from "../Discovery/MediaCard";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
+const pill =
+  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
+const actionButtonInactive = "text-neutral-400";
 
 const PersonPosterBlock = ({ image, name }: { image: string; name: string }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -101,14 +105,17 @@ const PersonDetailPage = () => {
   return (
     <div className="text-white overflow-hidden">
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <button
+        <motion.button
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-neutral-600 bg-neutral-800/70 px-3 py-2 text-sm text-neutral-100 transition hover:bg-neutral-700/70"
+          className={`mb-4 ${pill} ${actionButtonInactive}`}
+          initial={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          <ArrowLeft size={16} />
-          Back
-        </button>
+          <AnimatedNavIcon>
+            <ArrowLeft size={24} strokeWidth={2.5} />
+          </AnimatedNavIcon>
+        </motion.button>
 
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <PersonPosterBlock image={poster} name={data.name} />
@@ -152,19 +159,18 @@ const PersonDetailPage = () => {
           </motion.div>
         </div>
 
-        <div className="mt-8">
-          <h2 className="text-xl font-space-grotesk font-semibold text-neutral-100">Media</h2>
-          {mediaItems.length === 0 ? (
-            <p className="pt-2 text-sm text-neutral-400">No movie or TV credits found.</p>
-          ) : (
-            <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-              {mediaItems.map((item) => (
-                <MediaCard key={`${item.media_type}-${item.id}`} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
+        {mediaItems.length === 0 && (
+          <p className="mt-8 text-sm text-neutral-400">No movie or TV credits found.</p>
+        )}
       </div>
+
+      {mediaItems.length > 0 && (
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+          {mediaItems.map((item) => (
+            <MediaCard key={`${item.media_type}-${item.id}`} item={item} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
