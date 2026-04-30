@@ -5,7 +5,7 @@ import { useInfiniteTrending } from "../../hooks/useTrending";
 import { useSearch } from "../../hooks/useSearch";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { stateKey } from "../../api/userMedia";
-import { fetchDiscover } from "../../api/tmdb";
+import { fetchDiscover, fetchPeopleSearch, type PersonSearchResult } from "../../api/tmdb";
 import MediaCard from "./MediaCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
@@ -32,9 +32,8 @@ const DiscoveryPage = () => {
     watchedFilter: "all" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
-    selectedActor: null,
   };
-  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom, selectedActor } = discoveryControls;
+  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
   const {
     data,
     isPending,
@@ -51,15 +50,34 @@ const DiscoveryPage = () => {
   const { data: searchData, isLoading: isSearchLoading } = useSearch(
     canSearch ? trimmedQuery : "",
   );
-  const actorMode = selectedActor !== null;
+  const { data: peopleSearchData, isLoading: isPeopleSearchLoading } = useQuery({
+    queryKey: ["tmdb", "people", "search", "discovery", trimmedQuery],
+    queryFn: () => fetchPeopleSearch({ query: trimmedQuery }),
+    enabled: canSearch,
+    staleTime: 60_000,
+  });
+  const matchedPerson: PersonSearchResult | null = useMemo(() => {
+    if (!canSearch) return null;
+    const people = peopleSearchData?.results ?? [];
+    if (people.length === 0) return null;
+    const q = trimmedQuery.toLowerCase();
+    return (
+      people.find((p) => p.name.toLowerCase() === q) ??
+      people.find((p) => p.name.toLowerCase().startsWith(q)) ??
+      people.find((p) => p.name.toLowerCase().includes(q)) ??
+      people[0] ??
+      null
+    );
+  }, [canSearch, peopleSearchData?.results, trimmedQuery]);
+  const actorMode = canSearch && matchedPerson !== null;
   const { data: actorMovieData, isLoading: isActorMovieLoading } = useQuery({
-    queryKey: ["tmdb", "discover", "movie", "actor", selectedActor?.id ?? null],
-    queryFn: () => fetchDiscover("movie", { person_id: selectedActor!.id }),
+    queryKey: ["tmdb", "discover", "movie", "actor-search", matchedPerson?.id ?? null],
+    queryFn: () => fetchDiscover("movie", { person_id: matchedPerson!.id }),
     enabled: actorMode,
   });
   const { data: actorTvData, isLoading: isActorTvLoading } = useQuery({
-    queryKey: ["tmdb", "discover", "tv", "actor", selectedActor?.id ?? null],
-    queryFn: () => fetchDiscover("tv", { person_id: selectedActor!.id }),
+    queryKey: ["tmdb", "discover", "tv", "actor-search", matchedPerson?.id ?? null],
+    queryFn: () => fetchDiscover("tv", { person_id: matchedPerson!.id }),
     enabled: actorMode,
   });
 
@@ -171,7 +189,11 @@ const DiscoveryPage = () => {
     [favoriteFilter, results, stateMap, watchedFilter],
   );
 
-  if ((actorMode && (isActorMovieLoading || isActorTvLoading)) || (isPending && !data)) {
+  if (
+    (canSearch && isPeopleSearchLoading) ||
+    (actorMode && (isActorMovieLoading || isActorTvLoading)) ||
+    (isPending && !data)
+  ) {
     return (
       <div>
         <SkeletonCards count={8} />
@@ -182,30 +204,33 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
+  const showNoResults = isShowingSearchResults && !isSearchLoading && visibleResults.length === 0;
+  const showActorNoResults = isShowingSearchResults && actorMode && visibleResults.length === 0;
+  const showSearchNotice = isShowingSearchHint || showNoResults || showActorNoResults;
 
   return (
     <div>
-      {isShowingSearchHint && (
-        <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
+      {showSearchNotice && (
+        <div className="fixed left-0 right-0 top-[88px] z-[69] px-5">
+          <div className="mx-auto max-w-4xl rounded-2xl border border-neutral-600 bg-neutral-800/90 px-3 py-2 text-sm text-neutral-300 backdrop-blur-md">
+            {isShowingSearchHint && <p>Type at least 2 characters to search.</p>}
+            {showNoResults && (
+              <p role="alert">
+                No results found for "{trimmedQuery}". Try another title or clear some filters.
+              </p>
+            )}
+            {showActorNoResults && (
+              <p role="alert">
+                No movie or TV results found for actor "{matchedPerson?.name}".
+              </p>
+            )}
+          </div>
+        </div>
       )}
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
-      {isShowingSearchResults && !isSearchLoading && visibleResults.length === 0 && (
-        <div className="px-5 pt-2">
-          <p role="alert" className="text-sm text-neutral-400">
-            No results found for "{trimmedQuery}". Try another title or clear some filters.
-          </p>
-        </div>
-      )}
-      {!isShowingSearchResults && actorMode && visibleResults.length === 0 && (
-        <div className="px-5 pt-2">
-          <p role="alert" className="text-sm text-neutral-400">
-            No movie or TV results found for actor "{selectedActor?.name}".
-          </p>
-        </div>
-      )}
 
-      <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+      <div className={`p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${showSearchNotice ? "pt-24" : ""}`}>
         {visibleResults.map((item) => (
           (() => {
             const key = stateKey(item.id, item.media_type);

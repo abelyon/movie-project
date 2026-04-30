@@ -19,7 +19,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { floatingActionButtonBaseClass } from "../constants/floatingActionButton";
 import { AnimatedNavIcon } from "../components/AnimatedNavIcon";
 import { getFriendOverview } from "../api/friends";
-import { fetchPeopleSearch } from "../api/tmdb";
 import { WatchTogetherUserStack } from "../components/WatchTogetherUserStack";
 
 const routes = [
@@ -74,7 +73,6 @@ type FilterType = "all" | "movie" | "tv";
 type MinRating = 0 | 6 | 7 | 8;
 type WatchFilter = "all" | "watched" | "unwatched";
 type FavoriteFilter = "all" | "favorited";
-type PersonOption = { id: number; name: string };
 
 export type MainLayoutOutletContext = {
   discoveryControls: {
@@ -87,12 +85,10 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
-    selectedActor: PersonOption | null;
     setFilterType: (value: FilterType) => void;
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
-    setSelectedActor: Dispatch<SetStateAction<PersonOption | null>>;
   };
   savedControls: {
     sortBy: SortKind;
@@ -128,8 +124,6 @@ const MainLayout = () => {
   const [dWatchedFilter, setDWatchedFilter] = useState<WatchFilter>("all");
   const [dFavoriteFilter, setDFavoriteFilter] = useState<FavoriteFilter>("all");
   const [dYearFrom, setDYearFrom] = useState("");
-  const [dActorQuery, setDActorQuery] = useState("");
-  const [dSelectedActor, setDSelectedActor] = useState<PersonOption | null>(null);
   const [dQuery, setDQuery] = useState("");
   const dSearchInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,14 +165,6 @@ const MainLayout = () => {
   });
   const friends = friendsOverview?.friends ?? [];
 
-  const { data: peopleSearchData, isFetching: peopleSearchLoading } = useQuery({
-    queryKey: ["tmdb", "people", "search", dActorQuery.trim()],
-    queryFn: () => fetchPeopleSearch({ query: dActorQuery.trim() }),
-    enabled: isDiscovery && dShowFilter && dActorQuery.trim().length >= 2 && dSelectedActor === null,
-    staleTime: 60_000,
-  });
-  const peopleResults = peopleSearchData?.results ?? [];
-
   /** Full-screen backdrop; omit discovery search so the grid stays clickable while searching. */
   const hasModalBackdrop =
     (isDiscovery && (dShowFilter || dShowSort)) ||
@@ -205,12 +191,10 @@ const MainLayout = () => {
         watchedFilter: dWatchedFilter,
         favoriteFilter: dFavoriteFilter,
         yearFrom: dYearFrom,
-        selectedActor: dSelectedActor,
         setFilterType: setDFilterType,
         setSelectedGenreIds: setDSelectedGenreIds,
         setMinRating: setDMinRating,
         setYearFrom: setDYearFrom,
-        setSelectedActor: setDSelectedActor,
       },
       savedControls: {
         sortBy: sSortBy,
@@ -230,7 +214,7 @@ const MainLayout = () => {
       },
     }),
     [
-      dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom, dSelectedActor,
+      dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
       sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom, selectedFriendIds, showFriendsSocial,
     ],
   );
@@ -371,54 +355,6 @@ const MainLayout = () => {
                         </select>
                       </div>
                     </div>
-                    <div className="mt-3">
-                      <label className="block px-1 text-xs uppercase tracking-wide text-neutral-400" htmlFor="layout-actor-filter">Actor</label>
-                      <input
-                        id="layout-actor-filter"
-                        value={dActorQuery}
-                        onChange={(e) => setDActorQuery(e.target.value)}
-                        placeholder="Type actor name..."
-                        className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none"
-                      />
-                      {dSelectedActor ? (
-                        <div className="mt-2 flex items-center justify-between rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm">
-                          <span className="text-neutral-100">{dSelectedActor.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setDSelectedActor(null);
-                              setDActorQuery("");
-                            }}
-                            className="text-neutral-300 hover:text-white"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      ) : dActorQuery.trim().length >= 2 ? (
-                        <div className="mt-2 max-h-40 overflow-y-auto rounded-2xl border border-neutral-600 bg-neutral-900/70 p-1">
-                          {peopleSearchLoading ? (
-                            <p className="px-2 py-2 text-sm text-neutral-400">Searching actors...</p>
-                          ) : peopleResults.length === 0 ? (
-                            <p className="px-2 py-2 text-sm text-neutral-400">No actors found.</p>
-                          ) : (
-                            peopleResults.slice(0, 8).map((person) => (
-                              <button
-                                key={person.id}
-                                type="button"
-                                onClick={() => {
-                                  setDSelectedActor({ id: person.id, name: person.name });
-                                  setDActorQuery(person.name);
-                                }}
-                                className="mt-1 first:mt-0 w-full rounded-xl px-2 py-2 text-left text-sm text-neutral-200 transition hover:bg-neutral-700/60"
-                              >
-                                {person.name}
-                                {person.known_for_department ? ` (${person.known_for_department})` : ""}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
                     <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -438,7 +374,7 @@ const MainLayout = () => {
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); setDSelectedActor(null); setDActorQuery(""); }}
+                        onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
                         className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
                       >
                         Clear filters
@@ -457,7 +393,7 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dSelectedActor !== null ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>
                   <Filter size={24} strokeWidth={2.5} />
