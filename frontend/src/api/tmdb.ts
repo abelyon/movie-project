@@ -35,6 +35,7 @@ export async function fetchDiscover(
 export type PersonSearchResult = {
   id: number;
   name: string;
+  media_type?: "person";
   known_for_department?: string;
   profile_path?: string | null;
 };
@@ -51,6 +52,33 @@ export async function fetchPeopleSearch(params: {
   page?: number;
 }): Promise<PersonSearchResponse> {
   const { data } = await api.get<PersonSearchResponse>("/people/search", { params });
+  return data;
+}
+
+export type PersonDetail = {
+  id: number;
+  name: string;
+  profile_path?: string | null;
+  biography?: string;
+  birthday?: string | null;
+  place_of_birth?: string | null;
+  known_for_department?: string;
+  credits: Array<{
+    id: number;
+    media_type: "movie" | "tv";
+    title?: string;
+    name?: string;
+    poster_path?: string | null;
+    backdrop_path?: string | null;
+    overview?: string;
+    vote_average?: number;
+    release_date?: string;
+    first_air_date?: string;
+  }>;
+};
+
+export async function fetchPerson(id: number): Promise<PersonDetail> {
+  const { data } = await api.get<PersonDetail>(`/person/${id}`);
   return data;
 }
 

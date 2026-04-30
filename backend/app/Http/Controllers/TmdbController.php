@@ -148,4 +148,40 @@ class TmdbController extends Controller
 
         return response()->json($json, 200);
     }
+
+    public function person($id)
+    {
+        $apiKey = config('services.tmdb.api_key');
+        $url = config('services.tmdb.url');
+
+        $response = Http::get("{$url}/person/{$id}", [
+            'api_key' => $apiKey,
+            'append_to_response' => 'combined_credits',
+        ]);
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Failed to fetch person from TMDB',
+            ], $response->status());
+        }
+
+        $json = $response->json();
+        $credits = $json['combined_credits']['cast'] ?? [];
+        unset($json['combined_credits']);
+
+        $filteredCredits = array_values(array_filter($credits, function ($item) {
+            $mediaType = $item['media_type'] ?? null;
+            return in_array($mediaType, ['movie', 'tv'], true);
+        }));
+
+        usort($filteredCredits, function ($a, $b) {
+            $aDate = $a['release_date'] ?? $a['first_air_date'] ?? '';
+            $bDate = $b['release_date'] ?? $b['first_air_date'] ?? '';
+            return strcmp($bDate, $aDate);
+        });
+
+        $json['credits'] = $filteredCredits;
+
+        return response()->json($json, 200);
+    }
 }

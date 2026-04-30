@@ -92,5 +92,6 @@ Route::get('/trending', [TmdbController::class, 'trending']);
 Route::get('/discover/{type}', [TmdbController::class, 'discover']);
 Route::get('/search', [TmdbController::class, 'search']);
 Route::get('/people/search', [TmdbController::class, 'searchPeople']);
+Route::get('/person/{id}', [TmdbController::class, 'person']);
 Route::get('/movie/{id}', [TmdbController::class, 'movie']);
 Route::get('/tv/{id}', [TmdbController::class, 'tv']);
