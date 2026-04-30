@@ -78,6 +78,7 @@ export type MainLayoutOutletContext = {
   discoveryControls: {
     showSearch: boolean;
     query: string;
+    setQuery: Dispatch<SetStateAction<string>>;
     sortBy: SortKind;
     filterType: FilterType;
     selectedGenreIds: number[];
@@ -184,6 +185,7 @@ const MainLayout = () => {
       discoveryControls: {
         showSearch: dShowSearch,
         query: dQuery,
+        setQuery: setDQuery,
         sortBy: dSortBy,
         filterType: dFilterType,
         selectedGenreIds: dSelectedGenreIds,
