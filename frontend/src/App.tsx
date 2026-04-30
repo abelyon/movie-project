@@ -10,6 +10,7 @@ import RegisterPage from "./pages/Register/RegisterPage";
 import ResetPasswordPage from "./pages/Login/ResetPasswordPage";
 import SavedPage from "./pages/Saved/SavedPage";
 import DetailPage from "./pages/Detail/DetailPage";
+import PersonDetailPage from "./pages/People/PersonDetailPage";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import RealtimeBridge from "./realtime/RealtimeBridge";
 
@@ -23,6 +24,7 @@ const App = () => {
             <Route element={<ProtectedRoute />}>
               <Route index element={<Navigate to="/discovery" replace />} />
               <Route path="discovery" element={<DiscoveryPage />} />
+              <Route path="person/:id" element={<PersonDetailPage />} />
               <Route path=":media_type/:id" element={<DetailPage />} />
               <Route path="saved" element={<SavedPage />} />
               <Route path="profile" element={<ProfilePage />} />
