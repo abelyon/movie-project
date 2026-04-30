@@ -9,6 +9,8 @@ import { fetchDiscover, fetchPeopleSearch, type PersonSearchResult } from "../..
 import MediaCard from "./MediaCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
+const TMDB_PROFILE_BASE_URL = "https://image.tmdb.org/t/p/w185";
+
 const SkeletonCards = ({ count = 12 }: { count?: number }) => (
   <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
     {Array.from({ length: count }).map((_, idx) => (
@@ -217,6 +219,7 @@ const DiscoveryPage = () => {
   const showPinnedSearchNotice = showSearch && searchNotice !== null;
   const cardsTopSpacingClass = showSearch && !showPinnedSearchNotice ? "pt-5" : "";
   const cardsToRender = isShowingSearchHint ? [] : visibleResults;
+  const peopleToRender = isShowingSearchResults ? (peopleSearchData?.results ?? []).slice(0, 12) : [];
 
   return (
     <div className={showSearch ? "pt-20" : ""}>
@@ -229,6 +232,37 @@ const DiscoveryPage = () => {
       )}
 
       {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
+
+      {isShowingSearchResults && peopleToRender.length > 0 && (
+        <section className="px-5 pt-5">
+          <h3 className="mb-3 text-sm text-neutral-300 font-space-grotesk">People</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+            {peopleToRender.map((person) => (
+              <div
+                key={person.id}
+                className="relative m-auto flex flex-col items-center justify-end rounded-4xl overflow-hidden aspect-2/3 w-full border-t border-neutral-600 bg-neutral-800/80"
+              >
+                {person.profile_path ? (
+                  <img
+                    src={`${TMDB_PROFILE_BASE_URL}${person.profile_path}`}
+                    alt={person.name}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-neutral-800" />
+                )}
+                <div className="relative z-10 w-full bg-linear-to-t from-black/90 via-black/50 to-transparent p-3">
+                  <p className="truncate text-sm font-space-grotesk text-white">{person.name}</p>
+                  <p className="truncate text-xs text-neutral-300">
+                    {person.known_for_department ?? "Person"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className={`p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${cardsTopSpacingClass}`}>
         {cardsToRender.map((item) => (
