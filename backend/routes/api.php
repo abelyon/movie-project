@@ -97,5 +97,7 @@ Route::get('/catalog/watch-providers/{type}', [TmdbController::class, 'watchProv
 Route::get('/catalog/certifications/{type}', [TmdbController::class, 'certifications']);
 Route::get('/movie/{id}/watch-providers', [TmdbController::class, 'movieWatchProviders']);
 Route::get('/tv/{id}/watch-providers', [TmdbController::class, 'tvWatchProviders']);
+Route::get('/movie/{id}/certification', [TmdbController::class, 'movieCertification']);
+Route::get('/tv/{id}/certification', [TmdbController::class, 'tvCertification']);
 Route::get('/movie/{id}', [TmdbController::class, 'movie']);
 Route::get('/tv/{id}', [TmdbController::class, 'tv']);
