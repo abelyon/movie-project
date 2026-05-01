@@ -8,13 +8,44 @@ if (is_string($secureEnv)) {
 }
 $secureCookie = filter_var($secureEnv, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
 
-$sameSiteEnv = env('SESSION_SAME_SITE');
-if (is_string($sameSiteEnv)) {
-    $sameSiteEnv = strtolower(trim($sameSiteEnv, " \t\n\r\0\x0B\"'"));
+$rawSameSite = env('SESSION_SAME_SITE');
+$sameSiteEnv = '';
+if (is_string($rawSameSite) && $rawSameSite !== '') {
+    $sameSiteEnv = strtolower(trim($rawSameSite, " \t\n\r\0\x0B\"'"));
 }
+
+$frontendUrlForSession = env('FRONTEND_URL');
+if (is_string($frontendUrlForSession)) {
+    $frontendUrlForSession = trim($frontendUrlForSession, " \t\n\r\0\x0B\"'");
+}
+$appUrlForSession = env('APP_URL');
+if (is_string($appUrlForSession)) {
+    $appUrlForSession = trim($appUrlForSession, " \t\n\r\0\x0B\"'");
+}
+
+$defaultSameSite = 'lax';
+if (env('APP_ENV') === 'production') {
+    $defaultSameSite = 'none';
+} elseif (
+    is_string($frontendUrlForSession) && $frontendUrlForSession !== ''
+    && is_string($appUrlForSession) && $appUrlForSession !== ''
+    && str_starts_with($frontendUrlForSession, 'https://')
+    && str_starts_with($appUrlForSession, 'https://')
+) {
+    $frontendHost = parse_url($frontendUrlForSession, PHP_URL_HOST);
+    $appHost = parse_url($appUrlForSession, PHP_URL_HOST);
+    if ($frontendHost && $appHost && strcasecmp($frontendHost, $appHost) !== 0) {
+        $defaultSameSite = 'none';
+    }
+}
+
 $sameSite = in_array($sameSiteEnv, ['lax', 'strict', 'none'], true)
     ? $sameSiteEnv
-    : (env('APP_ENV') === 'production' ? 'none' : 'lax');
+    : $defaultSameSite;
+
+$defaultSessionSecure = $sameSite === 'none'
+    || parse_url((string) env('APP_URL', ''), PHP_URL_SCHEME) === 'https'
+    || env('APP_ENV') === 'production';
 
 return [
 
@@ -183,7 +214,7 @@ return [
     |
     */
 
-    'secure' => $secureCookie ?? (env('APP_ENV') === 'production'),
+    'secure' => $secureCookie ?? $defaultSessionSecure,
 
     /*
     |--------------------------------------------------------------------------

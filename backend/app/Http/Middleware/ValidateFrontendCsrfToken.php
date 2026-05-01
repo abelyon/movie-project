@@ -34,6 +34,7 @@ class ValidateFrontendCsrfToken extends ValidateCsrfToken
         'api/user/media/favorite',
         'api/user/media/watched',
         'api/friends/*',
+        'api/user/profile',
     ];
 }
 
