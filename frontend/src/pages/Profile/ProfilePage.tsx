@@ -17,6 +17,7 @@ import {
   updateProfile,
 } from "../../api/auth";
 import { userNameInitial } from "../../utils/userDisplay";
+import { TMDB_COUNTRY_OPTIONS } from "../../constants/tmdbCountries";
 
 const cardClass =
   "rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-5 backdrop-blur-md";
@@ -30,6 +31,7 @@ const ProfilePage = () => {
   const [searchUserId, setSearchUserId] = useState("");
   const [searchError, setSearchError] = useState("");
   const [nameInput, setNameInput] = useState(user?.name ?? "");
+  const [countryCode, setCountryCode] = useState(user?.country_code ?? "");
   const [nameError, setNameError] = useState("");
   const [nameSaved, setNameSaved] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
@@ -37,6 +39,10 @@ const ProfilePage = () => {
   useEffect(() => {
     setNameInput(user?.name ?? "");
   }, [user?.name]);
+
+  useEffect(() => {
+    setCountryCode(user?.country_code ?? "");
+  }, [user?.country_code]);
 
   const avatarInitial = useMemo(() => userNameInitial(user?.name), [user?.name]);
 
@@ -118,13 +124,13 @@ const ProfilePage = () => {
   const updateProfileMutation = useMutation({
     mutationFn: updateProfile,
     onSuccess: async () => {
-      setNameSaved("Name updated.");
+      setNameSaved("Profile updated.");
       setNameError("");
       await refetchUser();
     },
     onError: () => {
       setNameSaved("");
-      setNameError("Could not update name. Use 3-255 characters.");
+      setNameError("Could not update profile. Use 3–255 characters for name.");
     },
   });
   const resendVerificationMutation = useMutation({
@@ -226,10 +232,10 @@ const ProfilePage = () => {
             <p className="mt-1 font-space-grotesk text-neutral-100">{joinedAt}</p>
           </div>
 
-          <div className="rounded-3xl border-t border-neutral-600 bg-neutral-900/70 p-4">
-            <p className="font-space-grotesk text-xs uppercase tracking-wide text-neutral-500">Name</p>
+          <div className="rounded-3xl border-t border-neutral-600 bg-neutral-900/70 p-4 sm:col-span-2">
+            <p className="font-space-grotesk text-xs uppercase tracking-wide text-neutral-500">Profile details</p>
             <form
-              className="mt-2 flex flex-col gap-2 sm:flex-row"
+              className="mt-2 flex flex-col gap-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 setNameSaved("");
@@ -239,21 +245,45 @@ const ProfilePage = () => {
                   setNameError("Name must be at least 3 characters.");
                   return;
                 }
+                const cc = countryCode.trim().toUpperCase();
                 void updateProfileMutation.mutateAsync({
                   name: trimmed,
+                  country_code: cc.length === 2 ? cc : null,
                 });
               }}
             >
-              <input
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Your display name"
-                className="w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 font-space-grotesk text-sm text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
-              />
+              <label className="block">
+                <span className="text-xs text-neutral-500">Name</span>
+                <input
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="Your display name"
+                  className="mt-1 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 font-space-grotesk text-sm text-neutral-100 placeholder-neutral-500 outline-none transition focus:border-neutral-400"
+                />
+              </label>
+              <label className="block" htmlFor="profile-country">
+                <span className="text-xs text-neutral-500">Country / region</span>
+                <span className="mt-0.5 block text-[11px] text-neutral-600">
+                  Streaming services and content ratings in Discovery use this region (TMDB).
+                </span>
+                <select
+                  id="profile-country"
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className="mt-1 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 font-space-grotesk text-sm text-neutral-100 outline-none transition focus:border-neutral-400"
+                >
+                  <option value="">Default (United States)</option>
+                  {TMDB_COUNTRY_OPTIONS.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="submit"
                 disabled={updateProfileMutation.isPending}
-                className="rounded-2xl border-t border-neutral-500 bg-neutral-200 px-4 py-2 font-space-grotesk text-sm font-semibold text-neutral-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-4 py-2 font-space-grotesk text-sm font-semibold text-neutral-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:self-start"
               >
                 {updateProfileMutation.isPending ? "Saving..." : "Save"}
               </button>
