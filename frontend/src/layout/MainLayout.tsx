@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { fetchCertificationsList, fetchWatchProvidersCatalog, type WatchProviderRow } from "../api/tmdb";
+import { tmdbCountryName } from "../constants/tmdbCountries";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
@@ -69,8 +71,8 @@ const ALL_GENRES = [...MOVIE_GENRES, ...TV_GENRES].reduce<Array<{ id: number; na
 );
 
 type SortKind = "default" | "title_asc" | "title_desc" | "rating_desc";
-type FilterType = "all" | "movie" | "tv";
-type MinRating = 0 | 6 | 7 | 8;
+export type FilterType = "all" | "movie" | "tv";
+export type MinRating = 0 | 6 | 7 | 8;
 type WatchFilter = "all" | "watched" | "unwatched";
 type FavoriteFilter = "all" | "favorited";
 
@@ -85,10 +87,15 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
+    selectedWatchProviderIds: number[];
+    certification: string;
+    watchRegion: string;
     setFilterType: (value: FilterType) => void;
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
+    setSelectedWatchProviderIds: Dispatch<SetStateAction<number[]>>;
+    setCertification: (value: string) => void;
   };
   savedControls: {
     sortBy: SortKind;
@@ -98,6 +105,9 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
+    selectedWatchProviderIds: number[];
+    certification: string;
+    watchRegion: string;
     selectedFriendIds: number[];
     showFriendsSocial: boolean;
     withFriendsSaved: boolean;
@@ -105,10 +115,13 @@ export type MainLayoutOutletContext = {
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
+    setSelectedWatchProviderIds: Dispatch<SetStateAction<number[]>>;
+    setCertification: (value: string) => void;
   };
 };
 
 const MainLayout = () => {
+  const noopCertification = useCallback(() => {}, []);
   const { user } = useAuth();
   const { pathname } = useLocation();
   const isDiscovery = pathname === "/discovery";
@@ -125,6 +138,8 @@ const MainLayout = () => {
   const [dFavoriteFilter, setDFavoriteFilter] = useState<FavoriteFilter>("all");
   const [dYearFrom, setDYearFrom] = useState("");
   const [dQuery, setDQuery] = useState("");
+  const [dSelectedWatchProviderIds, setDSelectedWatchProviderIds] = useState<number[]>([]);
+  const [dCertification, setDCertification] = useState("");
   const dSearchInputRef = useRef<HTMLInputElement>(null);
 
   const [sShowFriends, setSShowFriends] = useState(false);
@@ -137,8 +152,54 @@ const MainLayout = () => {
   const [sWatchedFilter, setSWatchedFilter] = useState<WatchFilter>("all");
   const [sFavoriteFilter, setSFavoriteFilter] = useState<FavoriteFilter>("all");
   const [sYearFrom, setSYearFrom] = useState("");
+  const [sSelectedWatchProviderIds, setSSelectedWatchProviderIds] = useState<number[]>([]);
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
+
+  const watchRegion =
+    user?.country_code && user.country_code.length === 2
+      ? user.country_code.toUpperCase()
+      : "US";
+
+  const discoverySortPanelOpen = isDiscovery && dShowSort;
+  const savedSortPanelOpen = isSaved && sShowSort;
+  const filterTypeForCerts = isDiscovery ? dFilterType : sFilterType;
+  const certListType = filterTypeForCerts === "tv" ? "tv" : "movie";
+
+  const watchProvidersCatalog = useQuery({
+    queryKey: ["catalog", "watch-providers", "movie", watchRegion],
+    queryFn: () => fetchWatchProvidersCatalog({ type: "movie", watch_region: watchRegion }),
+    enabled: Boolean(user && (discoverySortPanelOpen || savedSortPanelOpen)),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const certificationsCatalog = useQuery({
+    queryKey: ["catalog", "certifications", certListType],
+    queryFn: () => fetchCertificationsList(certListType),
+    enabled: Boolean(user && (discoverySortPanelOpen || savedSortPanelOpen)),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const mergedProviderOptions = useMemo(() => {
+    const d = watchProvidersCatalog.data;
+    if (!d) return [];
+    const map = new Map<number, WatchProviderRow>();
+    for (const row of [...d.flatrate, ...d.rent, ...d.buy]) {
+      if (!map.has(row.provider_id)) map.set(row.provider_id, row);
+    }
+    return [...map.values()].sort((a, b) => a.provider_name.localeCompare(b.provider_name));
+  }, [watchProvidersCatalog.data]);
+
+  const certOptionsForRegion = useMemo(() => {
+    const raw = certificationsCatalog.data?.certifications?.[watchRegion];
+    if (!raw?.length) return [];
+    return [...raw]
+      .sort((a, b) => a.order - b.order)
+      .map((c) => ({
+        value: c.certification,
+        label: c.meaning ? `${c.certification} — ${c.meaning}` : c.certification,
+      }));
+  }, [certificationsCatalog.data, watchRegion]);
 
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
@@ -191,10 +252,15 @@ const MainLayout = () => {
         watchedFilter: dWatchedFilter,
         favoriteFilter: dFavoriteFilter,
         yearFrom: dYearFrom,
+        selectedWatchProviderIds: dSelectedWatchProviderIds,
+        certification: dCertification,
+        watchRegion,
         setFilterType: setDFilterType,
         setSelectedGenreIds: setDSelectedGenreIds,
         setMinRating: setDMinRating,
         setYearFrom: setDYearFrom,
+        setSelectedWatchProviderIds: setDSelectedWatchProviderIds,
+        setCertification: setDCertification,
       },
       savedControls: {
         sortBy: sSortBy,
@@ -204,6 +270,9 @@ const MainLayout = () => {
         watchedFilter: sWatchedFilter,
         favoriteFilter: sFavoriteFilter,
         yearFrom: sYearFrom,
+        selectedWatchProviderIds: sSelectedWatchProviderIds,
+        certification: "",
+        watchRegion,
         selectedFriendIds,
         showFriendsSocial,
         withFriendsSaved: !showFriendsSocial && selectedFriendIds.length > 0,
@@ -211,11 +280,17 @@ const MainLayout = () => {
         setSelectedGenreIds: setSSelectedGenreIds,
         setMinRating: setSMinRating,
         setYearFrom: setSYearFrom,
+        setSelectedWatchProviderIds: setSSelectedWatchProviderIds,
+        setCertification: noopCertification,
       },
     }),
     [
+      noopCertification,
       dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
-      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom, selectedFriendIds, showFriendsSocial,
+      dSelectedWatchProviderIds, dCertification, watchRegion,
+      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom,
+      sSelectedWatchProviderIds,
+      selectedFriendIds, showFriendsSocial,
     ],
   );
 
@@ -405,34 +480,117 @@ const MainLayout = () => {
               <AnimatePresence>
                 {dShowSort && (
                   <motion.div
-                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48"
+                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[75vh] w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:left-auto md:inset-x-auto md:mr-2 md:w-80"
                     initial={{ opacity: 0, x: 10, scale: 0.98 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     exit={{ opacity: 0, x: 10, scale: 0.98 }}
                     transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
                   >
-                    {[
-                      { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
-                      { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
-                      { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
-                      { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
-                    ].map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setDSortBy(opt.key)}
-                        className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${dSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
+                    <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Region</p>
+                    <p className="mt-1 px-1 text-sm text-neutral-200">
+                      Streaming and ratings use{" "}
+                      <span className="font-semibold text-white">{tmdbCountryName(watchRegion)}</span>
+                      {user?.country_code ? "" : " (default US — set yours in Profile)"}.
+                    </p>
+                    {!user?.country_code && (
+                      <Link
+                        to="/profile"
+                        className="mt-2 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
                       >
-                        {opt.icon} {opt.label}
-                      </button>
-                    ))}
+                        Set country in Profile
+                      </Link>
+                    )}
+                    <div className={`mt-3 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
+                      <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Streaming services</p>
+                      {watchProvidersCatalog.isLoading ? (
+                        <p className="mt-2 px-1 text-xs text-neutral-500">Loading providers…</p>
+                      ) : mergedProviderOptions.length === 0 ? (
+                        <p className="mt-2 px-1 text-xs text-neutral-500">No provider list for this region.</p>
+                      ) : (
+                        <div className="mt-2 flex max-h-36 flex-wrap gap-1 overflow-y-auto pr-0.5">
+                          {mergedProviderOptions.map((p) => {
+                            const active = dSelectedWatchProviderIds.includes(p.provider_id);
+                            return (
+                              <button
+                                key={p.provider_id}
+                                type="button"
+                                onClick={() => {
+                                  setDSelectedWatchProviderIds((prev) =>
+                                    prev.includes(p.provider_id)
+                                      ? prev.filter((id) => id !== p.provider_id)
+                                      : [...prev, p.provider_id],
+                                  );
+                                }}
+                                className={`rounded-2xl px-2.5 py-1 text-left text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}
+                              >
+                                {p.provider_name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">
+                        Content rating ({certListType === "tv" ? "TV" : "Movies"}
+                        {dFilterType === "all" ? " — movies only when type is All" : ""})
+                      </p>
+                      <select
+                        value={dCertification}
+                        onChange={(e) => setDCertification(e.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                      >
+                        <option value="">Any rating</option>
+                        {certOptionsForRegion.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      {certificationsCatalog.isLoading && (
+                        <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
+                      )}
+                      {(dSelectedWatchProviderIds.length > 0 || dCertification !== "") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDSelectedWatchProviderIds([]);
+                            setDCertification("");
+                          }}
+                          className="mt-2 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-xs text-neutral-200 transition hover:bg-neutral-700/60"
+                        >
+                          Clear streaming &amp; rating filters
+                        </button>
+                      )}
+                    </div>
+                    {dShowSearch && (
+                      <p className="mt-2 px-1 text-xs text-amber-200/90">
+                        Streaming and content rating filters apply to Discovery browse, not while search is open.
+                      </p>
+                    )}
+                    <p className="mt-4 px-1 text-xs uppercase tracking-wide text-neutral-400">Sort</p>
+                    <div className="mt-1">
+                      {[
+                        { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
+                        { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
+                        { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
+                        { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
+                      ].map((opt) => (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setDSortBy(opt.key)}
+                          className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${dSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
+                        >
+                          {opt.icon} {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
               <button
                 type="button"
                 onClick={() => { setDShowSort((prev) => !prev); setDShowFilter(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dSortBy !== "default" || dSelectedWatchProviderIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>{sortButtonIcon(dSortBy)}</AnimatedNavIcon>
               </button>
@@ -553,21 +711,94 @@ const MainLayout = () => {
           <div className="relative">
             <AnimatePresence>
               {sShowSort && (
-                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
-                  {[
-                    { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
-                    { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
-                    { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
-                    { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
-                  ].map((opt) => (
-                    <button key={opt.key} type="button" onClick={() => setSSortBy(opt.key)} className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${sSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}>
-                      {opt.icon} {opt.label}
-                    </button>
-                  ))}
+                <motion.div
+                  className="fixed inset-x-4 bottom-24 z-[70] max-h-[75vh] w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:left-auto md:inset-x-auto md:mr-2 md:w-80"
+                  initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Region</p>
+                  <p className="mt-1 px-1 text-sm text-neutral-200">
+                    Streaming uses{" "}
+                    <span className="font-semibold text-white">{tmdbCountryName(watchRegion)}</span>
+                    {user?.country_code ? "" : " (default US — set yours in Profile)"}.
+                  </p>
+                  {!user?.country_code && (
+                    <Link
+                      to="/profile"
+                      className="mt-2 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
+                    >
+                      Set country in Profile
+                    </Link>
+                  )}
+                  <div className="mt-3">
+                    <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Streaming services</p>
+                    {watchProvidersCatalog.isLoading ? (
+                      <p className="mt-2 px-1 text-xs text-neutral-500">Loading providers…</p>
+                    ) : mergedProviderOptions.length === 0 ? (
+                      <p className="mt-2 px-1 text-xs text-neutral-500">No provider list for this region.</p>
+                    ) : (
+                      <div className="mt-2 flex max-h-36 flex-wrap gap-1 overflow-y-auto pr-0.5">
+                        {mergedProviderOptions.map((p) => {
+                          const active = sSelectedWatchProviderIds.includes(p.provider_id);
+                          return (
+                            <button
+                              key={p.provider_id}
+                              type="button"
+                              onClick={() => {
+                                setSSelectedWatchProviderIds((prev) =>
+                                  prev.includes(p.provider_id)
+                                    ? prev.filter((id) => id !== p.provider_id)
+                                    : [...prev, p.provider_id],
+                                );
+                              }}
+                              className={`rounded-2xl px-2.5 py-1 text-left text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}
+                            >
+                              {p.provider_name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="mt-3 px-1 text-xs text-neutral-500">
+                      Content rating filters apply on <span className="text-neutral-300">Discovery</span> (open Sort
+                      there). Here you can narrow Saved by where titles stream (up to 100 items after other filters).
+                    </p>
+                    {sSelectedWatchProviderIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSSelectedWatchProviderIds([]);
+                        }}
+                        className="mt-2 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-xs text-neutral-200 transition hover:bg-neutral-700/60"
+                      >
+                        Clear streaming selection
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-4 px-1 text-xs uppercase tracking-wide text-neutral-400">Sort</p>
+                  <div className="mt-1">
+                    {[
+                      { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
+                      { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
+                      { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
+                      { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setSSortBy(opt.key)}
+                        className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${sSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
+                      >
+                        {opt.icon} {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" || sSelectedWatchProviderIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>{sortButtonIcon(sSortBy)}</AnimatedNavIcon>
             </button>
           </div>
