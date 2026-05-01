@@ -432,7 +432,7 @@ const MainLayout = () => {
                     </div>
                     <div className={`mt-3 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
                       <label
-                        className="block px-1 text-xs tracking-wide text-neutral-400"
+                        className="block px-1 text-xs uppercase tracking-wide text-neutral-400"
                         htmlFor="discovery-layout-certification"
                       >
                         Content rating
