@@ -130,7 +130,7 @@ const MainLayout = () => {
   const [dFilterType, setDFilterType] = useState<FilterType>("all");
   const [dSelectedGenreIds, setDSelectedGenreIds] = useState<number[]>([]);
   const [dMinRating, setDMinRating] = useState<MinRating>(0);
-  const [dWatchedFilter, setDWatchedFilter] = useState<WatchFilter>("all");
+  const [dWatchedFilter, setDWatchedFilter] = useState<WatchFilter>("unwatched");
   const [dFavoriteFilter, setDFavoriteFilter] = useState<FavoriteFilter>("all");
   const [dYearFrom, setDYearFrom] = useState("");
   const [dQuery, setDQuery] = useState("");
@@ -457,7 +457,7 @@ const MainLayout = () => {
                         onClick={() => {
                           setDFilterType("all");
                           setDMinRating(0);
-                          setDWatchedFilter("all");
+                          setDWatchedFilter("unwatched");
                           setDFavoriteFilter("all");
                           setDYearFrom("");
                           setDSelectedGenreIds([]);
@@ -482,7 +482,7 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "unwatched" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>
                   <Filter size={24} strokeWidth={2.5} />

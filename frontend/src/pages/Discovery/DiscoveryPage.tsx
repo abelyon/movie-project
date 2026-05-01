@@ -31,7 +31,7 @@ const DiscoveryPage = () => {
     filterType: "all" as const,
     selectedGenreIds: [] as number[],
     minRating: 0 as const,
-    watchedFilter: "all" as const,
+    watchedFilter: "unwatched" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
     selectedWatchProviderIds: [] as number[],
