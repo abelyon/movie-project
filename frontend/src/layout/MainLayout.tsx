@@ -430,53 +430,13 @@ const MainLayout = () => {
                         </select>
                       </div>
                     </div>
-                    <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Region &amp; availability</p>
-                    <p className="mt-1 px-1 text-sm text-neutral-200">
-                      Streaming and TMDB content ratings use{" "}
-                      <span className="font-semibold text-white">{tmdbCountryName(watchRegion)}</span>
-                      {user?.country_code ? "" : " (default US — set yours in Profile)"}.
-                    </p>
-                    {!user?.country_code && (
-                      <Link
-                        to="/profile"
-                        className="mt-1 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
+                    <div className={`mt-3 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
+                      <label
+                        className="block px-1 text-xs tracking-wide text-neutral-400"
+                        htmlFor="discovery-layout-certification"
                       >
-                        Set country in Profile
-                      </Link>
-                    )}
-                    <div className={`mt-2 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
-                      <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Streaming services</p>
-                      {watchProvidersCatalog.isLoading ? (
-                        <p className="mt-2 px-1 text-xs text-neutral-500">Loading providers…</p>
-                      ) : mergedProviderOptions.length === 0 ? (
-                        <p className="mt-2 px-1 text-xs text-neutral-500">No provider list for this region.</p>
-                      ) : (
-                        <div className="mt-2 flex max-h-36 flex-wrap gap-1 overflow-y-auto pr-0.5">
-                          {mergedProviderOptions.map((p) => {
-                            const active = dSelectedWatchProviderIds.includes(p.provider_id);
-                            return (
-                              <button
-                                key={p.provider_id}
-                                type="button"
-                                onClick={() => {
-                                  setDSelectedWatchProviderIds((prev) =>
-                                    prev.includes(p.provider_id)
-                                      ? prev.filter((id) => id !== p.provider_id)
-                                      : [...prev, p.provider_id],
-                                  );
-                                }}
-                                className={`rounded-2xl px-2.5 py-1 text-left text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}
-                              >
-                                {p.provider_name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">
-                        Content rating ({certListType === "tv" ? "TV" : "Movies"}
-                        {dFilterType === "all" ? " — movies only when type is All" : ""})
-                      </p>
+                        Content rating
+                      </label>
                       <select
                         id="discovery-layout-certification"
                         value={dCertification}
@@ -496,7 +456,7 @@ const MainLayout = () => {
                     </div>
                     {dShowSearch && (
                       <p className="mt-2 px-1 text-xs text-amber-200/90">
-                        Streaming and content rating apply to the Discovery grid, not while search is open.
+                        Content rating applies to the Discovery grid, not while search is open.
                       </p>
                     )}
                     <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
@@ -546,7 +506,7 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dSelectedWatchProviderIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>
                   <Filter size={24} strokeWidth={2.5} />
