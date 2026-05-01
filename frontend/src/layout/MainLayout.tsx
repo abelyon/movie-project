@@ -161,22 +161,22 @@ const MainLayout = () => {
       ? user.country_code.toUpperCase()
       : "US";
 
-  const discoverySortPanelOpen = isDiscovery && dShowSort;
-  const savedSortPanelOpen = isSaved && sShowSort;
+  const filterPanelOpenForCatalog =
+    Boolean(user) && ((isDiscovery && dShowFilter) || (isSaved && sShowFilter));
   const filterTypeForCerts = isDiscovery ? dFilterType : sFilterType;
   const certListType = filterTypeForCerts === "tv" ? "tv" : "movie";
 
   const watchProvidersCatalog = useQuery({
     queryKey: ["catalog", "watch-providers", "movie", watchRegion],
     queryFn: () => fetchWatchProvidersCatalog({ type: "movie", watch_region: watchRegion }),
-    enabled: Boolean(user && (discoverySortPanelOpen || savedSortPanelOpen)),
+    enabled: filterPanelOpenForCatalog,
     staleTime: 24 * 60 * 60 * 1000,
   });
 
   const certificationsCatalog = useQuery({
     queryKey: ["catalog", "certifications", certListType],
     queryFn: () => fetchCertificationsList(certListType),
-    enabled: Boolean(user && (discoverySortPanelOpen || savedSortPanelOpen)),
+    enabled: filterPanelOpenForCatalog,
     staleTime: 24 * 60 * 60 * 1000,
   });
 
@@ -430,77 +430,21 @@ const MainLayout = () => {
                         </select>
                       </div>
                     </div>
-                    <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
-                        const active = dSelectedGenreIds.includes(genre.id);
-                        return (
-                          <button
-                            key={genre.id}
-                            type="button"
-                            onClick={() => setDSelectedGenreIds((prev) => prev.includes(genre.id) ? prev.filter((id) => id !== genre.id) : [...prev, genre.id])}
-                            className={`rounded-2xl px-2.5 py-1 text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}
-                          >
-                            {genre.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
-                        className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
-                      >
-                        Clear filters
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDShowFilter(false)}
-                        className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-white"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <button
-                type="button"
-                onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
-              >
-                <AnimatedNavIcon>
-                  <Filter size={24} strokeWidth={2.5} />
-                </AnimatedNavIcon>
-              </button>
-            </div>
-
-            <div className="relative">
-              <AnimatePresence>
-                {dShowSort && (
-                  <motion.div
-                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[75vh] w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:left-auto md:inset-x-auto md:mr-2 md:w-80"
-                    initial={{ opacity: 0, x: 10, scale: 0.98 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 10, scale: 0.98 }}
-                    transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  >
-                    <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Region</p>
+                    <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Region &amp; availability</p>
                     <p className="mt-1 px-1 text-sm text-neutral-200">
-                      Streaming and ratings use{" "}
+                      Streaming and TMDB content ratings use{" "}
                       <span className="font-semibold text-white">{tmdbCountryName(watchRegion)}</span>
                       {user?.country_code ? "" : " (default US — set yours in Profile)"}.
                     </p>
                     {!user?.country_code && (
                       <Link
                         to="/profile"
-                        className="mt-2 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
+                        className="mt-1 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
                       >
                         Set country in Profile
                       </Link>
                     )}
-                    <div className={`mt-3 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
+                    <div className={`mt-2 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
                       <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Streaming services</p>
                       {watchProvidersCatalog.isLoading ? (
                         <p className="mt-2 px-1 text-xs text-neutral-500">Loading providers…</p>
@@ -534,6 +478,7 @@ const MainLayout = () => {
                         {dFilterType === "all" ? " — movies only when type is All" : ""})
                       </p>
                       <select
+                        id="discovery-layout-certification"
                         value={dCertification}
                         onChange={(e) => setDCertification(e.target.value)}
                         className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
@@ -548,49 +493,99 @@ const MainLayout = () => {
                       {certificationsCatalog.isLoading && (
                         <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
                       )}
-                      {(dSelectedWatchProviderIds.length > 0 || dCertification !== "") && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDSelectedWatchProviderIds([]);
-                            setDCertification("");
-                          }}
-                          className="mt-2 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-xs text-neutral-200 transition hover:bg-neutral-700/60"
-                        >
-                          Clear streaming &amp; rating filters
-                        </button>
-                      )}
                     </div>
                     {dShowSearch && (
                       <p className="mt-2 px-1 text-xs text-amber-200/90">
-                        Streaming and content rating filters apply to Discovery browse, not while search is open.
+                        Streaming and content rating apply to the Discovery grid, not while search is open.
                       </p>
                     )}
-                    <p className="mt-4 px-1 text-xs uppercase tracking-wide text-neutral-400">Sort</p>
-                    <div className="mt-1">
-                      {[
-                        { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
-                        { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
-                        { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
-                        { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
-                      ].map((opt) => (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          onClick={() => setDSortBy(opt.key)}
-                          className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${dSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
-                        >
-                          {opt.icon} {opt.label}
-                        </button>
-                      ))}
+                    <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
+                        const active = dSelectedGenreIds.includes(genre.id);
+                        return (
+                          <button
+                            key={genre.id}
+                            type="button"
+                            onClick={() => setDSelectedGenreIds((prev) => prev.includes(genre.id) ? prev.filter((id) => id !== genre.id) : [...prev, genre.id])}
+                            className={`rounded-2xl px-2.5 py-1 text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}
+                          >
+                            {genre.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDFilterType("all");
+                          setDMinRating(0);
+                          setDWatchedFilter("all");
+                          setDFavoriteFilter("all");
+                          setDYearFrom("");
+                          setDSelectedGenreIds([]);
+                          setDSelectedWatchProviderIds([]);
+                          setDCertification("");
+                        }}
+                        className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
+                      >
+                        Clear filters
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDShowFilter(false)}
+                        className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-white"
+                      >
+                        Apply
+                      </button>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
               <button
                 type="button"
+                onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dSelectedWatchProviderIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+              >
+                <AnimatedNavIcon>
+                  <Filter size={24} strokeWidth={2.5} />
+                </AnimatedNavIcon>
+              </button>
+            </div>
+
+            <div className="relative">
+              <AnimatePresence>
+                {dShowSort && (
+                  <motion.div
+                    className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48"
+                    initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    {[
+                      { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
+                      { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
+                      { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
+                      { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setDSortBy(opt.key)}
+                        className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${dSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
+                      >
+                        {opt.icon} {opt.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <button
+                type="button"
                 onClick={() => { setDShowSort((prev) => !prev); setDShowFilter(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dSortBy !== "default" || dSelectedWatchProviderIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>{sortButtonIcon(dSortBy)}</AnimatedNavIcon>
               </button>
@@ -675,64 +670,24 @@ const MainLayout = () => {
                       </select>
                     </div>
                   </div>
-                  <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {(sFilterType === "tv" ? TV_GENRES : sFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
-                      const active = sSelectedGenreIds.includes(genre.id);
-                      return (
-                        <button key={genre.id} type="button" onClick={() => setSSelectedGenreIds((prev) => prev.includes(genre.id) ? prev.filter((id) => id !== genre.id) : [...prev, genre.id])} className={`rounded-2xl px-2.5 py-1 text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}>
-                          {genre.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button type="button" onClick={() => { setSFilterType("all"); setSMinRating(0); setSWatchedFilter("all"); setSFavoriteFilter("all"); setSYearFrom(""); setSSelectedGenreIds([]); }} className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
-                      Clear filters
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSShowFilter(false)}
-                      className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-white"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
-              <AnimatedNavIcon>
-                <Filter size={24} strokeWidth={2.5} />
-              </AnimatedNavIcon>
-            </button>
-          </div>
-
-          <div className="relative">
-            <AnimatePresence>
-              {sShowSort && (
-                <motion.div
-                  className="fixed inset-x-4 bottom-24 z-[70] max-h-[75vh] w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:left-auto md:inset-x-auto md:mr-2 md:w-80"
-                  initial={{ opacity: 0, x: 10, scale: 0.98 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 10, scale: 0.98 }}
-                  transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-                >
-                  <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Region</p>
+                  <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Region &amp; streaming</p>
                   <p className="mt-1 px-1 text-sm text-neutral-200">
-                    Streaming uses{" "}
+                    Narrow Saved by where titles stream in{" "}
                     <span className="font-semibold text-white">{tmdbCountryName(watchRegion)}</span>
                     {user?.country_code ? "" : " (default US — set yours in Profile)"}.
                   </p>
                   {!user?.country_code && (
                     <Link
                       to="/profile"
-                      className="mt-2 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
+                      className="mt-1 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
                     >
                       Set country in Profile
                     </Link>
                   )}
-                  <div className="mt-3">
+                  <p className="mt-2 px-1 text-xs text-neutral-500">
+                    TMDB content rating filters apply on Discovery (Filters). Here, pick providers only (up to 100 titles after other filters).
+                  </p>
+                  <div className="mt-2">
                     <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Streaming services</p>
                     {watchProvidersCatalog.isLoading ? (
                       <p className="mt-2 px-1 text-xs text-neutral-500">Loading providers…</p>
@@ -761,44 +716,81 @@ const MainLayout = () => {
                         })}
                       </div>
                     )}
-                    <p className="mt-3 px-1 text-xs text-neutral-500">
-                      Content rating filters apply on <span className="text-neutral-300">Discovery</span> (open Sort
-                      there). Here you can narrow Saved by where titles stream (up to 100 items after other filters).
-                    </p>
-                    {sSelectedWatchProviderIds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSSelectedWatchProviderIds([]);
-                        }}
-                        className="mt-2 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-xs text-neutral-200 transition hover:bg-neutral-700/60"
-                      >
-                        Clear streaming selection
-                      </button>
-                    )}
                   </div>
-                  <p className="mt-4 px-1 text-xs uppercase tracking-wide text-neutral-400">Sort</p>
-                  <div className="mt-1">
-                    {[
-                      { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
-                      { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
-                      { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
-                      { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
-                    ].map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setSSortBy(opt.key)}
-                        className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${sSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
-                      >
-                        {opt.icon} {opt.label}
-                      </button>
-                    ))}
+                  <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {(sFilterType === "tv" ? TV_GENRES : sFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
+                      const active = sSelectedGenreIds.includes(genre.id);
+                      return (
+                        <button key={genre.id} type="button" onClick={() => setSSelectedGenreIds((prev) => prev.includes(genre.id) ? prev.filter((id) => id !== genre.id) : [...prev, genre.id])} className={`rounded-2xl px-2.5 py-1 text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}>
+                          {genre.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSFilterType("all");
+                        setSMinRating(0);
+                        setSWatchedFilter("all");
+                        setSFavoriteFilter("all");
+                        setSYearFrom("");
+                        setSSelectedGenreIds([]);
+                        setSSelectedWatchProviderIds([]);
+                      }}
+                      className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
+                    >
+                      Clear filters
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSShowFilter(false)}
+                      className="w-full rounded-2xl border-t border-neutral-500 bg-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-white"
+                    >
+                      Apply
+                    </button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" || sSelectedWatchProviderIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 || sSelectedWatchProviderIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+              <AnimatedNavIcon>
+                <Filter size={24} strokeWidth={2.5} />
+              </AnimatedNavIcon>
+            </button>
+          </div>
+
+          <div className="relative">
+            <AnimatePresence>
+              {sShowSort && (
+                <motion.div
+                  className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48"
+                  initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
+                  {[
+                    { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
+                    { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
+                    { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
+                    { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
+                  ].map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setSSortBy(opt.key)}
+                      className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${sSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
+                    >
+                      {opt.icon} {opt.label}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>{sortButtonIcon(sSortBy)}</AnimatedNavIcon>
             </button>
           </div>
