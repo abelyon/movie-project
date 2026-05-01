@@ -140,6 +140,126 @@ class TmdbController extends Controller
         return $this->mediaWatchProviders($request, 'tv', $id);
     }
 
+    public function movieCertification(Request $request, int $id)
+    {
+        $apiKey = config('services.tmdb.api_key');
+        if ($apiKey === null || $apiKey === '') {
+            return response()->json(['message' => 'TMDB API key is not configured'], 503);
+        }
+        $url = $this->tmdbBaseUrl();
+        $region = strtoupper((string) $request->query('watch_region', 'US'));
+        if (strlen($region) !== 2) {
+            return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
+        }
+
+        $response = Http::acceptJson()->get("{$url}/movie/{$id}/release_dates", [
+            'api_key' => $apiKey,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Failed to fetch release dates from TMDB'], $response->status());
+        }
+
+        $json = $response->json();
+        $payload = is_array($json) ? $json : [];
+        $cert = $this->extractMovieCertificationFromReleaseDates($payload, $region);
+
+        return response()->json([
+            'watch_region' => $region,
+            'certification' => $cert,
+        ], 200);
+    }
+
+    public function tvCertification(Request $request, int $id)
+    {
+        $apiKey = config('services.tmdb.api_key');
+        if ($apiKey === null || $apiKey === '') {
+            return response()->json(['message' => 'TMDB API key is not configured'], 503);
+        }
+        $url = $this->tmdbBaseUrl();
+        $region = strtoupper((string) $request->query('watch_region', 'US'));
+        if (strlen($region) !== 2) {
+            return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
+        }
+
+        $response = Http::acceptJson()->get("{$url}/tv/{$id}/content_ratings", [
+            'api_key' => $apiKey,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Failed to fetch TV content ratings from TMDB'], $response->status());
+        }
+
+        $json = $response->json();
+        $results = is_array($json) && isset($json['results']) && is_array($json['results'])
+            ? $json['results']
+            : [];
+        $cert = null;
+        foreach ($results as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if (strtoupper((string) ($row['iso_3166_1'] ?? '')) !== $region) {
+                continue;
+            }
+            $rating = trim((string) ($row['rating'] ?? ''));
+            if ($rating !== '') {
+                $cert = $rating;
+                break;
+            }
+        }
+
+        return response()->json([
+            'watch_region' => $region,
+            'certification' => $cert,
+        ], 200);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function extractMovieCertificationFromReleaseDates(array $payload, string $region): ?string
+    {
+        $upper = strtoupper($region);
+        foreach ($payload['results'] ?? [] as $block) {
+            if (! is_array($block)) {
+                continue;
+            }
+            if (strtoupper((string) ($block['iso_3166_1'] ?? '')) !== $upper) {
+                continue;
+            }
+            $dates = $block['release_dates'] ?? [];
+            if (! is_array($dates)) {
+                continue;
+            }
+            $preferred = [];
+            $fallback = [];
+            foreach ($dates as $d) {
+                if (! is_array($d)) {
+                    continue;
+                }
+                $c = trim((string) ($d['certification'] ?? ''));
+                if ($c === '' || strtoupper($c) === 'NR') {
+                    continue;
+                }
+                $type = (int) ($d['type'] ?? 0);
+                if ($type === 3) {
+                    $preferred[] = $c;
+                } else {
+                    $fallback[] = $c;
+                }
+            }
+            if ($preferred !== []) {
+                return $preferred[0];
+            }
+            if ($fallback !== []) {
+                return $fallback[0];
+            }
+        }
+
+        return null;
+    }
+
     private function mediaWatchProviders(Request $request, string $type, int $id)
     {
         if (!in_array($type, ['movie', 'tv'], true)) {

@@ -238,3 +238,16 @@ export async function fetchMediaWatchProviderIds(
   });
   return data.provider_ids ?? [];
 }
+
+export async function fetchMediaCertification(
+  mediaType: "movie" | "tv",
+  id: number,
+  watch_region: string,
+): Promise<string | null> {
+  const path =
+    mediaType === "movie" ? `/movie/${id}/certification` : `/tv/${id}/certification`;
+  const { data } = await api.get<{ certification: string | null }>(path, {
+    params: { watch_region },
+  });
+  return data.certification ?? null;
+}

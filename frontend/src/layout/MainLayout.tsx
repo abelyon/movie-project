@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { fetchCertificationsList, fetchWatchProvidersCatalog, type WatchProviderRow } from "../api/tmdb";
-import { tmdbCountryName } from "../constants/tmdbCountries";
+import { fetchCertificationsList } from "../api/tmdb";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
@@ -105,7 +104,6 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
-    selectedWatchProviderIds: number[];
     certification: string;
     watchRegion: string;
     selectedFriendIds: number[];
@@ -115,13 +113,11 @@ export type MainLayoutOutletContext = {
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
-    setSelectedWatchProviderIds: Dispatch<SetStateAction<number[]>>;
     setCertification: (value: string) => void;
   };
 };
 
 const MainLayout = () => {
-  const noopCertification = useCallback(() => {}, []);
   const { user } = useAuth();
   const { pathname } = useLocation();
   const isDiscovery = pathname === "/discovery";
@@ -152,7 +148,7 @@ const MainLayout = () => {
   const [sWatchedFilter, setSWatchedFilter] = useState<WatchFilter>("all");
   const [sFavoriteFilter, setSFavoriteFilter] = useState<FavoriteFilter>("all");
   const [sYearFrom, setSYearFrom] = useState("");
-  const [sSelectedWatchProviderIds, setSSelectedWatchProviderIds] = useState<number[]>([]);
+  const [sCertification, setSCertification] = useState("");
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
 
@@ -166,29 +162,12 @@ const MainLayout = () => {
   const filterTypeForCerts = isDiscovery ? dFilterType : sFilterType;
   const certListType = filterTypeForCerts === "tv" ? "tv" : "movie";
 
-  const watchProvidersCatalog = useQuery({
-    queryKey: ["catalog", "watch-providers", "movie", watchRegion],
-    queryFn: () => fetchWatchProvidersCatalog({ type: "movie", watch_region: watchRegion }),
-    enabled: filterPanelOpenForCatalog,
-    staleTime: 24 * 60 * 60 * 1000,
-  });
-
   const certificationsCatalog = useQuery({
     queryKey: ["catalog", "certifications", certListType],
     queryFn: () => fetchCertificationsList(certListType),
     enabled: filterPanelOpenForCatalog,
     staleTime: 24 * 60 * 60 * 1000,
   });
-
-  const mergedProviderOptions = useMemo(() => {
-    const d = watchProvidersCatalog.data;
-    if (!d) return [];
-    const map = new Map<number, WatchProviderRow>();
-    for (const row of [...d.flatrate, ...d.rent, ...d.buy]) {
-      if (!map.has(row.provider_id)) map.set(row.provider_id, row);
-    }
-    return [...map.values()].sort((a, b) => a.provider_name.localeCompare(b.provider_name));
-  }, [watchProvidersCatalog.data]);
 
   const certOptionsForRegion = useMemo(() => {
     const raw = certificationsCatalog.data?.certifications?.[watchRegion];
@@ -270,8 +249,7 @@ const MainLayout = () => {
         watchedFilter: sWatchedFilter,
         favoriteFilter: sFavoriteFilter,
         yearFrom: sYearFrom,
-        selectedWatchProviderIds: sSelectedWatchProviderIds,
-        certification: "",
+        certification: sCertification,
         watchRegion,
         selectedFriendIds,
         showFriendsSocial,
@@ -280,16 +258,14 @@ const MainLayout = () => {
         setSelectedGenreIds: setSSelectedGenreIds,
         setMinRating: setSMinRating,
         setYearFrom: setSYearFrom,
-        setSelectedWatchProviderIds: setSSelectedWatchProviderIds,
-        setCertification: noopCertification,
+        setCertification: setSCertification,
       },
     }),
     [
-      noopCertification,
       dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
       dSelectedWatchProviderIds, dCertification, watchRegion,
       sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom,
-      sSelectedWatchProviderIds,
+      sCertification,
       selectedFriendIds, showFriendsSocial,
     ],
   );
@@ -630,51 +606,28 @@ const MainLayout = () => {
                       </select>
                     </div>
                   </div>
-                  <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Region &amp; streaming</p>
-                  <p className="mt-1 px-1 text-sm text-neutral-200">
-                    Narrow Saved by where titles stream in{" "}
-                    <span className="font-semibold text-white">{tmdbCountryName(watchRegion)}</span>
-                    {user?.country_code ? "" : " (default US — set yours in Profile)"}.
-                  </p>
-                  {!user?.country_code && (
-                    <Link
-                      to="/profile"
-                      className="mt-1 inline-block px-1 text-xs font-semibold text-emerald-300 underline-offset-2 hover:underline"
+                  <div className="mt-3">
+                    <label
+                      className="block px-1 text-xs uppercase tracking-wide text-neutral-400"
+                      htmlFor="saved-layout-certification"
                     >
-                      Set country in Profile
-                    </Link>
-                  )}
-                  <p className="mt-2 px-1 text-xs text-neutral-500">
-                    TMDB content rating filters apply on Discovery (Filters). Here, pick providers only (up to 100 titles after other filters).
-                  </p>
-                  <div className="mt-2">
-                    <p className="px-1 text-xs uppercase tracking-wide text-neutral-400">Streaming services</p>
-                    {watchProvidersCatalog.isLoading ? (
-                      <p className="mt-2 px-1 text-xs text-neutral-500">Loading providers…</p>
-                    ) : mergedProviderOptions.length === 0 ? (
-                      <p className="mt-2 px-1 text-xs text-neutral-500">No provider list for this region.</p>
-                    ) : (
-                      <div className="mt-2 flex max-h-36 flex-wrap gap-1 overflow-y-auto pr-0.5">
-                        {mergedProviderOptions.map((p) => {
-                          const active = sSelectedWatchProviderIds.includes(p.provider_id);
-                          return (
-                            <button
-                              key={p.provider_id}
-                              type="button"
-                              onClick={() => {
-                                setSSelectedWatchProviderIds((prev) =>
-                                  prev.includes(p.provider_id)
-                                    ? prev.filter((id) => id !== p.provider_id)
-                                    : [...prev, p.provider_id],
-                                );
-                              }}
-                              className={`rounded-2xl px-2.5 py-1 text-left text-xs transition ${active ? "bg-white border border-white text-neutral-900" : "border border-neutral-600 text-neutral-300 hover:bg-neutral-700/60"}`}
-                            >
-                              {p.provider_name}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      Content rating
+                    </label>
+                    <select
+                      id="saved-layout-certification"
+                      value={sCertification}
+                      onChange={(e) => setSCertification(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                    >
+                      <option value="">Any rating</option>
+                      {certOptionsForRegion.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {certificationsCatalog.isLoading && (
+                      <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
                     )}
                   </div>
                   <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
@@ -698,7 +651,7 @@ const MainLayout = () => {
                         setSFavoriteFilter("all");
                         setSYearFrom("");
                         setSSelectedGenreIds([]);
-                        setSSelectedWatchProviderIds([]);
+                        setSCertification("");
                       }}
                       className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
                     >
@@ -715,7 +668,7 @@ const MainLayout = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 || sSelectedWatchProviderIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 || sCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>
                 <Filter size={24} strokeWidth={2.5} />
               </AnimatedNavIcon>
