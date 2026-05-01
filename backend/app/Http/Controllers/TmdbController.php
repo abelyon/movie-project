@@ -13,7 +13,7 @@ class TmdbController extends Controller
     public function discover(Request $request, $type)
     {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
 
         if (!in_array($type, ['movie', 'tv'])) {
             return response()->json([
@@ -77,28 +77,35 @@ class TmdbController extends Controller
         }
 
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        if ($apiKey === null || $apiKey === '') {
+            return response()->json(['message' => 'TMDB API key is not configured'], 503);
+        }
+
+        $url = $this->tmdbBaseUrl();
         $region = strtoupper((string) $request->query('watch_region', 'US'));
         if (strlen($region) !== 2) {
             return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
         }
 
-        $response = Http::get("{$url}/watch/providers/{$type}", [
+        $response = Http::acceptJson()->get("{$url}/watch/providers/{$type}", [
             'api_key' => $apiKey,
         ]);
 
-        if ($response->failed()) {
-            return response()->json(['message' => 'Failed to fetch watch providers from TMDB'], $response->status());
+        $payload = $response->json();
+        if ($response->failed() || !is_array($payload) || !isset($payload['results']) || !is_array($payload['results'])) {
+            return response()->json(
+                ['message' => 'Failed to fetch watch providers from TMDB'],
+                $response->failed() ? $response->status() : 502,
+            );
         }
 
-        $results = $response->json('results') ?? [];
-        $regionData = $results[$region] ?? null;
+        $regionData = $this->tmdbRegionPayload($payload['results'], $region);
 
         return response()->json([
             'watch_region' => $region,
-            'flatrate' => $regionData['flatrate'] ?? [],
-            'rent' => $regionData['rent'] ?? [],
-            'buy' => $regionData['buy'] ?? [],
+            'flatrate' => is_array($regionData) ? ($regionData['flatrate'] ?? []) : [],
+            'rent' => is_array($regionData) ? ($regionData['rent'] ?? []) : [],
+            'buy' => is_array($regionData) ? ($regionData['buy'] ?? []) : [],
         ]);
     }
 
@@ -109,7 +116,7 @@ class TmdbController extends Controller
         }
 
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
         $path = $type === 'tv' ? 'certification/tv/list' : 'certification/movie/list';
 
         $response = Http::get("{$url}/{$path}", [
@@ -140,13 +147,13 @@ class TmdbController extends Controller
         }
 
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
         $region = strtoupper((string) $request->query('watch_region', 'US'));
         if (strlen($region) !== 2) {
             return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
         }
 
-        $response = Http::get("{$url}/{$type}/{$id}/watch/providers", [
+        $response = Http::acceptJson()->get("{$url}/{$type}/{$id}/watch/providers", [
             'api_key' => $apiKey,
         ]);
 
@@ -154,8 +161,11 @@ class TmdbController extends Controller
             return response()->json(['message' => 'Failed to fetch watch providers from TMDB'], $response->status());
         }
 
-        $results = $response->json('results') ?? [];
-        $slice = $results[$region] ?? null;
+        $payload = $response->json();
+        $results = is_array($payload) && isset($payload['results']) && is_array($payload['results'])
+            ? $payload['results']
+            : [];
+        $slice = $this->tmdbRegionPayload($results, $region);
         $ids = [];
         if (is_array($slice)) {
             foreach (['flatrate', 'rent', 'buy'] as $bucket) {
@@ -179,7 +189,7 @@ class TmdbController extends Controller
     public function searchPeople(Request $request)
     {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
         $query = trim((string) $request->query('query', ''));
 
         if (strlen($query) < 2) {
@@ -210,7 +220,7 @@ class TmdbController extends Controller
     public function search(Request $request)
     {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
 
         $queryParams = [
             'api_key' => $apiKey,
@@ -225,7 +235,7 @@ class TmdbController extends Controller
     public function trending(Request $request)
     {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
 
         $queryParams = [
             'api_key' => $apiKey,
@@ -239,7 +249,7 @@ class TmdbController extends Controller
 
     public function movie(Request $request, $id) {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
         $region = strtoupper((string) $request->query('watch_region', 'US'));
         if (strlen($region) !== 2) {
             $region = 'US';
@@ -250,7 +260,9 @@ class TmdbController extends Controller
             'append_to_response' => 'credits,watch/providers',
         ]);
         $json = $response->json();
-        $watchProviders = $json['watch/providers']['results'][$region] ?? null;
+        $wp = $json['watch/providers'] ?? null;
+        $byCountry = is_array($wp) && isset($wp['results']) && is_array($wp['results']) ? $wp['results'] : null;
+        $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
         unset($json['watch/providers']);
         $json['watch_providers'] = $watchProviders;
         $json['cast'] = $json['credits']['cast'] ?? [];
@@ -261,7 +273,7 @@ class TmdbController extends Controller
 
     public function tv(Request $request, $id) {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
         $region = strtoupper((string) $request->query('watch_region', 'US'));
         if (strlen($region) !== 2) {
             $region = 'US';
@@ -272,7 +284,9 @@ class TmdbController extends Controller
             'append_to_response' => 'credits,watch/providers',
         ]);
         $json = $response->json();
-        $watchProviders = $json['watch/providers']['results'][$region] ?? null;
+        $wp = $json['watch/providers'] ?? null;
+        $byCountry = is_array($wp) && isset($wp['results']) && is_array($wp['results']) ? $wp['results'] : null;
+        $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
         unset($json['watch/providers']);
         $json['watch_providers'] = $watchProviders;
         $json['cast'] = $json['credits']['cast'] ?? [];
@@ -284,7 +298,7 @@ class TmdbController extends Controller
     public function person($id)
     {
         $apiKey = config('services.tmdb.api_key');
-        $url = config('services.tmdb.url');
+        $url = $this->tmdbBaseUrl();
 
         $response = Http::get("{$url}/person/{$id}", [
             'api_key' => $apiKey,
@@ -315,5 +329,39 @@ class TmdbController extends Controller
         $json['credits'] = $filteredCredits;
 
         return response()->json($json, 200);
+    }
+
+    private function tmdbBaseUrl(): string
+    {
+        return rtrim((string) config('services.tmdb.url'), '/');
+    }
+
+    /**
+     * TMDB country keys in watch-provider maps may not match PHP array casing; resolve case-insensitively.
+     *
+     * @param  array<string, mixed>|null  $resultsByCountry
+     * @return array<string, mixed>|null
+     */
+    private function tmdbRegionPayload(?array $resultsByCountry, string $region): ?array
+    {
+        if ($resultsByCountry === null || $resultsByCountry === []) {
+            return null;
+        }
+
+        $upper = strtoupper($region);
+        if (isset($resultsByCountry[$upper]) && is_array($resultsByCountry[$upper])) {
+            return $resultsByCountry[$upper];
+        }
+        if (isset($resultsByCountry[$region]) && is_array($resultsByCountry[$region])) {
+            return $resultsByCountry[$region];
+        }
+
+        foreach ($resultsByCountry as $code => $payload) {
+            if (is_array($payload) && strtoupper((string) $code) === $upper) {
+                return $payload;
+            }
+        }
+
+        return null;
     }
 }
