@@ -2,6 +2,7 @@ import { useMemo, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useInfiniteTrending } from "../../hooks/useTrending";
+import { useInfiniteRegionalDiscover } from "../../hooks/useRegionalDiscover";
 import { useSearch } from "../../hooks/useSearch";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { stateKey } from "../../api/userMedia";
@@ -33,17 +34,55 @@ const DiscoveryPage = () => {
     watchedFilter: "all" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
+    selectedWatchProviderIds: [] as number[],
+    certification: "",
+    watchRegion: "US",
+    setFilterType: () => {},
+    setSelectedGenreIds: () => {},
+    setMinRating: () => {},
+    setYearFrom: () => {},
+    setSelectedWatchProviderIds: () => {},
+    setCertification: () => {},
   };
-  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
   const {
-    data,
-    isPending,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteTrending();
+    showSearch,
+    query,
+    sortBy,
+    filterType,
+    selectedGenreIds,
+    minRating,
+    watchedFilter,
+    favoriteFilter,
+    yearFrom,
+    selectedWatchProviderIds,
+    certification,
+    watchRegion,
+  } = discoveryControls;
+  const useRegionalBrowse =
+    !showSearch &&
+    (selectedWatchProviderIds.length > 0 || certification !== "");
+  const trendingQuery = useInfiniteTrending({ enabled: !useRegionalBrowse });
+  const regionalQuery = useInfiniteRegionalDiscover({
+    enabled: useRegionalBrowse,
+    filterType,
+    watchRegion,
+    watchProviderIds: selectedWatchProviderIds,
+    certification,
+    selectedGenreIds,
+    minRating,
+    yearFrom,
+  });
+  const data = useRegionalBrowse ? regionalQuery.data : trendingQuery.data;
+  const isPending = useRegionalBrowse ? regionalQuery.isPending : trendingQuery.isPending;
+  const isError = useRegionalBrowse ? regionalQuery.isError : trendingQuery.isError;
+  const error = useRegionalBrowse ? regionalQuery.error : trendingQuery.error;
+  const fetchNextPage = useRegionalBrowse
+    ? regionalQuery.fetchNextPage
+    : trendingQuery.fetchNextPage;
+  const hasNextPage = useRegionalBrowse ? regionalQuery.hasNextPage : trendingQuery.hasNextPage;
+  const isFetchingNextPage = useRegionalBrowse
+    ? regionalQuery.isFetchingNextPage
+    : trendingQuery.isFetchingNextPage;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const trimmedQuery = query.trim();
@@ -72,7 +111,7 @@ const DiscoveryPage = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch, useRegionalBrowse]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];

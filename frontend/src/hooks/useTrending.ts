@@ -3,7 +3,8 @@ import { fetchTrending } from "../api/tmdb";
 
 export const infiniteTrendingQueryKey = ["tmdb", "trending", "infinite"] as const;
 
-export function useInfiniteTrending() {
+export function useInfiniteTrending(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
   return useInfiniteQuery({
     queryKey: infiniteTrendingQueryKey,
     queryFn: ({ pageParam }) => fetchTrending({ page: pageParam }),
@@ -13,6 +14,7 @@ export function useInfiniteTrending() {
       const total = lastPage.total_pages ?? 1;
       return page < total ? page + 1 : undefined;
     },
+    enabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,

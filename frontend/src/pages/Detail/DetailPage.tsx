@@ -149,6 +149,7 @@ const DetailPage = () => {
   const { data: fetched, isPending, isFetching, isError, error } = useDetail(
     media_type,
     id,
+    user?.country_code,
   );
   const data = fetched ?? previewDetail;
   const showSkeleton = isPending && !data;

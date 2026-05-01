@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { fetchMediaWatchProviderIds } from "../../api/tmdb";
 import { stateKey } from "../../api/userMedia";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { getFriendOverview } from "../../api/friends";
@@ -18,9 +19,18 @@ const SavedPage = () => {
     watchedFilter: "all" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
+    selectedWatchProviderIds: [] as number[],
+    certification: "",
+    watchRegion: "US",
     selectedFriendIds: [] as number[],
     showFriendsSocial: false,
     withFriendsSaved: false,
+    setFilterType: () => {},
+    setSelectedGenreIds: () => {},
+    setMinRating: () => {},
+    setYearFrom: () => {},
+    setSelectedWatchProviderIds: () => {},
+    setCertification: () => {},
   };
   const {
     sortBy,
@@ -30,6 +40,8 @@ const SavedPage = () => {
     watchedFilter,
     favoriteFilter,
     yearFrom,
+    selectedWatchProviderIds,
+    watchRegion,
     selectedFriendIds,
     showFriendsSocial,
     withFriendsSaved,
@@ -72,9 +84,68 @@ const SavedPage = () => {
     [filterType, minRating, saved, selectedGenreIds, yearFrom],
   );
 
+  const streamingFilterActive = selectedWatchProviderIds.length > 0;
+  const savedIdsKey = useMemo(
+    () =>
+      filteredSaved
+        .filter((i) => i.media_type === "movie" || i.media_type === "tv")
+        .map((i) => `${i.media_type}:${i.id}`)
+        .sort()
+        .join(","),
+    [filteredSaved],
+  );
+
+  const savedWatchProviderMap = useQuery({
+    queryKey: ["saved", "watch-providers", watchRegion, savedIdsKey],
+    queryFn: async () => {
+      const map = new Map<string, number[]>();
+      const eligible = filteredSaved.filter(
+        (i) => i.media_type === "movie" || i.media_type === "tv",
+      );
+      const chunk = 8;
+      for (let i = 0; i < eligible.length; i += chunk) {
+        const slice = eligible.slice(i, i + chunk);
+        await Promise.all(
+          slice.map(async (item) => {
+            const ids = await fetchMediaWatchProviderIds(
+              item.media_type as "movie" | "tv",
+              item.id,
+              watchRegion,
+            );
+            map.set(stateKey(item.id, item.media_type), ids);
+          }),
+        );
+      }
+      return map;
+    },
+    enabled:
+      streamingFilterActive &&
+      watchRegion.length === 2 &&
+      filteredSaved.length > 0 &&
+      filteredSaved.length <= 100,
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+
+  const afterStreamingFilter = useMemo(() => {
+    if (!streamingFilterActive) return filteredSaved;
+    if (filteredSaved.length > 100) return filteredSaved;
+    const map = savedWatchProviderMap.data;
+    if (!map) return filteredSaved;
+    return filteredSaved.filter((item) => {
+      if (item.media_type !== "movie" && item.media_type !== "tv") return false;
+      const ids = map.get(stateKey(item.id, item.media_type)) ?? [];
+      return selectedWatchProviderIds.some((pid) => ids.includes(pid));
+    });
+  }, [
+    filteredSaved,
+    selectedWatchProviderIds,
+    streamingFilterActive,
+    savedWatchProviderMap.data,
+  ]);
+
   const processedSaved = useMemo(() => {
-    if (sortBy === "default") return filteredSaved;
-    const sorted = [...filteredSaved];
+    if (sortBy === "default") return afterStreamingFilter;
+    const sorted = [...afterStreamingFilter];
 
     if (sortBy === "title_asc") {
       sorted.sort((a, b) => {
@@ -96,7 +167,7 @@ const SavedPage = () => {
 
     sorted.sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
     return sorted;
-  }, [filteredSaved, sortBy]);
+  }, [afterStreamingFilter, sortBy]);
 
   const { data: stateMap } = useMediaStateMap(processedSaved);
   const watchTogetherNameMap = useMemo(() => {
@@ -119,6 +190,8 @@ const SavedPage = () => {
     [favoriteFilter, processedSaved, stateMap, watchedFilter],
   );
 
+  const streamingFilterTooLarge =
+    streamingFilterActive && filteredSaved.length > 100;
   if (isLoading && (saved ?? []).length === 0) {
     return (
       <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
@@ -132,6 +205,18 @@ const SavedPage = () => {
 
   return (
     <div>
+      {streamingFilterTooLarge && (
+        <p className="px-5 pt-5 text-sm text-amber-200/90">
+          Streaming filter applies to at most 100 titles after your other filters. Narrow type, year, or genres, then
+          try again.
+        </p>
+      )}
+      {streamingFilterActive &&
+        filteredSaved.length > 0 &&
+        filteredSaved.length <= 100 &&
+        savedWatchProviderMap.isFetching && (
+          <p className="px-5 pt-3 text-xs text-neutral-400">Checking streaming availability…</p>
+        )}
       {!visibleSaved.length ? (
         <div className="p-5">
           <p className="text-neutral-400">
