@@ -459,10 +459,7 @@ const DetailPage = () => {
 
                 {getTrailerYoutubeKey(data) ? (
                   <div className="mt-6">
-                    <h2 className="font-space-grotesk text-sm font-semibold text-neutral-100">
-                      Trailer
-                    </h2>
-                    <div className="mt-3 aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-black">
+                    <div className="aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-black">
                       <iframe
                         title={`${getTitle(data, media_type)} trailer`}
                         src={`https://www.youtube-nocookie.com/embed/${getTrailerYoutubeKey(data)}?rel=0`}
