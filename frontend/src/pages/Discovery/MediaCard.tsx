@@ -6,6 +6,7 @@ import type { MediaItem } from "../../api/types";
 import { getState, stateKey } from "../../api/userMedia";
 import { Bookmark, Clapperboard, Star, Tv } from "lucide-react";
 import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
+import { useAuth } from "../../contexts/AuthContext";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -24,6 +25,10 @@ const MediaCard = ({
   isSaved?: boolean;
   watchTogetherMeta?: WatchTogetherMeta;
 }) => {
+  const { user } = useAuth();
+  const watchRegion = user?.country_code && user.country_code.length === 2
+    ? user.country_code.toUpperCase()
+    : "US";
   const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -33,13 +38,19 @@ const MediaCard = ({
     watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount,
   );
 
+  const showWatchTogetherBadge = Boolean(
+    watchTogetherMeta &&
+    watchTogetherMeta.participantCount > 0 &&
+    (everyoneWantsToWatch || watchTogetherMeta.wantCount >= 2),
+  );
+
   const prefetchDetail = () => {
     const mt = item.media_type;
     if (mt !== "movie" && mt !== "tv") return;
     const kind = mt as "movie" | "tv";
     void queryClient.prefetchQuery({
-      queryKey: detailQueryKey(kind, item.id),
-      queryFn: () => fetchDetail(kind, item.id),
+      queryKey: detailQueryKey(kind, item.id, watchRegion),
+      queryFn: () => fetchDetail(kind, item.id, watchRegion),
       staleTime: 5 * 60 * 1000,
     });
   };
@@ -72,8 +83,9 @@ const MediaCard = ({
     prefetchForDetail();
     await Promise.allSettled([
       queryClient.ensureQueryData({
-        queryKey: detailQueryKey(item.media_type, item.id),
-        queryFn: () => fetchDetail(item.media_type as "movie" | "tv", item.id),
+        queryKey: detailQueryKey(item.media_type, item.id, watchRegion),
+        queryFn: () =>
+          fetchDetail(item.media_type as "movie" | "tv", item.id, watchRegion),
         staleTime: 5 * 60 * 1000,
       }),
       queryClient.ensureQueryData({
@@ -158,7 +170,7 @@ const MediaCard = ({
           </span>
         </div>
       )}
-      {watchTogetherMeta && watchTogetherMeta.participantCount > 0 && (
+      {watchTogetherMeta && showWatchTogetherBadge && (
         <div className="absolute bottom-0 right-0 p-4 flex flex-col items-start gap-2 pointer-events-none">
           {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
             <span

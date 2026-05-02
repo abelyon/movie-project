@@ -56,5 +56,22 @@ const api = axios.create({
   },
 });
 
+let onAuthExpired: (() => void) | null = null;
+
+export function setAuthExpiredHandler(handler: (() => void) | null): void {
+  onAuthExpired = handler;
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    if (status === 401 || status === 419) {
+      onAuthExpired?.();
+    }
+    return Promise.reject(error);
+  },
+);
+
 export default api;
 export { LARAVEL_BASE };

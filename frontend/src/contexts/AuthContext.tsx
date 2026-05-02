@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import * as authApi from "../api/auth";
+import { setAuthExpiredHandler } from "../api/client";
 import type { User } from "../api/auth";
 
 type AuthState = {
@@ -42,6 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setAuthExpiredHandler(() => {
+      setUser(null);
+      setIsLoading(false);
+    });
+    return () => {
+      setAuthExpiredHandler(null);
     };
   }, []);
 

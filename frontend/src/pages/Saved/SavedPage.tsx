@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { fetchMediaCertification } from "../../api/tmdb";
 import { stateKey } from "../../api/userMedia";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { getFriendOverview } from "../../api/friends";
@@ -18,9 +19,16 @@ const SavedPage = () => {
     watchedFilter: "all" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
+    certification: "",
+    watchRegion: "US",
     selectedFriendIds: [] as number[],
     showFriendsSocial: false,
     withFriendsSaved: false,
+    setFilterType: () => {},
+    setSelectedGenreIds: () => {},
+    setMinRating: () => {},
+    setYearFrom: () => {},
+    setCertification: () => {},
   };
   const {
     sortBy,
@@ -30,6 +38,8 @@ const SavedPage = () => {
     watchedFilter,
     favoriteFilter,
     yearFrom,
+    certification,
+    watchRegion,
     selectedFriendIds,
     showFriendsSocial,
     withFriendsSaved,
@@ -72,9 +82,68 @@ const SavedPage = () => {
     [filterType, minRating, saved, selectedGenreIds, yearFrom],
   );
 
+  const certificationFilterActive = certification.trim() !== "";
+  const savedIdsKey = useMemo(
+    () =>
+      filteredSaved
+        .filter((i) => i.media_type === "movie" || i.media_type === "tv")
+        .map((i) => `${i.media_type}:${i.id}`)
+        .sort()
+        .join(","),
+    [filteredSaved],
+  );
+
+  const savedCertificationMap = useQuery({
+    queryKey: ["saved", "certifications", watchRegion, certification, savedIdsKey],
+    queryFn: async () => {
+      const map = new Map<string, string | null>();
+      const eligible = filteredSaved.filter(
+        (i) => i.media_type === "movie" || i.media_type === "tv",
+      );
+      const chunk = 8;
+      for (let i = 0; i < eligible.length; i += chunk) {
+        const slice = eligible.slice(i, i + chunk);
+        await Promise.all(
+          slice.map(async (item) => {
+            const cert = await fetchMediaCertification(
+              item.media_type as "movie" | "tv",
+              item.id,
+              watchRegion,
+            );
+            map.set(stateKey(item.id, item.media_type), cert);
+          }),
+        );
+      }
+      return map;
+    },
+    enabled:
+      certificationFilterActive &&
+      watchRegion.length === 2 &&
+      filteredSaved.length > 0 &&
+      filteredSaved.length <= 100,
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+
+  const afterCertificationFilter = useMemo(() => {
+    if (!certificationFilterActive) return filteredSaved;
+    if (filteredSaved.length > 100) return filteredSaved;
+    const map = savedCertificationMap.data;
+    if (!map) return filteredSaved;
+    return filteredSaved.filter((item) => {
+      if (item.media_type !== "movie" && item.media_type !== "tv") return false;
+      const c = map.get(stateKey(item.id, item.media_type));
+      return c === certification;
+    });
+  }, [
+    certification,
+    certificationFilterActive,
+    filteredSaved,
+    savedCertificationMap.data,
+  ]);
+
   const processedSaved = useMemo(() => {
-    if (sortBy === "default") return filteredSaved;
-    const sorted = [...filteredSaved];
+    if (sortBy === "default") return afterCertificationFilter;
+    const sorted = [...afterCertificationFilter];
 
     if (sortBy === "title_asc") {
       sorted.sort((a, b) => {
@@ -96,7 +165,7 @@ const SavedPage = () => {
 
     sorted.sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
     return sorted;
-  }, [filteredSaved, sortBy]);
+  }, [afterCertificationFilter, sortBy]);
 
   const { data: stateMap } = useMediaStateMap(processedSaved);
   const watchTogetherNameMap = useMemo(() => {
@@ -119,6 +188,8 @@ const SavedPage = () => {
     [favoriteFilter, processedSaved, stateMap, watchedFilter],
   );
 
+  const certificationFilterTooLarge =
+    certificationFilterActive && filteredSaved.length > 100;
   if (isLoading && (saved ?? []).length === 0) {
     return (
       <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
@@ -132,6 +203,18 @@ const SavedPage = () => {
 
   return (
     <div>
+      {certificationFilterTooLarge && (
+        <p className="px-5 pt-5 text-sm text-amber-200/90">
+          Content rating filter applies to at most 100 titles after your other filters. Narrow type, year, or genres,
+          then try again.
+        </p>
+      )}
+      {certificationFilterActive &&
+        filteredSaved.length > 0 &&
+        filteredSaved.length <= 100 &&
+        savedCertificationMap.isFetching && (
+          <p className="px-5 pt-3 text-xs text-neutral-400">Checking content ratings…</p>
+        )}
       {!visibleSaved.length ? (
         <div className="p-5">
           <p className="text-neutral-400">

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { fetchCertificationsList } from "../api/tmdb";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
@@ -17,7 +19,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { floatingActionButtonBaseClass } from "../constants/floatingActionButton";
 import { AnimatedNavIcon } from "../components/AnimatedNavIcon";
-import { getFriendOverview, type FriendUser } from "../api/friends";
+import { getFriendOverview } from "../api/friends";
 import { WatchTogetherUserStack } from "../components/WatchTogetherUserStack";
 
 const routes = [
@@ -68,8 +70,8 @@ const ALL_GENRES = [...MOVIE_GENRES, ...TV_GENRES].reduce<Array<{ id: number; na
 );
 
 type SortKind = "default" | "title_asc" | "title_desc" | "rating_desc";
-type FilterType = "all" | "movie" | "tv";
-type MinRating = 0 | 6 | 7 | 8;
+export type FilterType = "all" | "movie" | "tv";
+export type MinRating = 0 | 6 | 7 | 8;
 type WatchFilter = "all" | "watched" | "unwatched";
 type FavoriteFilter = "all" | "favorited";
 
@@ -84,10 +86,15 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
+    selectedWatchProviderIds: number[];
+    certification: string;
+    watchRegion: string;
     setFilterType: (value: FilterType) => void;
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
+    setSelectedWatchProviderIds: Dispatch<SetStateAction<number[]>>;
+    setCertification: (value: string) => void;
   };
   savedControls: {
     sortBy: SortKind;
@@ -97,6 +104,8 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
+    certification: string;
+    watchRegion: string;
     selectedFriendIds: number[];
     showFriendsSocial: boolean;
     withFriendsSaved: boolean;
@@ -104,6 +113,7 @@ export type MainLayoutOutletContext = {
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
+    setCertification: (value: string) => void;
   };
 };
 
@@ -120,10 +130,12 @@ const MainLayout = () => {
   const [dFilterType, setDFilterType] = useState<FilterType>("all");
   const [dSelectedGenreIds, setDSelectedGenreIds] = useState<number[]>([]);
   const [dMinRating, setDMinRating] = useState<MinRating>(0);
-  const [dWatchedFilter, setDWatchedFilter] = useState<WatchFilter>("all");
+  const [dWatchedFilter, setDWatchedFilter] = useState<WatchFilter>("unwatched");
   const [dFavoriteFilter, setDFavoriteFilter] = useState<FavoriteFilter>("all");
   const [dYearFrom, setDYearFrom] = useState("");
   const [dQuery, setDQuery] = useState("");
+  const [dSelectedWatchProviderIds, setDSelectedWatchProviderIds] = useState<number[]>([]);
+  const [dCertification, setDCertification] = useState("");
   const dSearchInputRef = useRef<HTMLInputElement>(null);
 
   const [sShowFriends, setSShowFriends] = useState(false);
@@ -136,11 +148,37 @@ const MainLayout = () => {
   const [sWatchedFilter, setSWatchedFilter] = useState<WatchFilter>("all");
   const [sFavoriteFilter, setSFavoriteFilter] = useState<FavoriteFilter>("all");
   const [sYearFrom, setSYearFrom] = useState("");
+  const [sCertification, setSCertification] = useState("");
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
-  const [friends, setFriends] = useState<FriendUser[]>([]);
-  const [friendsLoading, setFriendsLoading] = useState(false);
-  const [friendsLoaded, setFriendsLoaded] = useState(false);
+
+  const watchRegion =
+    user?.country_code && user.country_code.length === 2
+      ? user.country_code.toUpperCase()
+      : "US";
+
+  const filterPanelOpenForCatalog =
+    Boolean(user) && ((isDiscovery && dShowFilter) || (isSaved && sShowFilter));
+  const filterTypeForCerts = isDiscovery ? dFilterType : sFilterType;
+  const certListType = filterTypeForCerts === "tv" ? "tv" : "movie";
+
+  const certificationsCatalog = useQuery({
+    queryKey: ["catalog", "certifications", certListType],
+    queryFn: () => fetchCertificationsList(certListType),
+    enabled: filterPanelOpenForCatalog,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  const certOptionsForRegion = useMemo(() => {
+    const raw = certificationsCatalog.data?.certifications?.[watchRegion];
+    if (!raw?.length) return [];
+    return [...raw]
+      .sort((a, b) => a.order - b.order)
+      .map((c) => ({
+        value: c.certification,
+        label: c.meaning ? `${c.certification} — ${c.meaning}` : c.certification,
+      }));
+  }, [certificationsCatalog.data, watchRegion]);
 
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
@@ -154,26 +192,18 @@ const MainLayout = () => {
     setSSelectedGenreIds([]);
   }, [sFilterType]);
 
-  useEffect(() => {
-    if (!isSaved || friendsLoaded) return;
-    let cancelled = false;
-    setFriendsLoading(true);
-    getFriendOverview()
-      .then((data) => {
-        if (cancelled) return;
-        setFriends(data.friends ?? []);
-        setFriendsLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) setFriends([]);
-      })
-      .finally(() => {
-        if (!cancelled) setFriendsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isSaved, friendsLoaded]);
+  const {
+    data: friendsOverview,
+    isFetching: friendsLoading,
+  } = useQuery({
+    queryKey: ["friends", "overview"],
+    queryFn: getFriendOverview,
+    // Keep friends overview active on Saved so realtime invalidations refetch it.
+    enabled: isSaved,
+    staleTime: 30_000,
+    refetchOnMount: "always",
+  });
+  const friends = friendsOverview?.friends ?? [];
 
   /** Full-screen backdrop; omit discovery search so the grid stays clickable while searching. */
   const hasModalBackdrop =
@@ -201,10 +231,15 @@ const MainLayout = () => {
         watchedFilter: dWatchedFilter,
         favoriteFilter: dFavoriteFilter,
         yearFrom: dYearFrom,
+        selectedWatchProviderIds: dSelectedWatchProviderIds,
+        certification: dCertification,
+        watchRegion,
         setFilterType: setDFilterType,
         setSelectedGenreIds: setDSelectedGenreIds,
         setMinRating: setDMinRating,
         setYearFrom: setDYearFrom,
+        setSelectedWatchProviderIds: setDSelectedWatchProviderIds,
+        setCertification: setDCertification,
       },
       savedControls: {
         sortBy: sSortBy,
@@ -214,6 +249,8 @@ const MainLayout = () => {
         watchedFilter: sWatchedFilter,
         favoriteFilter: sFavoriteFilter,
         yearFrom: sYearFrom,
+        certification: sCertification,
+        watchRegion,
         selectedFriendIds,
         showFriendsSocial,
         withFriendsSaved: !showFriendsSocial && selectedFriendIds.length > 0,
@@ -221,11 +258,15 @@ const MainLayout = () => {
         setSelectedGenreIds: setSSelectedGenreIds,
         setMinRating: setSMinRating,
         setYearFrom: setSYearFrom,
+        setCertification: setSCertification,
       },
     }),
     [
       dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
-      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom, selectedFriendIds, showFriendsSocial,
+      dSelectedWatchProviderIds, dCertification, watchRegion,
+      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom,
+      sCertification,
+      selectedFriendIds, showFriendsSocial,
     ],
   );
 
@@ -365,6 +406,35 @@ const MainLayout = () => {
                         </select>
                       </div>
                     </div>
+                    <div className={`mt-3 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
+                      <label
+                        className="block px-1 text-xs uppercase tracking-wide text-neutral-400"
+                        htmlFor="discovery-layout-certification"
+                      >
+                        Content rating
+                      </label>
+                      <select
+                        id="discovery-layout-certification"
+                        value={dCertification}
+                        onChange={(e) => setDCertification(e.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                      >
+                        <option value="">Any rating</option>
+                        {certOptionsForRegion.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      {certificationsCatalog.isLoading && (
+                        <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
+                      )}
+                    </div>
+                    {dShowSearch && (
+                      <p className="mt-2 px-1 text-xs text-amber-200/90">
+                        Content rating applies to the Discovery grid, not while search is open.
+                      </p>
+                    )}
                     <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -384,7 +454,16 @@ const MainLayout = () => {
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => { setDFilterType("all"); setDMinRating(0); setDWatchedFilter("all"); setDFavoriteFilter("all"); setDYearFrom(""); setDSelectedGenreIds([]); }}
+                        onClick={() => {
+                          setDFilterType("all");
+                          setDMinRating(0);
+                          setDWatchedFilter("unwatched");
+                          setDFavoriteFilter("all");
+                          setDYearFrom("");
+                          setDSelectedGenreIds([]);
+                          setDSelectedWatchProviderIds([]);
+                          setDCertification("");
+                        }}
                         className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
                       >
                         Clear filters
@@ -403,7 +482,7 @@ const MainLayout = () => {
               <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "all" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "unwatched" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>
                   <Filter size={24} strokeWidth={2.5} />
@@ -527,6 +606,30 @@ const MainLayout = () => {
                       </select>
                     </div>
                   </div>
+                  <div className="mt-3">
+                    <label
+                      className="block px-1 text-xs uppercase tracking-wide text-neutral-400"
+                      htmlFor="saved-layout-certification"
+                    >
+                      Content rating
+                    </label>
+                    <select
+                      id="saved-layout-certification"
+                      value={sCertification}
+                      onChange={(e) => setSCertification(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
+                    >
+                      <option value="">Any rating</option>
+                      {certOptionsForRegion.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {certificationsCatalog.isLoading && (
+                      <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
+                    )}
+                  </div>
                   <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {(sFilterType === "tv" ? TV_GENRES : sFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -539,7 +642,19 @@ const MainLayout = () => {
                     })}
                   </div>
                   <div className="mt-3 flex gap-2">
-                    <button type="button" onClick={() => { setSFilterType("all"); setSMinRating(0); setSWatchedFilter("all"); setSFavoriteFilter("all"); setSYearFrom(""); setSSelectedGenreIds([]); }} className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSFilterType("all");
+                        setSMinRating(0);
+                        setSWatchedFilter("all");
+                        setSFavoriteFilter("all");
+                        setSYearFrom("");
+                        setSSelectedGenreIds([]);
+                        setSCertification("");
+                      }}
+                      className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
+                    >
                       Clear filters
                     </button>
                     <button
@@ -553,7 +668,7 @@ const MainLayout = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 || sCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>
                 <Filter size={24} strokeWidth={2.5} />
               </AnimatedNavIcon>
@@ -563,14 +678,25 @@ const MainLayout = () => {
           <div className="relative">
             <AnimatePresence>
               {sShowSort && (
-                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                <motion.div
+                  className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-2 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-48"
+                  initial={{ opacity: 0, x: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 10, scale: 0.98 }}
+                  transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+                >
                   {[
                     { key: "default" as SortKind, label: "Default", icon: <ArrowUpDown size={15} /> },
                     { key: "title_asc" as SortKind, label: "Title A-Z", icon: <ArrowDownAZ size={15} /> },
                     { key: "title_desc" as SortKind, label: "Title Z-A", icon: <ArrowUpAZ size={15} /> },
                     { key: "rating_desc" as SortKind, label: "Rating high-low", icon: <Star size={15} /> },
                   ].map((opt) => (
-                    <button key={opt.key} type="button" onClick={() => setSSortBy(opt.key)} className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${sSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}>
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setSSortBy(opt.key)}
+                      className={`mt-1 first:mt-0 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm transition ${sSortBy === opt.key ? "bg-neutral-700/80 text-white" : "text-neutral-300 hover:bg-neutral-700/60"}`}
+                    >
                       {opt.icon} {opt.label}
                     </button>
                   ))}

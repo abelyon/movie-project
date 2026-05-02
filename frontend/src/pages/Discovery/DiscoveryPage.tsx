@@ -1,14 +1,18 @@
 import { useMemo, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useInfiniteTrending } from "../../hooks/useTrending";
+import { useInfiniteRegionalDiscover } from "../../hooks/useRegionalDiscover";
 import { useSearch } from "../../hooks/useSearch";
 import { useMediaStateMap, useSavedList } from "../../hooks/useMedia";
 import { stateKey } from "../../api/userMedia";
+import { fetchPeopleSearch } from "../../api/tmdb";
 import MediaCard from "./MediaCard";
+import PeopleCard from "./PeopleCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
 const SkeletonCards = ({ count = 12 }: { count?: number }) => (
-  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+  <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
     {Array.from({ length: count }).map((_, idx) => (
       <div
         key={idx}
@@ -27,20 +31,58 @@ const DiscoveryPage = () => {
     filterType: "all" as const,
     selectedGenreIds: [] as number[],
     minRating: 0 as const,
-    watchedFilter: "all" as const,
+    watchedFilter: "unwatched" as const,
     favoriteFilter: "all" as const,
     yearFrom: "",
+    selectedWatchProviderIds: [] as number[],
+    certification: "",
+    watchRegion: "US",
+    setFilterType: () => {},
+    setSelectedGenreIds: () => {},
+    setMinRating: () => {},
+    setYearFrom: () => {},
+    setSelectedWatchProviderIds: () => {},
+    setCertification: () => {},
   };
-  const { showSearch, query, sortBy, filterType, selectedGenreIds, minRating, watchedFilter, favoriteFilter, yearFrom } = discoveryControls;
   const {
-    data,
-    isPending,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteTrending();
+    showSearch,
+    query,
+    sortBy,
+    filterType,
+    selectedGenreIds,
+    minRating,
+    watchedFilter,
+    favoriteFilter,
+    yearFrom,
+    selectedWatchProviderIds,
+    certification,
+    watchRegion,
+  } = discoveryControls;
+  const useRegionalBrowse =
+    !showSearch &&
+    (selectedWatchProviderIds.length > 0 || certification !== "");
+  const trendingQuery = useInfiniteTrending({ enabled: !useRegionalBrowse });
+  const regionalQuery = useInfiniteRegionalDiscover({
+    enabled: useRegionalBrowse,
+    filterType,
+    watchRegion,
+    watchProviderIds: selectedWatchProviderIds,
+    certification,
+    selectedGenreIds,
+    minRating,
+    yearFrom,
+  });
+  const data = useRegionalBrowse ? regionalQuery.data : trendingQuery.data;
+  const isPending = useRegionalBrowse ? regionalQuery.isPending : trendingQuery.isPending;
+  const isError = useRegionalBrowse ? regionalQuery.isError : trendingQuery.isError;
+  const error = useRegionalBrowse ? regionalQuery.error : trendingQuery.error;
+  const fetchNextPage = useRegionalBrowse
+    ? regionalQuery.fetchNextPage
+    : trendingQuery.fetchNextPage;
+  const hasNextPage = useRegionalBrowse ? regionalQuery.hasNextPage : trendingQuery.hasNextPage;
+  const isFetchingNextPage = useRegionalBrowse
+    ? regionalQuery.isFetchingNextPage
+    : trendingQuery.isFetchingNextPage;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const trimmedQuery = query.trim();
@@ -48,6 +90,12 @@ const DiscoveryPage = () => {
   const { data: searchData, isLoading: isSearchLoading } = useSearch(
     canSearch ? trimmedQuery : "",
   );
+  const { data: peopleSearchData, isLoading: isPeopleSearchLoading } = useQuery({
+    queryKey: ["tmdb", "people", "search", "discovery", trimmedQuery],
+    queryFn: () => fetchPeopleSearch({ query: trimmedQuery }),
+    enabled: canSearch,
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (showSearch) return;
@@ -63,22 +111,29 @@ const DiscoveryPage = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch, useRegionalBrowse]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
+  const rawPeople = canSearch ? (peopleSearchData?.results ?? []) : [];
   const raw = canSearch ? rawSearch : rawTrending;
-  const seen = new Set<string>();
-  const dedupedResults = raw.filter((item) => {
+  const seenMedia = new Set<string>();
+  const dedupedMediaResults = raw.filter((item) => {
     if (item.media_type !== "movie" && item.media_type !== "tv") return false;
     const key = `${item.media_type}-${item.id}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (seenMedia.has(key)) return false;
+    seenMedia.add(key);
+    return true;
+  });
+  const seenPeople = new Set<number>();
+  const dedupedPeopleResults = rawPeople.filter((person) => {
+    if (seenPeople.has(person.id)) return false;
+    seenPeople.add(person.id);
     return true;
   });
   const filteredResults = useMemo(
     () =>
-      dedupedResults.filter((item) => {
+      dedupedMediaResults.filter((item) => {
         if (filterType !== "all" && item.media_type !== filterType) return false;
         if (selectedGenreIds.length > 0) {
           const itemGenres = item.genre_ids ?? [];
@@ -97,9 +152,9 @@ const DiscoveryPage = () => {
 
         return true;
       }),
-    [dedupedResults, filterType, minRating, selectedGenreIds, yearFrom],
+    [dedupedMediaResults, filterType, minRating, selectedGenreIds, yearFrom],
   );
-  const results = useMemo(() => {
+  const mediaResults = useMemo(() => {
     if (sortBy === "default") return filteredResults;
     const sorted = [...filteredResults];
 
@@ -125,7 +180,7 @@ const DiscoveryPage = () => {
     return sorted;
   }, [filteredResults, sortBy]);
 
-  const { data: stateMap } = useMediaStateMap(results);
+  const { data: stateMap } = useMediaStateMap(mediaResults);
   const { data: savedList } = useSavedList();
   const savedBadgeCacheRef = useRef<Record<string, boolean>>({});
   const hasStateMap = stateMap !== undefined;
@@ -136,17 +191,20 @@ const DiscoveryPage = () => {
   );
   const visibleResults = useMemo(
     () =>
-      results.filter((item) => {
+      mediaResults.filter((item) => {
         const key = stateKey(item.id, item.media_type);
         if (favoriteFilter === "favorited" && !stateMap?.[key]?.is_favorited) return false;
         if (watchedFilter === "all") return true;
         const watched = Boolean(stateMap?.[key]?.watched_at);
         return watchedFilter === "watched" ? watched : !watched;
       }),
-    [favoriteFilter, results, stateMap, watchedFilter],
+    [favoriteFilter, mediaResults, stateMap, watchedFilter],
   );
 
-  if (isPending && !data) {
+  if (
+    (canSearch && isPeopleSearchLoading) ||
+    (isPending && !data)
+  ) {
     return (
       <div>
         <SkeletonCards count={8} />
@@ -157,24 +215,35 @@ const DiscoveryPage = () => {
 
   const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
   const isShowingSearchResults = showSearch && trimmedQuery.length >= 2;
+  const visiblePeople = isShowingSearchResults ? dedupedPeopleResults : [];
+  const hasAnySearchResults = visibleResults.length > 0 || visiblePeople.length > 0;
+  const searchNotice = isShowingSearchHint
+    ? "Type at least 2 characters to search."
+    : isShowingSearchResults && !isSearchLoading && !isPeopleSearchLoading && !hasAnySearchResults
+        ? `No results found for "${trimmedQuery}". Try another title or clear some filters.`
+        : null;
+  const showPinnedSearchNotice = showSearch && searchNotice !== null;
+  const cardsTopSpacingClass = showSearch && !showPinnedSearchNotice ? "pt-5" : "";
+  const mediaCardsToRender = isShowingSearchHint ? [] : visibleResults;
+  const peopleCardsToRender = isShowingSearchHint ? [] : visiblePeople;
 
   return (
-    <div>
-      {isShowingSearchHint && (
-        <p className="px-5 pt-2 text-sm text-neutral-400">Type at least 2 characters to search.</p>
-      )}
-
-      {isShowingSearchResults && isSearchLoading && visibleResults.length === 0 && <SkeletonCards count={8} />}
-      {isShowingSearchResults && !isSearchLoading && visibleResults.length === 0 && (
-        <div className="px-5 pt-2">
-          <p role="alert" className="text-sm text-neutral-400">
-            No results found for "{trimmedQuery}". Try another title or clear some filters.
+    <div className={showSearch ? "pt-20" : ""}>
+      {showPinnedSearchNotice && (
+        <div className="px-5 pb-5">
+          <p role="status" className="mx-5 text-left text-sm text-neutral-300 font-space-grotesk">
+            {searchNotice}
           </p>
         </div>
       )}
 
-      <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-        {visibleResults.map((item) => (
+      {isShowingSearchResults && isSearchLoading && isPeopleSearchLoading && !hasAnySearchResults && <SkeletonCards count={8} />}
+
+      <div className={`p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${cardsTopSpacingClass}`}>
+        {peopleCardsToRender.map((person) => (
+          <PeopleCard key={`person-${person.id}`} person={person} />
+        ))}
+        {mediaCardsToRender.map((item) => (
           (() => {
             const key = stateKey(item.id, item.media_type);
             const savedFromSources = Boolean(stateMap?.[key]?.is_saved) || savedSet.has(key);
