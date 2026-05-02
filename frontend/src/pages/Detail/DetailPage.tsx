@@ -496,23 +496,17 @@ const DetailPage = () => {
 
                 {recommendationItems.length > 0 ? (
                   <div
-                    className="mt-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                    className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5"
                     role="region"
                     aria-label="Recommended titles"
                   >
-                    <div className="flex gap-4 pb-1">
-                      {recommendationItems.map((item) => (
-                        <div
-                          key={`reco-${item.media_type}-${item.id}`}
-                          className="w-[10.5rem] shrink-0 sm:w-44"
-                        >
-                          <MediaCard
-                            item={item}
-                            isSaved={savedSet.has(stateKey(item.id, item.media_type))}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    {recommendationItems.map((item) => (
+                      <MediaCard
+                        key={`reco-${item.media_type}-${item.id}`}
+                        item={item}
+                        isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+                      />
+                    ))}
                   </div>
                 ) : null}
               </>
