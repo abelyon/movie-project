@@ -12,7 +12,7 @@ import PeopleCard from "./PeopleCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
 const SkeletonCards = ({ count = 12 }: { count?: number }) => (
-  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+  <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
     {Array.from({ length: count }).map((_, idx) => (
       <div
         key={idx}
@@ -239,7 +239,7 @@ const DiscoveryPage = () => {
 
       {isShowingSearchResults && isSearchLoading && isPeopleSearchLoading && !hasAnySearchResults && <SkeletonCards count={8} />}
 
-      <div className={`p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${cardsTopSpacingClass}`}>
+      <div className={`p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5 ${cardsTopSpacingClass}`}>
         {peopleCardsToRender.map((person) => (
           <PeopleCard key={`person-${person.id}`} person={person} />
         ))}

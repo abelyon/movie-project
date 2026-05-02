@@ -496,7 +496,7 @@ const DetailPage = () => {
 
                 {recommendationItems.length > 0 ? (
                   <div
-                    className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5"
+                    className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5"
                     role="region"
                     aria-label="Recommended titles"
                   >
