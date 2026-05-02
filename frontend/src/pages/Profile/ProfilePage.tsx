@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, LogOut, Mail, UserPlus, Users, X } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../contexts/ToastContext";
 import {
   acceptFriendRequest,
   denyFriendRequest,
@@ -25,6 +26,7 @@ const cardClass =
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, logout, refetchUser } = useAuth();
+  const { pushToast } = useToast();
   const qc = useQueryClient();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +35,6 @@ const ProfilePage = () => {
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [countryCode, setCountryCode] = useState(user?.country_code ?? "");
   const [nameError, setNameError] = useState("");
-  const [nameSaved, setNameSaved] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
 
   useEffect(() => {
@@ -124,13 +125,15 @@ const ProfilePage = () => {
   const updateProfileMutation = useMutation({
     mutationFn: updateProfile,
     onSuccess: async () => {
-      setNameSaved("Profile updated.");
       setNameError("");
       await refetchUser();
+      pushToast({ message: "Profile updated." });
     },
     onError: () => {
-      setNameSaved("");
-      setNameError("Could not update profile. Use 3–255 characters for name.");
+      pushToast({
+        message: "Could not update profile. Use 3–255 characters for name.",
+        variant: "error",
+      });
     },
   });
   const resendVerificationMutation = useMutation({
@@ -238,7 +241,6 @@ const ProfilePage = () => {
               className="mt-2 flex flex-col gap-3"
               onSubmit={(e) => {
                 e.preventDefault();
-                setNameSaved("");
                 setNameError("");
                 const trimmed = nameInput.trim();
                 if (trimmed.length < 3) {
@@ -289,7 +291,6 @@ const ProfilePage = () => {
               </button>
             </form>
             {nameError && <p className="mt-2 text-xs text-red-300">{nameError}</p>}
-            {nameSaved && <p className="mt-2 text-xs text-emerald-300">{nameSaved}</p>}
           </div>
         </div>
       </div>
