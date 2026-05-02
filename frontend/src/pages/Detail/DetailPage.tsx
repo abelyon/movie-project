@@ -93,7 +93,7 @@ function DetailPosterBlock({
 
   return (
     <motion.div
-      className="relative w-full sm:w-56 sm:shrink-0"
+      className="relative w-full"
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={enterFast}
@@ -114,7 +114,7 @@ function DetailPosterBlock({
       <motion.img
         src={poster}
         alt={title}
-        className="w-full h-50 object-cover rounded-4xl sm:h-full"
+        className="w-full h-50 object-cover rounded-4xl"
         decoding="async"
         fetchPriority="high"
         onLoad={() => setImageLoaded(true)}
@@ -213,9 +213,9 @@ const DetailPage = () => {
     return (
       <div className="text-white overflow-hidden">
         <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            <div className="relative w-full sm:w-56 sm:shrink-0">
-              <div className="w-full h-50 sm:h-88 rounded-4xl bg-neutral-800/80 animate-pulse" />
+          <div className="flex flex-col gap-6">
+            <div className="relative w-full">
+              <div className="w-full h-50 rounded-4xl bg-neutral-800/80 animate-pulse" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between gap-3">
@@ -277,7 +277,7 @@ const DetailPage = () => {
   return (
     <div className="text-white overflow-hidden">
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-6">
 
           {/* Poster */}
           {poster && (
@@ -292,7 +292,7 @@ const DetailPage = () => {
 
           {/* Info */}
           <motion.div
-            className="min-w-0 flex-1"
+            className="min-w-0 w-full"
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={enterFast}
