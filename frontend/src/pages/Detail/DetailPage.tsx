@@ -58,6 +58,9 @@ const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
 const getCast = (detail: MediaDetail) =>
   (detail.cast ?? []).slice(0, 12).filter((p) => p?.name);
 
+const getTrailerYoutubeKey = (detail: MediaDetail): string | null | undefined =>
+  detail.trailer_youtube_key;
+
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
 
@@ -453,6 +456,25 @@ const DetailPage = () => {
                     </p>
                   )}
                 </div>
+
+                {getTrailerYoutubeKey(data) ? (
+                  <div className="mt-6">
+                    <h2 className="font-space-grotesk text-sm font-semibold text-neutral-100">
+                      Trailer
+                    </h2>
+                    <div className="mt-3 aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-black">
+                      <iframe
+                        title={`${getTitle(data, media_type)} trailer`}
+                        src={`https://www.youtube-nocookie.com/embed/${getTrailerYoutubeKey(data)}?rel=0`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                        className="h-full w-full border-0"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </>
             )}
           </motion.div>
