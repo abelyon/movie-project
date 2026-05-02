@@ -24,14 +24,16 @@ const RealtimeBridge = () => {
       }
 
       const channel = echo.private(`users.${user.id}`);
+      if (disposed) {
+        return;
+      }
 
       channel.listen(".friend.request.updated", () => {
         void queryClient.invalidateQueries({ queryKey: ["friends", "overview"] });
       });
 
       channel.listen(".social.signal.updated", () => {
-        void queryClient.invalidateQueries({ queryKey: ["media"] });
-        void queryClient.invalidateQueries({ queryKey: ["saved"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media"] });
       });
     };
 
@@ -39,7 +41,7 @@ const RealtimeBridge = () => {
 
     return () => {
       disposed = true;
-      echo.leave(`private-users.${user.id}`);
+      // disconnect() closes all channels; leave() + disconnect() races on the same socket.
       echo.disconnect();
     };
   }, [queryClient, user]);

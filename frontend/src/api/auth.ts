@@ -6,6 +6,7 @@ export type User = {
   public_user_id: string;
   name: string;
   email: string;
+  country_code: string | null;
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
@@ -71,7 +72,10 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-export async function updateProfile(input: { name: string }): Promise<User> {
+export async function updateProfile(input: {
+  name: string;
+  country_code?: string | null;
+}): Promise<User> {
   await getCsrfCookie();
   const { data } = await api.patch<{ user: User }>(
     "/user/profile",

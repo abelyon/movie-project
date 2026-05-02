@@ -3,7 +3,12 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
-import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
+import {
+  useMediaState,
+  useMediaActions,
+  mediaItemFromDetail,
+  useSavedList,
+} from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
 import { ArrowLeft, Bookmark, Clapperboard, Eye, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 import type { MediaItem } from "../../api/types";
@@ -11,8 +16,9 @@ import { previewItemToDetail } from "../../utils/detailPreview";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
-import { getWhoWantsToWatch } from "../../api/userMedia";
+import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
 import { WatchTogetherUserStack } from "../../components/WatchTogetherUserStack";
+import MediaCard from "../Discovery/MediaCard";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
@@ -36,15 +42,33 @@ const getRuntime = (detail: MediaDetail, mediaType: string): number | undefined 
   return typeof n === "number" && !Number.isNaN(n) ? n : undefined;
 };
 
+/** e.g. 121 → "2H 1M", 90 → "1H 30M", 45 → "45M" */
+const formatRuntimeMinutes = (minutes: number): string => {
+  if (minutes <= 0) return "";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h}H ${m}M`;
+  if (h > 0) return `${h}H`;
+  return `${m}M`;
+};
+
 const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undefined => {
   if (mediaType !== "tv") return undefined;
   const seasons = (detail as TvDetail).number_of_seasons;
-  return seasons != null ? `${seasons} season${seasons !== 1 ? "s" : ""}` : undefined;
+  return seasons != null && seasons > 0
+    ? `${seasons} Season${seasons === 1 ? "" : "s"}`
+    : undefined;
 };
 
 const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
 const getCast = (detail: MediaDetail) =>
   (detail.cast ?? []).slice(0, 12).filter((p) => p?.name);
+
+const getTrailerYoutubeKey = (detail: MediaDetail): string | null | undefined =>
+  detail.trailer_youtube_key;
+
+const getRecommendations = (detail: MediaDetail): MediaItem[] =>
+  Array.isArray(detail.recommendations) ? detail.recommendations : [];
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
@@ -69,7 +93,7 @@ function DetailPosterBlock({
 
   return (
     <motion.div
-      className="relative w-full sm:w-56 sm:shrink-0"
+      className="relative w-full"
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={enterFast}
@@ -90,7 +114,7 @@ function DetailPosterBlock({
       <motion.img
         src={poster}
         alt={title}
-        className="w-full h-50 object-cover rounded-4xl sm:h-full"
+        className="w-full h-50 object-cover rounded-4xl"
         decoding="async"
         fetchPriority="high"
         onLoad={() => setImageLoaded(true)}
@@ -137,6 +161,7 @@ const DetailPage = () => {
   const { data: fetched, isPending, isFetching, isError, error } = useDetail(
     media_type,
     id,
+    user?.country_code,
   );
   const data = fetched ?? previewDetail;
   const showSkeleton = isPending && !data;
@@ -169,6 +194,18 @@ const DetailPage = () => {
     staleTime: 60_000,
     enabled: !!user,
   });
+  const { data: savedList } = useSavedList();
+  const savedSet = useMemo(
+    () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
+    [savedList],
+  );
+
+  const recommendationItems = useMemo(() => {
+    if (!data) return [];
+    return getRecommendations(data).filter(
+      (r) => r.media_type === "movie" || r.media_type === "tv",
+    );
+  }, [data]);
 
   if (!media_type || !id)
     return <div className="p-5 text-neutral-400">Invalid route</div>;
@@ -176,9 +213,9 @@ const DetailPage = () => {
     return (
       <div className="text-white overflow-hidden">
         <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            <div className="relative w-full sm:w-56 sm:shrink-0">
-              <div className="w-full h-50 sm:h-88 rounded-4xl bg-neutral-800/80 animate-pulse" />
+          <div className="flex flex-col gap-6">
+            <div className="relative w-full">
+              <div className="w-full h-50 rounded-4xl bg-neutral-800/80 animate-pulse" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between gap-3">
@@ -240,7 +277,7 @@ const DetailPage = () => {
   return (
     <div className="text-white overflow-hidden">
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-6">
 
           {/* Poster */}
           {poster && (
@@ -255,7 +292,7 @@ const DetailPage = () => {
 
           {/* Info */}
           <motion.div
-            className="min-w-0 flex-1"
+            className="min-w-0 w-full"
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={enterFast}
@@ -308,8 +345,8 @@ const DetailPage = () => {
                     className="shrink-0 text-base font-space-grotesk font-bold text-neutral-600"
                   >
                     {media_type === "movie" && runtime != null && runtime > 0
-                      ? `${runtime} M`
-                      : `${seasonsLabel} S`}
+                      ? formatRuntimeMinutes(runtime)
+                      : seasonsLabel}
                   </motion.span>
                 )}
               </div>
@@ -407,9 +444,11 @@ const DetailPage = () => {
                     <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       <div className="flex gap-3 pb-1">
                         {getCast(data).map((person) => (
-                          <div
+                          <button
+                            type="button"
                             key={`cast-${person.id}`}
-                            className="w-36 shrink-0 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2"
+                            onClick={() => navigate(`/person/${person.id}`)}
+                            className="w-36 shrink-0 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2 text-left cursor-pointer transition hover:bg-neutral-700/80"
                           >
                             {person.profile_path ? (
                               <img
@@ -428,7 +467,7 @@ const DetailPage = () => {
                             <p className="text-xs font-space-grotesk text-neutral-400">
                               {person.character || "—"}
                             </p>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -438,6 +477,38 @@ const DetailPage = () => {
                     </p>
                   )}
                 </div>
+
+                {getTrailerYoutubeKey(data) ? (
+                  <div className="mt-6">
+                    <div className="aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-black">
+                      <iframe
+                        title={`${getTitle(data, media_type)} trailer`}
+                        src={`https://www.youtube-nocookie.com/embed/${getTrailerYoutubeKey(data)}?rel=0`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                        className="h-full w-full border-0"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {recommendationItems.length > 0 ? (
+                  <div
+                    className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5"
+                    role="region"
+                    aria-label="Recommended titles"
+                  >
+                    {recommendationItems.map((item) => (
+                      <MediaCard
+                        key={`reco-${item.media_type}-${item.id}`}
+                        item={item}
+                        isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </>
             )}
           </motion.div>
