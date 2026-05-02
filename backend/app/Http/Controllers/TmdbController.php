@@ -432,23 +432,101 @@ class TmdbController extends Controller
         }
 
         $json = $response->json();
-        $credits = $json['combined_credits']['cast'] ?? [];
+        $combined = $json['combined_credits'] ?? [];
+        $castCredits = is_array($combined) ? ($combined['cast'] ?? []) : [];
+        $crewCredits = is_array($combined) ? ($combined['crew'] ?? []) : [];
         unset($json['combined_credits']);
 
-        $filteredCredits = array_values(array_filter($credits, function ($item) {
+        $filteredCredits = array_values(array_filter($castCredits, function ($item) {
             $mediaType = $item['media_type'] ?? null;
+
             return in_array($mediaType, ['movie', 'tv'], true);
         }));
 
         usort($filteredCredits, function ($a, $b) {
             $aDate = $a['release_date'] ?? $a['first_air_date'] ?? '';
             $bDate = $b['release_date'] ?? $b['first_air_date'] ?? '';
+
             return strcmp($bDate, $aDate);
         });
 
-        $json['credits'] = $filteredCredits;
+        $json['credits'] = array_values(array_filter(array_map(
+            fn ($row) => is_array($row) ? $this->normalizePersonCreditRow($row) : null,
+            $filteredCredits
+        )));
+
+        $directingRaw = array_values(array_filter($crewCredits, function ($item) {
+            if (! is_array($item)) {
+                return false;
+            }
+            $mediaType = $item['media_type'] ?? null;
+            if (! in_array($mediaType, ['movie', 'tv'], true)) {
+                return false;
+            }
+            $job = (string) ($item['job'] ?? '');
+            $directorJobs = ['Director', 'Co-Director', 'Series Director'];
+
+            return in_array($job, $directorJobs, true);
+        }));
+
+        $directingSeen = [];
+        $directingUnique = [];
+        foreach ($directingRaw as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $mid = (int) ($row['id'] ?? 0);
+            $mt = (string) ($row['media_type'] ?? '');
+            $key = $mt.'-'.$mid;
+            if ($mid === 0 || $key === '-' || isset($directingSeen[$key])) {
+                continue;
+            }
+            $directingSeen[$key] = true;
+            $directingUnique[] = $row;
+        }
+
+        usort($directingUnique, function ($a, $b) {
+            $aDate = $a['release_date'] ?? $a['first_air_date'] ?? '';
+            $bDate = $b['release_date'] ?? $b['first_air_date'] ?? '';
+
+            return strcmp($bDate, $aDate);
+        });
+
+        $json['directing_credits'] = array_values(array_filter(array_map(
+            fn ($row) => is_array($row) ? $this->normalizePersonCreditRow($row) : null,
+            $directingUnique
+        )));
 
         return response()->json($json, 200);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>|null
+     */
+    private function normalizePersonCreditRow(array $item): ?array
+    {
+        $mediaType = $item['media_type'] ?? null;
+        if (! in_array($mediaType, ['movie', 'tv'], true)) {
+            return null;
+        }
+        $id = (int) ($item['id'] ?? 0);
+        if ($id === 0) {
+            return null;
+        }
+
+        return [
+            'id' => $id,
+            'media_type' => $mediaType,
+            'title' => $item['title'] ?? null,
+            'name' => $item['name'] ?? null,
+            'poster_path' => $item['poster_path'] ?? null,
+            'backdrop_path' => $item['backdrop_path'] ?? null,
+            'overview' => $item['overview'] ?? null,
+            'vote_average' => isset($item['vote_average']) ? (float) $item['vote_average'] : null,
+            'release_date' => $item['release_date'] ?? null,
+            'first_air_date' => $item['first_air_date'] ?? null,
+        ];
     }
 
     private function tmdbBaseUrl(): string
