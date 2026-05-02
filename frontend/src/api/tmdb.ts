@@ -135,6 +135,8 @@ export type MovieDetail = {
     profile_path?: string | null;
   }>;
   runtime?: number;
+  /** YouTube video key from TMDB videos (preferred trailer). */
+  trailer_youtube_key?: string | null;
   media_type: "movie";
 };
 export type TvDetail = {
@@ -171,6 +173,8 @@ export type TvDetail = {
     profile_path?: string | null;
   }>;
   number_of_seasons?: number;
+  /** YouTube video key from TMDB videos (preferred trailer). */
+  trailer_youtube_key?: string | null;
   media_type: "tv";
 };
 

@@ -377,7 +377,7 @@ class TmdbController extends Controller
 
         $response = Http::get("{$url}/movie/{$id}", [
             'api_key' => $apiKey,
-            'append_to_response' => 'credits,watch/providers',
+            'append_to_response' => 'credits,watch/providers,videos',
         ]);
         $json = $response->json();
         $wp = $json['watch/providers'] ?? null;
@@ -387,6 +387,9 @@ class TmdbController extends Controller
         $json['watch_providers'] = $watchProviders;
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
+        $videos = $json['videos'] ?? null;
+        unset($json['videos']);
+        $json['trailer_youtube_key'] = is_array($videos) ? $this->pickYoutubeTrailerKey($videos) : null;
 
         return response()->json($json, 200);
     }
@@ -401,7 +404,7 @@ class TmdbController extends Controller
 
         $response = Http::get("{$url}/tv/{$id}", [
             'api_key' => $apiKey,
-            'append_to_response' => 'credits,watch/providers',
+            'append_to_response' => 'credits,watch/providers,videos',
         ]);
         $json = $response->json();
         $wp = $json['watch/providers'] ?? null;
@@ -411,8 +414,77 @@ class TmdbController extends Controller
         $json['watch_providers'] = $watchProviders;
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
+        $videos = $json['videos'] ?? null;
+        unset($json['videos']);
+        $json['trailer_youtube_key'] = is_array($videos) ? $this->pickYoutubeTrailerKey($videos) : null;
 
         return response()->json($json, 200);
+    }
+
+    /**
+     * Prefer official YouTube Trailer, then Teaser, etc.
+     *
+     * @param  array<string, mixed>  $videosPayload
+     */
+    private function pickYoutubeTrailerKey(array $videosPayload): ?string
+    {
+        $results = $videosPayload['results'] ?? [];
+        if (! is_array($results) || $results === []) {
+            return null;
+        }
+
+        $youtube = [];
+        foreach ($results as $v) {
+            if (! is_array($v)) {
+                continue;
+            }
+            if (($v['site'] ?? '') !== 'YouTube') {
+                continue;
+            }
+            $key = trim((string) ($v['key'] ?? ''));
+            if ($key === '') {
+                continue;
+            }
+            $youtube[] = $v;
+        }
+
+        if ($youtube === []) {
+            return null;
+        }
+
+        $typeRank = [
+            'Trailer' => 0,
+            'Teaser' => 1,
+            'Clip' => 2,
+            'Featurette' => 3,
+            'Behind the Scenes' => 4,
+        ];
+
+        usort($youtube, function ($a, $b) use ($typeRank) {
+            if (! is_array($a) || ! is_array($b)) {
+                return 0;
+            }
+            $ta = (string) ($a['type'] ?? '');
+            $tb = (string) ($b['type'] ?? '');
+            $ra = $typeRank[$ta] ?? 50;
+            $rb = $typeRank[$tb] ?? 50;
+            if ($ra !== $rb) {
+                return $ra <=> $rb;
+            }
+            $oa = ! empty($a['official']) ? 0 : 1;
+            $ob = ! empty($b['official']) ? 0 : 1;
+
+            return $oa <=> $ob;
+        });
+
+        $first = $youtube[0] ?? null;
+
+        if (! is_array($first)) {
+            return null;
+        }
+        $key = trim((string) ($first['key'] ?? ''));
+
+        return $key !== '' ? $key : null;
     }
 
     public function person($id)
