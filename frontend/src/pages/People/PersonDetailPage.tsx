@@ -121,7 +121,7 @@ const PersonDetailPage = () => {
           </div>
         </div>
 
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+        <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
           {Array.from({ length: 8 }).map((_, idx) => (
             <div key={`person-media-skel-${idx}`} className="aspect-2/3 w-full rounded-4xl bg-neutral-800/70 animate-pulse" />
           ))}
@@ -203,7 +203,7 @@ const PersonDetailPage = () => {
         </div>
       )}
       {directingItems.length > 0 && (
-        <div className="p-5 pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+        <div className="p-5 pt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
           {directingItems.map((item) => (
             <MediaCard
               key={`dir-${item.media_type}-${item.id}`}
@@ -225,7 +225,7 @@ const PersonDetailPage = () => {
         </div>
       )}
       {actingItems.length > 0 && (
-        <div className="p-5 pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+        <div className="p-5 pt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
           {actingItems.map((item) => (
             <MediaCard
               key={`cast-${item.media_type}-${item.id}`}
