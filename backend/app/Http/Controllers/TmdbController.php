@@ -377,9 +377,10 @@ class TmdbController extends Controller
 
         $response = Http::get("{$url}/movie/{$id}", [
             'api_key' => $apiKey,
-            'append_to_response' => 'credits,watch/providers,videos',
+            'append_to_response' => 'credits,watch/providers,videos,recommendations',
         ]);
         $json = $response->json();
+        $mid = (int) $id;
         $wp = $json['watch/providers'] ?? null;
         $byCountry = is_array($wp) && isset($wp['results']) && is_array($wp['results']) ? $wp['results'] : null;
         $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
@@ -390,6 +391,11 @@ class TmdbController extends Controller
         $videos = $json['videos'] ?? null;
         unset($json['videos']);
         $json['trailer_youtube_key'] = is_array($videos) ? $this->pickYoutubeTrailerKey($videos) : null;
+        $reco = $json['recommendations'] ?? null;
+        unset($json['recommendations']);
+        $json['recommendations'] = is_array($reco)
+            ? $this->normalizeMediaRecommendationRows($reco, 'movie', $mid)
+            : [];
 
         return response()->json($json, 200);
     }
@@ -404,9 +410,10 @@ class TmdbController extends Controller
 
         $response = Http::get("{$url}/tv/{$id}", [
             'api_key' => $apiKey,
-            'append_to_response' => 'credits,watch/providers,videos',
+            'append_to_response' => 'credits,watch/providers,videos,recommendations',
         ]);
         $json = $response->json();
+        $tid = (int) $id;
         $wp = $json['watch/providers'] ?? null;
         $byCountry = is_array($wp) && isset($wp['results']) && is_array($wp['results']) ? $wp['results'] : null;
         $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
@@ -417,8 +424,69 @@ class TmdbController extends Controller
         $videos = $json['videos'] ?? null;
         unset($json['videos']);
         $json['trailer_youtube_key'] = is_array($videos) ? $this->pickYoutubeTrailerKey($videos) : null;
+        $reco = $json['recommendations'] ?? null;
+        unset($json['recommendations']);
+        $json['recommendations'] = is_array($reco)
+            ? $this->normalizeMediaRecommendationRows($reco, 'tv', $tid)
+            : [];
 
         return response()->json($json, 200);
+    }
+
+    /**
+     * TMDB movie/tv recommendations (taste-based). Slim rows for the detail grid carousel.
+     *
+     * @param  array<string, mixed>  $recoPayload
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeMediaRecommendationRows(array $recoPayload, string $mediaType, int $excludeId): array
+    {
+        if (! in_array($mediaType, ['movie', 'tv'], true)) {
+            return [];
+        }
+
+        $results = $recoPayload['results'] ?? [];
+        if (! is_array($results)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($results as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $rid = (int) ($row['id'] ?? 0);
+            if ($rid === 0 || $rid === $excludeId) {
+                continue;
+            }
+
+            $genreIds = [];
+            if (isset($row['genre_ids']) && is_array($row['genre_ids'])) {
+                foreach ($row['genre_ids'] as $gid) {
+                    $genreIds[] = (int) $gid;
+                }
+            }
+
+            $poster = $row['poster_path'] ?? null;
+            $out[] = [
+                'id' => $rid,
+                'media_type' => $mediaType,
+                'title' => $row['title'] ?? null,
+                'name' => $row['name'] ?? null,
+                'poster_path' => $poster !== null && $poster !== '' ? $poster : null,
+                'backdrop_path' => $row['backdrop_path'] ?? null,
+                'overview' => $row['overview'] ?? null,
+                'vote_average' => isset($row['vote_average']) ? (float) $row['vote_average'] : null,
+                'release_date' => $row['release_date'] ?? null,
+                'first_air_date' => $row['first_air_date'] ?? null,
+                'genre_ids' => $genreIds,
+            ];
+            if (count($out) >= 20) {
+                break;
+            }
+        }
+
+        return $out;
     }
 
     /**

@@ -3,7 +3,12 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { useDetail } from "../../hooks/useDetail";
-import { useMediaState, useMediaActions, mediaItemFromDetail } from "../../hooks/useMedia";
+import {
+  useMediaState,
+  useMediaActions,
+  mediaItemFromDetail,
+  useSavedList,
+} from "../../hooks/useMedia";
 import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
 import { ArrowLeft, Bookmark, Clapperboard, Eye, Heart, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
 import type { MediaItem } from "../../api/types";
@@ -11,8 +16,9 @@ import { previewItemToDetail } from "../../utils/detailPreview";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
-import { getWhoWantsToWatch } from "../../api/userMedia";
+import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
 import { WatchTogetherUserStack } from "../../components/WatchTogetherUserStack";
+import MediaCard from "../Discovery/MediaCard";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
@@ -60,6 +66,9 @@ const getCast = (detail: MediaDetail) =>
 
 const getTrailerYoutubeKey = (detail: MediaDetail): string | null | undefined =>
   detail.trailer_youtube_key;
+
+const getRecommendations = (detail: MediaDetail): MediaItem[] =>
+  Array.isArray(detail.recommendations) ? detail.recommendations : [];
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
@@ -185,6 +194,18 @@ const DetailPage = () => {
     staleTime: 60_000,
     enabled: !!user,
   });
+  const { data: savedList } = useSavedList();
+  const savedSet = useMemo(
+    () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
+    [savedList],
+  );
+
+  const recommendationItems = useMemo(() => {
+    if (!data) return [];
+    return getRecommendations(data).filter(
+      (r) => r.media_type === "movie" || r.media_type === "tv",
+    );
+  }, [data]);
 
   if (!media_type || !id)
     return <div className="p-5 text-neutral-400">Invalid route</div>;
@@ -469,6 +490,28 @@ const DetailPage = () => {
                         className="h-full w-full border-0"
                         loading="lazy"
                       />
+                    </div>
+                  </div>
+                ) : null}
+
+                {recommendationItems.length > 0 ? (
+                  <div
+                    className="mt-6 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                    role="region"
+                    aria-label="Recommended titles"
+                  >
+                    <div className="flex gap-4 pb-1">
+                      {recommendationItems.map((item) => (
+                        <div
+                          key={`reco-${item.media_type}-${item.id}`}
+                          className="w-[10.5rem] shrink-0 sm:w-44"
+                        >
+                          <MediaCard
+                            item={item}
+                            isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ) : null}
