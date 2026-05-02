@@ -3,6 +3,7 @@ import type {
   TrendingResponse,
   SearchResponse,
   DiscoverResponse,
+  MediaItem,
 } from "./types";
 
 export async function fetchTrending(params?: {
@@ -137,6 +138,8 @@ export type MovieDetail = {
   runtime?: number;
   /** YouTube video key from TMDB videos (preferred trailer). */
   trailer_youtube_key?: string | null;
+  /** Taste-based picks from TMDB (same kind as this title). */
+  recommendations?: MediaItem[];
   media_type: "movie";
 };
 export type TvDetail = {
@@ -175,6 +178,8 @@ export type TvDetail = {
   number_of_seasons?: number;
   /** YouTube video key from TMDB videos (preferred trailer). */
   trailer_youtube_key?: string | null;
+  /** Taste-based picks from TMDB (same kind as this title). */
+  recommendations?: MediaItem[];
   media_type: "tv";
 };
 
