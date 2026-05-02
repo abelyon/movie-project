@@ -71,6 +71,19 @@ export async function fetchPeopleSearch(params: {
   return data;
 }
 
+export type PersonCreditRow = {
+  id: number;
+  media_type: "movie" | "tv";
+  title?: string;
+  name?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  overview?: string;
+  vote_average?: number;
+  release_date?: string;
+  first_air_date?: string;
+};
+
 export type PersonDetail = {
   id: number;
   name: string;
@@ -79,18 +92,8 @@ export type PersonDetail = {
   birthday?: string | null;
   place_of_birth?: string | null;
   known_for_department?: string;
-  credits: Array<{
-    id: number;
-    media_type: "movie" | "tv";
-    title?: string;
-    name?: string;
-    poster_path?: string | null;
-    backdrop_path?: string | null;
-    overview?: string;
-    vote_average?: number;
-    release_date?: string;
-    first_air_date?: string;
-  }>;
+  credits: PersonCreditRow[];
+  directing_credits?: PersonCreditRow[];
 };
 
 export async function fetchPerson(id: number): Promise<PersonDetail> {

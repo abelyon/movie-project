@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
-import { fetchPerson } from "../../api/tmdb";
+import { fetchPerson, type PersonCreditRow } from "../../api/tmdb";
 import type { MediaItem } from "../../api/types";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import MediaCard from "../Discovery/MediaCard";
@@ -16,6 +16,21 @@ const enterFast = { duration: 0.22, ease } as const;
 const pill =
   "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
 const actionButtonInactive = "text-neutral-400";
+
+function personCreditToMediaItem(item: PersonCreditRow): MediaItem {
+  return {
+    id: item.id,
+    media_type: item.media_type,
+    title: item.title,
+    name: item.name,
+    poster_path: item.poster_path ?? null,
+    backdrop_path: item.backdrop_path ?? null,
+    overview: item.overview,
+    vote_average: item.vote_average,
+    release_date: item.release_date,
+    first_air_date: item.first_air_date,
+  };
+}
 
 const PersonPosterBlock = ({ image, name }: { image: string; name: string }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -67,20 +82,13 @@ const PersonDetailPage = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const mediaItems: MediaItem[] = useMemo(
-    () =>
-      (data?.credits ?? []).map((item) => ({
-        id: item.id,
-        media_type: item.media_type,
-        title: item.title,
-        name: item.name,
-        poster_path: item.poster_path ?? null,
-        backdrop_path: item.backdrop_path ?? null,
-        overview: item.overview,
-        vote_average: item.vote_average,
-        release_date: item.release_date,
-        first_air_date: item.first_air_date,
-      })),
+  const directingItems: MediaItem[] = useMemo(
+    () => (data?.directing_credits ?? []).map(personCreditToMediaItem),
+    [data?.directing_credits],
+  );
+
+  const actingItems: MediaItem[] = useMemo(
+    () => (data?.credits ?? []).map(personCreditToMediaItem),
     [data?.credits],
   );
   const { data: savedList } = useSavedList();
@@ -183,16 +191,44 @@ const PersonDetailPage = () => {
           </motion.div>
         </div>
 
-        {mediaItems.length === 0 && (
+        {directingItems.length === 0 && actingItems.length === 0 && (
           <p className="mt-8 text-sm text-neutral-400">No movie or TV credits found.</p>
         )}
       </div>
 
-      {mediaItems.length > 0 && (
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
-          {mediaItems.map((item) => (
+      {directingItems.length > 0 && (
+        <div className="px-5 pb-2">
+          <h2 className="font-space-grotesk text-lg font-semibold text-white">Directed</h2>
+          <p className="mt-1 text-sm text-neutral-500">Film and TV credited as director.</p>
+        </div>
+      )}
+      {directingItems.length > 0 && (
+        <div className="p-5 pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+          {directingItems.map((item) => (
             <MediaCard
-              key={`${item.media_type}-${item.id}`}
+              key={`dir-${item.media_type}-${item.id}`}
+              item={item}
+              isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+            />
+          ))}
+        </div>
+      )}
+
+      {actingItems.length > 0 && (
+        <div className="px-5 pb-2 pt-4">
+          <h2 className="font-space-grotesk text-lg font-semibold text-white">
+            {directingItems.length > 0 ? "Acting & other credits" : "Film & TV"}
+          </h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            {directingItems.length > 0 ? "On-screen and other roles." : "Cast credits from TMDB."}
+          </p>
+        </div>
+      )}
+      {actingItems.length > 0 && (
+        <div className="p-5 pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+          {actingItems.map((item) => (
+            <MediaCard
+              key={`cast-${item.media_type}-${item.id}`}
               item={item}
               isSaved={savedSet.has(stateKey(item.id, item.media_type))}
             />
