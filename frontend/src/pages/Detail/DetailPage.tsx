@@ -61,6 +61,12 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
 };
 
 const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
+
+/** TMDB does not expose per-service deep links; this opens their watch page (includes partner links). */
+const getWatchProvidersPageUrl = (detail: MediaDetail): string | null => {
+  const link = detail.watch_providers?.link;
+  return typeof link === "string" && link.trim() !== "" ? link.trim() : null;
+};
 const getCast = (detail: MediaDetail) =>
   (detail.cast ?? []).slice(0, 12).filter((p) => p?.name);
 
@@ -412,25 +418,45 @@ const DetailPage = () => {
                 <div className="mt-6">
                   {getUSProviders(data)?.flatrate?.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => (
-                        <div
-                          key={`stream-${provider.provider_id}`}
-                          className="rounded-2xl border-t border-neutral-600 bg-neutral-800/80 p-1.5"
-                          title={provider.provider_name}
-                        >
-                          {provider.logo_path ? (
-                            <img
-                              src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
-                              alt={provider.provider_name}
-                              className="h-8 w-8 rounded-lg object-cover"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded-lg bg-neutral-700" />
-                          )}
-                        </div>
-                      ))}
+                      {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => {
+                        const watchUrl = getWatchProvidersPageUrl(data);
+                        const inner = (
+                          <>
+                            {provider.logo_path ? (
+                              <img
+                                src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
+                                alt=""
+                                className="h-8 w-8 rounded-lg object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-lg bg-neutral-700" />
+                            )}
+                          </>
+                        );
+                        return watchUrl ? (
+                          <a
+                            key={`stream-${provider.provider_id}`}
+                            href={watchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-2xl border-t border-neutral-600 bg-neutral-800/80 p-1.5 transition hover:bg-neutral-700/80 hover:ring-1 hover:ring-neutral-500/50"
+                            title={`${provider.provider_name} — open where to watch`}
+                            aria-label={`${provider.provider_name}: open where to watch in a new tab`}
+                          >
+                            {inner}
+                          </a>
+                        ) : (
+                          <div
+                            key={`stream-${provider.provider_id}`}
+                            className="rounded-2xl border-t border-neutral-600 bg-neutral-800/80 p-1.5"
+                            title={provider.provider_name}
+                          >
+                            {inner}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
