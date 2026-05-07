@@ -20,11 +20,11 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
 import { WatchTogetherUserStack } from "../../components/WatchTogetherUserStack";
 import MediaCard from "../Discovery/MediaCard";
+import PeopleCard from "../Discovery/PeopleCard";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
 const PROVIDER_LOGO_SIZE = "w92";
-const CAST_PROFILE_SIZE = "w185";
 
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
   mediaType === "movie"
@@ -485,30 +485,16 @@ const DetailPage = () => {
                     <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       <div className="flex gap-3 pb-1">
                         {getCast(data).map((person) => (
-                          <button
-                            type="button"
-                            key={`cast-${person.id}`}
-                            onClick={() => navigate(`/person/${person.id}`)}
-                            className="w-36 shrink-0 rounded-3xl border-t border-neutral-600 bg-neutral-800/80 p-2 text-left cursor-pointer transition hover:bg-neutral-700/80"
-                          >
-                            {person.profile_path ? (
-                              <img
-                                src={`${TMDB_IMAGE_BASE}/${CAST_PROFILE_SIZE}${person.profile_path}`}
-                                alt={person.name}
-                                className="aspect-2/3 w-full rounded-2xl object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            ) : (
-                              <div className="aspect-2/3 w-full rounded-2xl bg-neutral-700" />
-                            )}
-                            <p className="mt-2 text-sm font-space-grotesk font-semibold text-neutral-100">
-                              {person.name}
-                            </p>
-                            <p className="text-xs font-space-grotesk text-neutral-400">
-                              {person.character || "—"}
-                            </p>
-                          </button>
+                          <div key={`cast-${person.id}`} className="w-36 shrink-0">
+                            <PeopleCard
+                              person={{
+                                id: person.id,
+                                name: person.name,
+                                profile_path: person.profile_path ?? null,
+                                known_for_department: person.character || "Cast",
+                              }}
+                            />
+                          </div>
                         ))}
                       </div>
                     </div>
