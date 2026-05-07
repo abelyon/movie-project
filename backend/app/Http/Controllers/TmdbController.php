@@ -530,14 +530,40 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
             return $oa <=> $ob;
         });
 
-        $first = $youtube[0] ?? null;
-
-        if (! is_array($first)) {
-            return null;
+        foreach ($youtube as $video) {
+            if (! is_array($video)) {
+                continue;
+            }
+            $key = trim((string) ($video['key'] ?? ''));
+            if ($key === '') {
+                continue;
+            }
+            if ($this->youtubeOembedAvailable($key)) {
+                return $key;
+            }
         }
-        $key = trim((string) ($first['key'] ?? ''));
 
-        return $key !== '' ? $key : null;
+        return null;
+    }
+
+    private function youtubeOembedAvailable(string $key): bool
+    {
+        if ($key === '') {
+            return false;
+        }
+
+        $response = Http::timeout(3)->acceptJson()->get('https://www.youtube.com/oembed', [
+            'url' => "https://www.youtube.com/watch?v={$key}",
+            'format' => 'json',
+        ]);
+
+        if ($response->failed()) {
+            return false;
+        }
+
+        $json = $response->json();
+
+        return is_array($json) && isset($json['title']);
     }
 
     public function person($id)
