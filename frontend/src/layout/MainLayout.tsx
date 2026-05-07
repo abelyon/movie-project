@@ -203,6 +203,15 @@ const MainLayout = () => {
     refetchOnMount: "always",
   });
   const friends = friendsOverview?.friends ?? [];
+
+  useEffect(() => {
+    if (friends.length === 0) {
+      setSShowFriends(false);
+      setSelectedFriendIds([]);
+      setShowFriendsSocial(false);
+    }
+  }, [friends.length]);
+
 const hasModalBackdrop =
     (isDiscovery && (dShowFilter || dShowSort)) ||
     (isSaved && (sShowFriends || sShowFilter || sShowSort));
@@ -705,78 +714,76 @@ const hasModalBackdrop =
             </button>
           </div>
 
-          <div className="relative">
-            <AnimatePresence>
-              {sShowFriends && (
-                <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
-                  {friendsLoading ? (
-                    <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                      {Array.from({ length: 3 }).map((_, idx) => (
-                        <div key={idx} className="w-20 shrink-0 rounded-2xl px-2 py-2">
-                          <div className="mx-auto h-9 w-9 rounded-full bg-neutral-700/80 animate-pulse" />
-                          <div className="mt-2 h-3 rounded bg-neutral-700/70 animate-pulse" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : friends.length === 0 ? (
-                    <p className="mt-3 flex min-h-11 items-center font-space-grotesk text-sm text-neutral-300">
-                      No accepted friends yet.
-                    </p>
-                  ) : (
-                    <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                      {friends.map((friend) => {
-                        const active = selectedFriendIds.includes(friend.id);
-                        return (
-                          <button
-                            key={friend.id}
-                            type="button"
-                            onClick={() => {
-                              setShowFriendsSocial(false);
-                              setSelectedFriendIds((prev) =>
-                                prev.includes(friend.id)
-                                  ? prev.filter((id) => id !== friend.id)
-                                  : [...prev, friend.id],
-                              );
-                            }}
-                            className={`flex w-20 shrink-0 flex-col items-center rounded-2xl px-2 py-2 transition ${
-                              active
-                                ? "bg-white text-neutral-900"
-                                : "text-neutral-300 hover:bg-neutral-700/60"
-                            }`}
-                          >
-                            <WatchTogetherUserStack
-                              initialFrom={friend.name}
-                              label={friend.name}
-                              active={active}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {selectedFriendIds.length > 0 && (
-                    <button type="button" onClick={() => setSelectedFriendIds([])} className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
-                      Clear friends
-                    </button>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <button
-              type="button"
-              onClick={() => {
-                setSShowFriends((prev) => !prev);
-                setSShowFilter(false);
-                setSShowSort(false);
-                setShowFriendsSocial(false);
-              }}
-              className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
-            >
-              <AnimatedNavIcon>
-                <Users size={24} strokeWidth={2.5} />
-              </AnimatedNavIcon>
-            </button>
-          </div>
+          {friends.length > 0 && (
+            <div className="relative">
+              <AnimatePresence>
+                {sShowFriends && (
+                  <motion.div className="fixed inset-x-4 bottom-24 z-[70] max-h-[70vh] overflow-y-auto rounded-3xl border-t border-neutral-600 bg-neutral-800/90 p-3 backdrop-blur-md md:absolute md:right-full md:bottom-0 md:inset-x-auto md:mr-2 md:w-64" initial={{ opacity: 0, x: 10, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 10, scale: 0.98 }} transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}>
+                    {friendsLoading ? (
+                      <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {Array.from({ length: 3 }).map((_, idx) => (
+                          <div key={idx} className="w-20 shrink-0 rounded-2xl px-2 py-2">
+                            <div className="mx-auto h-9 w-9 rounded-full bg-neutral-700/80 animate-pulse" />
+                            <div className="mt-2 h-3 rounded bg-neutral-700/70 animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {friends.map((friend) => {
+                          const active = selectedFriendIds.includes(friend.id);
+                          return (
+                            <button
+                              key={friend.id}
+                              type="button"
+                              onClick={() => {
+                                setShowFriendsSocial(false);
+                                setSelectedFriendIds((prev) =>
+                                  prev.includes(friend.id)
+                                    ? prev.filter((id) => id !== friend.id)
+                                    : [...prev, friend.id],
+                                );
+                              }}
+                              className={`flex w-20 shrink-0 flex-col items-center rounded-2xl px-2 py-2 transition ${
+                                active
+                                  ? "bg-white text-neutral-900"
+                                  : "text-neutral-300 hover:bg-neutral-700/60"
+                              }`}
+                            >
+                              <WatchTogetherUserStack
+                                initialFrom={friend.name}
+                                label={friend.name}
+                                active={active}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {selectedFriendIds.length > 0 && (
+                      <button type="button" onClick={() => setSelectedFriendIds([])} className="mt-3 w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60">
+                        Clear friends
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <button
+                type="button"
+                onClick={() => {
+                  setSShowFriends((prev) => !prev);
+                  setSShowFilter(false);
+                  setSShowSort(false);
+                  setShowFriendsSocial(false);
+                }}
+                className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+              >
+                <AnimatedNavIcon>
+                  <Users size={24} strokeWidth={2.5} />
+                </AnimatedNavIcon>
+              </button>
+            </div>
+          )}
 
           <div
             className={`${floatingActionButtonBaseClass} pointer-events-none opacity-0`}
