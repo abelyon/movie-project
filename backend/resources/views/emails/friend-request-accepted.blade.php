@@ -1,4 +1,8 @@
-<x-emails.layout subject="Friend request accepted" headline="Friend request accepted">
+@php
+  $appUrl = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+@endphp
+
+<x-emails.layout subject="Friend request accepted" headline="Friend request accepted" actionText="Open app" :actionUrl="$appUrl . '/profile'">
   <p style="margin:0 0 12px;">Hi {{ $requester->name }},</p>
   <p style="margin:0 0 12px;">
     <strong>{{ $recipient->name }}</strong> accepted your friend request on {{ config('app.name') }}.

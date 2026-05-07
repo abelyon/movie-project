@@ -30,7 +30,7 @@
           @isset($actionText)
             <tr>
               <td style="padding-top:20px;">
-                <a href="{{ $actionUrl }}" style="display:inline-block; background:#10b981; color:#ffffff; text-decoration:none; font-weight:700; border-radius:12px; padding:12px 16px;">
+                <a href="{{ $actionUrl }}" style="display:inline-block; background:#FDC700; color:#171717; text-decoration:none; font-weight:700; border-radius:12px; padding:12px 16px;">
                   {{ $actionText }}
                 </a>
               </td>

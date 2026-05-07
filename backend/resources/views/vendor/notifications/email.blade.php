@@ -24,7 +24,7 @@
   @isset($actionText)
     <x-slot:secondaryText>
       If you are having trouble clicking the "{{ $actionText }}" button, copy and paste this URL into your browser:<br>
-      <a href="{{ $actionUrl }}" style="color:#6ee7b7;">{{ $actionUrl }}</a>
+      <a href="{{ $actionUrl }}" style="color:#FDC700;">{{ $actionUrl }}</a>
     </x-slot:secondaryText>
   @endisset
 </x-emails.layout>
