@@ -92,6 +92,7 @@ const PersonDetailPage = () => {
     [data?.credits],
   );
   const { data: savedList } = useSavedList();
+  const [bioExpanded, setBioExpanded] = useState(false);
   const savedSet = useMemo(
     () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
     [savedList],
@@ -179,14 +180,33 @@ const PersonDetailPage = () => {
             </div>
 
             {data.biography && (
-              <motion.p
-                className="mt-4 leading-relaxed text-neutral-200 font-space-grotesk"
+              <motion.div
+                className="mt-4"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, ease }}
               >
-                {data.biography}
-              </motion.p>
+                <button
+                  type="button"
+                  onClick={() => setBioExpanded((prev) => !prev)}
+                  className={`w-full text-left leading-relaxed text-neutral-200 font-space-grotesk transition ${
+                    bioExpanded ? "" : "max-h-24 overflow-hidden"
+                  }`}
+                  title={bioExpanded ? "Collapse overview" : "Expand overview"}
+                >
+                  {data.biography}
+                </button>
+                {!bioExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setBioExpanded(true)}
+                    className="mt-1 text-left text-sm font-space-grotesk text-neutral-400 hover:text-neutral-200"
+                    title="Expand overview"
+                  >
+                    ...
+                  </button>
+                )}
+              </motion.div>
             )}
           </motion.div>
         </div>
@@ -209,6 +229,7 @@ const PersonDetailPage = () => {
               key={`dir-${item.media_type}-${item.id}`}
               item={item}
               isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+              scrollToTopOnOpen
             />
           ))}
         </div>
@@ -231,6 +252,7 @@ const PersonDetailPage = () => {
               key={`cast-${item.media_type}-${item.id}`}
               item={item}
               isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+              scrollToTopOnOpen
             />
           ))}
         </div>

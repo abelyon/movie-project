@@ -418,6 +418,59 @@ const DetailPage = () => {
             {!isPreviewOnly && (
               <>
                 <div className="mt-6">
+                  {getCast(data).length ? (
+                    <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <div className="flex gap-3 pb-1">
+                        {getCast(data).map((person) => (
+                          <div key={`cast-${person.id}`} className="w-36 shrink-0">
+                            <PeopleCard
+                              person={{
+                                id: person.id,
+                                name: person.name,
+                                profile_path: person.profile_path ?? null,
+                                known_for_department: person.character || "Cast",
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
+                      No cast data available.
+                    </p>
+                  )}
+                </div>
+
+                {trailerUrl ? (
+                  <div className="mt-6">
+                    <a
+                      href={trailerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group relative block aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-neutral-800"
+                      aria-label={`Open ${getTitle(data, media_type)} trailer on YouTube`}
+                    >
+                      {trailerBackdrop ? (
+                        <img
+                          src={trailerBackdrop}
+                          alt=""
+                          className="h-full w-full rounded-3xl object-cover transition duration-200"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 rounded-3xl bg-black/35 transition group-hover:bg-black/45" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition group-hover:bg-black/70">
+                          <Play size={26} fill="currentColor" strokeWidth={1.5} />
+                        </span>
+                      </div>
+                    </a>
+                  </div>
+                ) : null}
+
+                <div className="mt-6">
                   {getUSProviders(data)?.flatrate?.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => {
@@ -479,59 +532,6 @@ const DetailPage = () => {
                     </p>
                   )}
                 </div>
-
-                <div className="mt-6">
-                  {getCast(data).length ? (
-                    <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                      <div className="flex gap-3 pb-1">
-                        {getCast(data).map((person) => (
-                          <div key={`cast-${person.id}`} className="w-36 shrink-0">
-                            <PeopleCard
-                              person={{
-                                id: person.id,
-                                name: person.name,
-                                profile_path: person.profile_path ?? null,
-                                known_for_department: person.character || "Cast",
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
-                      No cast data available.
-                    </p>
-                  )}
-                </div>
-
-                {trailerUrl ? (
-                  <div className="mt-6">
-                    <a
-                      href={trailerUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group relative block aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-neutral-800"
-                      aria-label={`Open ${getTitle(data, media_type)} trailer on YouTube`}
-                    >
-                      {trailerBackdrop ? (
-                        <img
-                          src={trailerBackdrop}
-                          alt=""
-                          className="h-full w-full rounded-3xl object-cover transition duration-200"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 rounded-3xl bg-black/35 transition group-hover:bg-black/45" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition group-hover:bg-black/70">
-                          <Play size={26} fill="currentColor" strokeWidth={1.5} />
-                        </span>
-                      </div>
-                    </a>
-                  </div>
-                ) : null}
 
                 {recommendationItems.length > 0 ? (
                   <div
