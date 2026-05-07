@@ -214,11 +214,7 @@ class TmdbController extends Controller
             'certification' => $cert,
         ], 200);
     }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function extractMovieCertificationFromReleaseDates(array $payload, string $region): ?string
+private function extractMovieCertificationFromReleaseDates(array $payload, string $region): ?string
     {
         $upper = strtoupper($region);
         foreach ($payload['results'] ?? [] as $block) {
@@ -433,12 +429,6 @@ class TmdbController extends Controller
         return response()->json($json, 200);
     }
 
-    /**
-     * TMDB movie/tv recommendations (taste-based). Slim rows for the detail grid carousel.
-     *
-     * @param  array<string, mixed>  $recoPayload
-     * @return array<int, array<string, mixed>>
-     */
     private function normalizeMediaRecommendationRows(array $recoPayload, string $mediaType, int $excludeId): array
     {
         if (! in_array($mediaType, ['movie', 'tv'], true)) {
@@ -489,11 +479,6 @@ class TmdbController extends Controller
         return $out;
     }
 
-    /**
-     * Prefer official YouTube Trailer, then Teaser, etc.
-     *
-     * @param  array<string, mixed>  $videosPayload
-     */
     private function pickYoutubeTrailerKey(array $videosPayload): ?string
     {
         $results = $videosPayload['results'] ?? [];
@@ -639,12 +624,7 @@ class TmdbController extends Controller
 
         return response()->json($json, 200);
     }
-
-    /**
-     * @param  array<string, mixed>  $item
-     * @return array<string, mixed>|null
-     */
-    private function normalizePersonCreditRow(array $item): ?array
+private function normalizePersonCreditRow(array $item): ?array
     {
         $mediaType = $item['media_type'] ?? null;
         if (! in_array($mediaType, ['movie', 'tv'], true)) {
@@ -673,14 +653,7 @@ class TmdbController extends Controller
     {
         return rtrim((string) config('services.tmdb.url'), '/');
     }
-
-    /**
-     * TMDB country keys in watch-provider maps may not match PHP array casing; resolve case-insensitively.
-     *
-     * @param  array<string, mixed>|null  $resultsByCountry
-     * @return array<string, mixed>|null
-     */
-    private function tmdbRegionPayload(?array $resultsByCountry, string $region): ?array
+private function tmdbRegionPayload(?array $resultsByCountry, string $region): ?array
     {
         if ($resultsByCountry === null || $resultsByCountry === []) {
             return null;

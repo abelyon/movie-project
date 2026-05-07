@@ -81,14 +81,10 @@ export function buildSavedListQueryKey(options?: {
       : "";
   return ["user", "media", "saved", variant, friendIdsSegment] as const;
 }
-
-/** Plain Saved tab (`useSavedList()` with no options). Seeded on save so first navigation has data. */
 export const DEFAULT_SAVED_LIST_QUERY_KEY = buildSavedListQueryKey();
 
 const sameQueryKey = (a: readonly unknown[], b: readonly unknown[]) =>
   a.length === b.length && a.every((v, i) => v === b[i]);
-
-/** Discovery/search grids read batched state; keep them in sync with detail actions */
 const patchBatchStateMaps = (
   qc: ReturnType<typeof useQueryClient>,
   tmdbId: number,
@@ -144,8 +140,6 @@ const mergeRemoveSaved = (
   if (!old) return old;
   return old.filter((item) => !(item.id === tmdbId && item.media_type === mediaType));
 };
-
-/** Remove item from cached Saved list so Saved tab updates before refetch */
 const optimisticRemoveFromSavedList = (
   qc: ReturnType<typeof useQueryClient>,
   tmdbId: number,
@@ -159,8 +153,6 @@ const optimisticRemoveFromSavedList = (
     mergeRemoveSaved(old, tmdbId, mediaType),
   );
 };
-
-/** Add or move item to front of Saved list cache (save / like / dislike) */
 const optimisticUpsertSavedList = (
   qc: ReturnType<typeof useQueryClient>,
   preview: MediaItem,
@@ -190,8 +182,6 @@ const restoreSavedListsSnapshot = (
     }
   }
 };
-
-/** Refresh saved/liked list variants right after a successful media mutation. */
 const refreshListsNow = async (qc: ReturnType<typeof useQueryClient>) => {
   await Promise.allSettled([
     qc.invalidateQueries({

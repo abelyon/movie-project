@@ -1,43 +1,26 @@
-/**
- * TMDB watch-provider responses do not include per-logo deep links to titles on each service.
- * We send users to that service’s own search/browse URL with the title, which usually lands on
- * the right page or close results. Unknown provider IDs return null so the UI can fall back.
- */
-
 const enc = (s: string) => encodeURIComponent(s.trim());
 
 type Kind = keyof typeof URL_KIND_BUILDERS;
 
-/** TMDB `provider_id` → internal kind (several IDs can map to the same streaming brand). */
 const PROVIDER_ID_KIND: Record<number, Kind> = {
-  // Netflix
   8: "netflix",
   1796: "netflix",
-  // Amazon Prime / Prime Video
   9: "primevideo",
   119: "primevideo",
   582: "primevideo",
   613: "primevideo",
-  // Disney+
   337: "disneyplus",
   390: "disneyplus",
-  // Apple TV+
   350: "appletv",
-  // Hulu
   15: "hulu",
   372: "hulu",
-  // Max / HBO Max
   1899: "max",
   384: "max",
   385: "max",
-  // Paramount+
   531: "paramountplus",
-  // Peacock
   387: "peacock",
-  // Crunchyroll
   283: "crunchyroll",
   1967: "crunchyroll",
-  // discovery+
   510: "discoveryplus",
 };
 
@@ -58,10 +41,6 @@ const URL_KIND_BUILDERS = {
     `https://www.discoveryplus.com/search?q=${enc(title)}`,
 } as const;
 
-/**
- * Returns a URL on the streaming site’s domain (usually site search with the title), or null
- * if we don’t have a safe pattern for that TMDB provider id.
- */
 export function providerMediaBrowseUrl(providerId: number, title: string): string | null {
   const t = title.trim();
   if (!t) return null;

@@ -1,7 +1,5 @@
 import type { MediaItem } from "../api/types";
 import type { MediaDetail, MovieDetail, TvDetail } from "../api/tmdb";
-
-/** Build minimal detail from list/search card data for instant detail UI before fetch completes */
 export function previewItemToDetail(
   preview: MediaItem,
   mediaType: "movie" | "tv",

@@ -1,13 +1,10 @@
 import { userNameInitial } from "../utils/userDisplay";
-
-/** Avatar initial + label row, matching the Saved watch-together friend picker. */
 export function WatchTogetherUserStack({
   initialFrom,
   label,
   active = false,
 }: {
-  /** Source string for the capitalized initial (e.g. real name when label is "You"). */
-  initialFrom: string;
+initialFrom: string;
   label: string;
   active?: boolean;
 }) {

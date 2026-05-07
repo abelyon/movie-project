@@ -198,15 +198,12 @@ const MainLayout = () => {
   } = useQuery({
     queryKey: ["friends", "overview"],
     queryFn: getFriendOverview,
-    // Keep friends overview active on Saved so realtime invalidations refetch it.
     enabled: isSaved,
     staleTime: 30_000,
     refetchOnMount: "always",
   });
   const friends = friendsOverview?.friends ?? [];
-
-  /** Full-screen backdrop; omit discovery search so the grid stays clickable while searching. */
-  const hasModalBackdrop =
+const hasModalBackdrop =
     (isDiscovery && (dShowFilter || dShowSort)) ||
     (isSaved && (sShowFriends || sShowFilter || sShowSort));
 

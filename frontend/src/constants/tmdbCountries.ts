@@ -1,4 +1,3 @@
-/** ISO 3166-1 alpha-2 codes supported for TMDB watch region / certifications. */
 export const TMDB_COUNTRY_OPTIONS: Array<{ code: string; name: string }> = [
   { code: "AR", name: "Argentina" },
   { code: "AU", name: "Australia" },

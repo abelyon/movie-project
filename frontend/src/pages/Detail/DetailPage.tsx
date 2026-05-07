@@ -43,7 +43,6 @@ const getRuntime = (detail: MediaDetail, mediaType: string): number | undefined 
   return typeof n === "number" && !Number.isNaN(n) ? n : undefined;
 };
 
-/** e.g. 121 → "2H 1M", 90 → "1H 30M", 45 → "45M" */
 const formatRuntimeMinutes = (minutes: number): string => {
   if (minutes <= 0) return "";
   const h = Math.floor(minutes / 60);
@@ -63,7 +62,6 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
 
 const getUSProviders = (detail: MediaDetail) => detail.watch_providers;
 
-/** TMDB regional watch hub (fallback when we have no direct service URL for that provider id). */
 const getWatchProvidersPageUrl = (detail: MediaDetail): string | null => {
   const link = detail.watch_providers?.link;
   return typeof link === "string" && link.trim() !== "" ? link.trim() : null;
@@ -286,7 +284,6 @@ const DetailPage = () => {
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
         <div className="flex flex-col gap-6">
 
-          {/* Poster */}
           {poster && (
             <DetailPosterBlock
               key={`${media_type}-${numericId}`}
@@ -297,7 +294,6 @@ const DetailPage = () => {
             />
           )}
 
-          {/* Info */}
           <motion.div
             className="min-w-0 w-full"
             initial={{ opacity: 0, x: 12 }}
@@ -555,7 +551,6 @@ const DetailPage = () => {
         </div>
       </div>
 
-      {/* Fixed action buttons — right side, nav-pill style */}
       <div
         className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3"
       >

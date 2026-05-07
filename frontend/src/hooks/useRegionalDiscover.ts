@@ -69,7 +69,6 @@ export function useInfiniteRegionalDiscover(options: {
     yearFrom,
   } = options;
 
-  /** When type is All, apply certification to both movie and TV so mature TV (e.g. TV-MA) is excluded alongside movies. */
   const applyCertMovie =
     certification !== "" && (filterType === "movie" || filterType === "all");
   const applyCertTv =

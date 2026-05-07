@@ -19,8 +19,7 @@ type ToastContextValue = {
   pushToast: (opts: {
     message: string;
     variant?: ToastVariant;
-    /** 0 = no auto-dismiss */
-    durationMs?: number;
+durationMs?: number;
   }) => void;
   dismissToast: (id: string) => void;
 };
