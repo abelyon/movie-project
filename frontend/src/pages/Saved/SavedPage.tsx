@@ -192,7 +192,7 @@ const SavedPage = () => {
     certificationFilterActive && filteredSaved.length > 100;
   if (isLoading && (saved ?? []).length === 0) {
     return (
-      <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+      <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5">
         {Array.from({ length: 8 }).map((_, idx) => (
           <div key={idx} className="aspect-2/3 w-full rounded-4xl bg-neutral-800/70 animate-pulse" />
         ))}
@@ -228,7 +228,7 @@ const SavedPage = () => {
           </p>
         </div>
       ) : (
-        <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-5">
+        <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5">
           {visibleSaved.map((item) => (
             <MediaCard
               key={`${item.media_type}-${item.id}`}
