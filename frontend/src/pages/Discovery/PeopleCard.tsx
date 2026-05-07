@@ -49,11 +49,16 @@ const PeopleCard = ({ person }: { person: PersonSearchResult }) => {
         </motion.div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 p-4 pointer-events-none">
-        <div className="rounded-3xl border-t border-neutral-600 bg-neutral-800/80 px-3 py-2 backdrop-blur-md">
-          <p className="text-sm font-space-grotesk font-medium text-neutral-100 truncate">{person.name}</p>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0">
+        <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 p-4">
+          <p className="truncate text-sm font-space-grotesk font-medium text-neutral-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            {person.name}
+          </p>
           {person.known_for_department && (
-            <p className="mt-0.5 text-xs text-neutral-300 truncate">{person.known_for_department}</p>
+            <p className="mt-0.5 truncate text-xs text-neutral-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+              {person.known_for_department}
+            </p>
           )}
         </div>
       </div>
