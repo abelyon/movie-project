@@ -58,9 +58,29 @@ function resolveApiBaseUrl(): string {
   return s;
 }
 
+/** Origin for Fortify + `/sanctum/csrf-cookie` (never ends with `/api`). Strip repeated `/api` segments from typos like `.../api/api`. */
+function laravelOriginFromApiBaseUrl(apiBaseUrl: string): string {
+  const trimmed = apiBaseUrl.replace(/\/+$/, "");
+  try {
+    const url = new URL(trimmed);
+    const segments = url.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+    while (segments.length && segments[segments.length - 1].toLowerCase() === "api") {
+      segments.pop();
+    }
+    url.pathname = segments.length ? `/${segments.join("/")}` : "";
+    const out = `${url.origin}${url.pathname}`.replace(/\/+$/, "");
+    return out || url.origin;
+  } catch {
+    let fallback = trimmed;
+    while (/\/api$/i.test(fallback)) {
+      fallback = fallback.replace(/\/api$/i, "").replace(/\/+$/, "");
+    }
+    return fallback || "http://127.0.0.1:8000";
+  }
+}
+
 const API_BASE_URL = resolveApiBaseUrl();
-const LARAVEL_BASE =
-  API_BASE_URL.replace(/\/api\/?$/, "") || "http://127.0.0.1:8000";
+const LARAVEL_BASE = laravelOriginFromApiBaseUrl(API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,

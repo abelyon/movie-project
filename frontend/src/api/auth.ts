@@ -20,9 +20,10 @@ export function xsrfHeader(): Record<string, string> {
 }
 
 export async function getCsrfCookie(): Promise<void> {
-  await axios.get("/sanctum/csrf-cookie", {
+  const root = LARAVEL_BASE.replace(/\/+$/, "");
+  // Always hit `/sanctum/csrf-cookie` on the Laravel origin — never under `/api` (axios baseURL + `/sanctum/...` would break).
+  await axios.get(`${root}/sanctum/csrf-cookie`, {
     withCredentials: true,
-    baseURL: LARAVEL_BASE || undefined,
     headers: {
       "X-Requested-With": "XMLHttpRequest",
     },
