@@ -9,6 +9,8 @@ import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
 import { useAuth } from "../../contexts/AuthContext";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
+const NO_PHOTO_PLACEHOLDER =
+  "https://placehold.co/500x750/171717/a3a3a3?text=No+Photo";
 
 type WatchTogetherMeta = {
   wantCount: number;
@@ -32,6 +34,9 @@ const MediaCard = ({
     ? user.country_code.toUpperCase()
     : "US";
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageSrc, setImageSrc] = useState(
+    item.poster_path ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}` : NO_PHOTO_PLACEHOLDER,
+  );
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const everyoneWantsToWatch = Boolean(
@@ -131,10 +136,16 @@ const MediaCard = ({
     >
       <div className="relative h-full w-full overflow-hidden rounded-4xl bg-neutral-800/80">
         <motion.img
-          src={`${TMDB_IMAGE_BASE_URL}${item.poster_path ?? ""}`}
+          src={imageSrc}
           alt={item.title ?? item.name ?? ""}
           className="w-full h-full object-cover"
           onLoad={() => setImageLoaded(true)}
+          onError={() => {
+            if (imageSrc !== NO_PHOTO_PLACEHOLDER) {
+              setImageLoaded(false);
+              setImageSrc(NO_PHOTO_PLACEHOLDER);
+            }
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: imageLoaded ? 1 : 0 }}
           transition={{ duration: 0.3 }}
@@ -154,8 +165,8 @@ const MediaCard = ({
           />
         </motion.div>
       </div>
-      <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-between p-2 sm:p-4">
-        <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md sm:h-9 sm:px-3 sm:py-2">
+      <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-between p-4">
+        <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md">
           {item.media_type === "movie" ? (
             <Clapperboard size={16} strokeWidth={2.5} />
           ) : item.media_type === "tv" ? (
@@ -163,31 +174,31 @@ const MediaCard = ({
           ) : null}
         </span>
         {item.vote_average != null && item.vote_average > 0 && (
-          <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-sm text-neutral-100 backdrop-blur-md font-space-grotesk font-medium sm:h-9 sm:px-3 sm:py-2 sm:text-base">
+          <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-sm text-neutral-100 backdrop-blur-md font-space-grotesk font-medium">
             {item.vote_average.toFixed(1)}
           </span>
         )}
       </div>
       {isSaved && (
-        <div className="absolute right-0 bottom-0 p-2 sm:p-4">
-          <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-white backdrop-blur-md sm:h-9 sm:px-3 sm:py-2">
+        <div className="absolute right-0 bottom-0 p-4">
+          <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-white backdrop-blur-md">
             <Bookmark size={16} strokeWidth={2.5} fill="currentColor" />
           </span>
         </div>
       )}
       {watchTogetherMeta && showWatchTogetherBadge && (
-        <div className="pointer-events-none absolute right-0 bottom-0 flex flex-col items-start gap-2 p-2 sm:p-4">
+        <div className="pointer-events-none absolute right-0 bottom-0 flex flex-col items-start gap-2 p-4">
           {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
             <span
               title="Everyone wants to watch"
-              className="flex h-8 min-w-[40px] items-center justify-center rounded-4xl border-t border-white bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md sm:h-9 sm:min-w-[44px] sm:px-3 sm:py-2"
+              className="flex h-8 min-w-[40px] items-center justify-center rounded-4xl border-t border-white bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md"
             >
               <Star size={16} strokeWidth={2.5} fill="currentColor" />
             </span>
           ) : (
             <span
               title={`${watchTogetherMeta.wantCount} selected user(s) want to watch`}
-              className="flex h-8 min-w-[40px] items-center justify-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-sm text-neutral-100 backdrop-blur-md font-space-grotesk font-medium sm:h-9 sm:min-w-[44px] sm:px-3 sm:py-2 sm:text-base"
+              className="flex h-8 min-w-[40px] items-center justify-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-sm text-neutral-100 backdrop-blur-md font-space-grotesk font-medium"
             >
               {watchTogetherMeta.wantCount}
             </span>

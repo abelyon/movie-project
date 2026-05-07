@@ -56,7 +56,7 @@ const PeopleCard = ({ person }: { person: PersonSearchResult }) => {
             {person.name}
           </p>
           {person.known_for_department && (
-            <p className="mt-0.5 truncate text-xs text-neutral-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            <p className="mt-0.5 truncate text-xs font-space-grotesk text-neutral-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               {person.known_for_department}
             </p>
           )}
