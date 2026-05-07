@@ -719,7 +719,9 @@ const hasModalBackdrop =
                       ))}
                     </div>
                   ) : friends.length === 0 ? (
-                    <p className="mt-3 text-sm text-neutral-400">No accepted friends yet.</p>
+                    <p className="mt-3 flex min-h-11 items-center font-space-grotesk text-sm text-neutral-300">
+                      No accepted friends yet.
+                    </p>
                   ) : (
                     <div className="flex max-w-64 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                       {friends.map((friend) => {

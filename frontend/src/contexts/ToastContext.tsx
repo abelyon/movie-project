@@ -72,7 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               className="pointer-events-auto"
             >
               <div
-                className={`flex items-start gap-3 rounded-2xl border px-4 py-3 font-space-grotesk text-sm shadow-lg backdrop-blur-md ${
+                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-space-grotesk text-sm shadow-lg backdrop-blur-md ${
                   t.variant === "success"
                     ? "border-emerald-400/35 bg-emerald-950/92 text-emerald-50"
                     : t.variant === "error"
@@ -81,11 +81,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 }`}
               >
                 {t.variant === "success" ? (
-                  <CheckCircle className="mt-0.5 shrink-0 text-emerald-400" size={18} aria-hidden />
+                  <CheckCircle className="shrink-0 text-emerald-400" size={18} aria-hidden />
                 ) : t.variant === "error" ? (
-                  <AlertCircle className="mt-0.5 shrink-0 text-red-400" size={18} aria-hidden />
+                  <AlertCircle className="shrink-0 text-red-400" size={18} aria-hidden />
                 ) : (
-                  <Info className="mt-0.5 shrink-0 text-neutral-400" size={18} aria-hidden />
+                  <Info className="shrink-0 text-neutral-400" size={18} aria-hidden />
                 )}
                 <p className="min-w-0 flex-1 leading-snug">{t.message}</p>
                 <button
