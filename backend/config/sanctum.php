@@ -12,6 +12,36 @@ $frontendStateful = $frontendHost
     ? ($frontendPort ? "{$frontendHost}:{$frontendPort}" : $frontendHost)
     : null;
 
+$sanctumDomainsRaw = env('SANCTUM_STATEFUL_DOMAINS');
+$sanctumDomainsRaw =
+    is_string($sanctumDomainsRaw) ? trim($sanctumDomainsRaw, " \t\n\r\0\x0B\"'") : '';
+
+$statefulDomains = [];
+
+if ($sanctumDomainsRaw !== '') {
+    $statefulDomains = array_values(array_unique(array_filter(array_map(
+        static fn (string $h): string => trim($h, " \t\n\r\0\x0B\"'"),
+        explode(',', $sanctumDomainsRaw),
+    ))));
+} else {
+    $statefulDomains = array_values(array_unique(array_filter([
+        'localhost',
+        'localhost:3000',
+        '127.0.0.1',
+        '127.0.0.1:8000',
+        '127.0.0.1:5173',
+        '::1',
+        Sanctum::currentApplicationUrlWithPort(),
+        $frontendStateful,
+    ])));
+}
+
+// Always fold FRONTEND_URL host into stateful domains when split-deploy env skew causes mismatches.
+if ($frontendStateful !== null && $frontendStateful !== '') {
+    $statefulDomains[] = $frontendStateful;
+}
+$statefulDomains = array_values(array_unique(array_filter($statefulDomains)));
+
 return [
 
     /*
@@ -25,16 +55,7 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', implode(',', array_filter([
-        'localhost',
-        'localhost:3000',
-        '127.0.0.1',
-        '127.0.0.1:8000',
-        '127.0.0.1:5173',
-        '::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        $frontendStateful,
-    ])))),
+    'stateful' => $statefulDomains,
 
     /*
     |--------------------------------------------------------------------------
