@@ -20,10 +20,12 @@ const MediaCard = ({
   item,
   isSaved = false,
   watchTogetherMeta,
+  scrollToTopOnOpen = false,
 }: {
   item: MediaItem;
   isSaved?: boolean;
   watchTogetherMeta?: WatchTogetherMeta;
+  scrollToTopOnOpen?: boolean;
 }) => {
   const { user } = useAuth();
   const watchRegion = user?.country_code && user.country_code.length === 2
@@ -104,6 +106,9 @@ const MediaCard = ({
       }),
     ]);
     navigate(`/${item.media_type}/${item.id}`, { state: { preview: item } });
+    if (scrollToTopOnOpen) {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    }
   };
 
   return (

@@ -541,6 +541,7 @@ const DetailPage = () => {
                         key={`reco-${item.media_type}-${item.id}`}
                         item={item}
                         isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+                        scrollToTopOnOpen
                       />
                     ))}
                   </div>
