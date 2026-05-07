@@ -37,7 +37,7 @@ const PersonPosterBlock = ({ image, name }: { image: string; name: string }) => 
 
   return (
     <motion.div
-      className="relative w-full sm:w-56 sm:shrink-0"
+      className="relative w-full"
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={enterFast}
@@ -58,7 +58,7 @@ const PersonPosterBlock = ({ image, name }: { image: string; name: string }) => 
       <motion.img
         src={image}
         alt={name}
-        className="w-full h-50 object-cover rounded-4xl sm:h-full"
+        className="w-full h-50 object-cover rounded-4xl"
         decoding="async"
         fetchPriority="high"
         onLoad={() => setImageLoaded(true)}
@@ -101,11 +101,11 @@ const PersonDetailPage = () => {
     return (
       <div className="text-white overflow-hidden">
         <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            <div className="relative w-full sm:w-56 sm:shrink-0">
-              <div className="w-full h-50 sm:h-88 rounded-4xl bg-neutral-800/80 animate-pulse" />
+          <div className="flex flex-col gap-6">
+            <div className="relative w-full">
+              <div className="w-full h-50 rounded-4xl bg-neutral-800/80 animate-pulse" />
             </div>
-            <div className="flex-1">
+            <div className="w-full">
               <div className="h-9 w-64 rounded-2xl bg-neutral-800/80 animate-pulse" />
               <div className="mt-4 flex gap-2">
                 <div className="h-7 w-28 rounded-4xl bg-neutral-800/80 animate-pulse" />
@@ -149,11 +149,11 @@ const PersonDetailPage = () => {
   return (
     <div className="text-white overflow-hidden">
       <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-6">
           <PersonPosterBlock image={poster} name={data.name} />
 
           <motion.div
-            className="min-w-0 flex-1"
+            className="min-w-0 w-full"
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={enterFast}
@@ -236,7 +236,7 @@ const PersonDetailPage = () => {
         </div>
       )}
 
-      <div className="fixed bottom-5 right-5 z-[60] flex flex-col gap-3">
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3">
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
