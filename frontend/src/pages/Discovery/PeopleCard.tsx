@@ -15,7 +15,7 @@ const PeopleCard = ({ person }: { person: PersonSearchResult }) => {
   return (
     <motion.div
       onClick={() => navigate(`/person/${person.id}`)}
-      className="relative m-auto flex flex-col items-center justify-center rounded-4xl cursor-pointer aspect-2/3 w-full"
+      className="relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full"
       initial={{ opacity: 1, y: 0, scale: 1 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: false, amount: 0.15, margin: "0px 0px -40px 0px" }}
@@ -23,7 +23,7 @@ const PeopleCard = ({ person }: { person: PersonSearchResult }) => {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <div className="relative w-full h-full wmin-h-[280px] overflow-hidden rounded-4xl bg-neutral-800/80">
+      <div className="relative w-full h-full overflow-hidden rounded-4xl bg-neutral-800/80">
         <motion.img
           src={imageSrc}
           alt={person.name}
@@ -49,7 +49,7 @@ const PeopleCard = ({ person }: { person: PersonSearchResult }) => {
         </motion.div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden rounded-b-4xl">
         <div className="h-24 bg-gradient-to-t from-black/70 via-black/35 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-4">
           <p className="truncate text-sm font-space-grotesk font-medium text-neutral-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">

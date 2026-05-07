@@ -511,19 +511,19 @@ const DetailPage = () => {
                       href={trailerUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group relative block aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-neutral-900"
+                      className="group relative block aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-neutral-800"
                       aria-label={`Open ${getTitle(data, media_type)} trailer on YouTube`}
                     >
                       {trailerBackdrop ? (
                         <img
                           src={trailerBackdrop}
                           alt=""
-                          className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                          className="h-full w-full rounded-3xl object-cover transition duration-200 group-hover:scale-[1.02]"
                           loading="lazy"
                           decoding="async"
                         />
                       ) : null}
-                      <div className="absolute inset-0 bg-black/35 transition group-hover:bg-black/45" />
+                      <div className="absolute inset-0 rounded-3xl bg-black/35 transition group-hover:bg-black/45" />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition group-hover:scale-105">
                           <Play size={26} fill="currentColor" strokeWidth={1.5} />
