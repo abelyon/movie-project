@@ -12,7 +12,8 @@ export type User = {
   updated_at: string;
 };
 
-function xsrfHeader(): Record<string, string> {
+/** Readable XSRF cookie → header (needed where axios options bypass automatic CSRF merge). */
+export function xsrfHeader(): Record<string, string> {
   const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
   if (!match) return {};
   return { "X-XSRF-TOKEN": decodeURIComponent(match[1]) };

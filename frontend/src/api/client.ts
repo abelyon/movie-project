@@ -1,4 +1,23 @@
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
+
+function resolvedRequestUrl(config: {
+  baseURL?: string;
+  url?: string;
+}): string {
+  const url = config.url ?? "";
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  const base = (config.baseURL ?? "").replace(/\/+$/, "");
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${base}${path}`;
+}
+
+function isBroadcastingAuthRequest(error: AxiosError): boolean {
+  const cfg = error.config;
+  if (!cfg) return false;
+  return resolvedRequestUrl(cfg).includes("/broadcasting/auth");
+}
 
 /**
  * Laravel registers `routes/api.php` under the `/api` prefix.
@@ -64,9 +83,9 @@ export function setAuthExpiredHandler(handler: (() => void) | null): void {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const status = error?.response?.status;
-    if (status === 401 || status === 419) {
+  (error: AxiosError) => {
+    const status = error.response?.status;
+    if ((status === 401 || status === 419) && !isBroadcastingAuthRequest(error)) {
       onAuthExpired?.();
     }
     return Promise.reject(error);

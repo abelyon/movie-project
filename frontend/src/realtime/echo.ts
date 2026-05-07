@@ -1,6 +1,7 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 import type { ChannelAuthorizationCallback } from "pusher-js";
+import { xsrfHeader } from "../api/auth";
 import api, { LARAVEL_BASE } from "../api/client";
 
 type ChannelAuthorizationPayload = Parameters<ChannelAuthorizationCallback>[1];
@@ -37,7 +38,9 @@ const forceTLS = scheme === "https";
 export function createEcho(token?: string): Echo<"reverb"> {
   const headers: Record<string, string> = {
     Accept: "application/json",
+    "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
+    ...xsrfHeader(),
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -68,7 +71,10 @@ export function createEcho(token?: string): Echo<"reverb"> {
               channel_name: channel.name,
             },
             {
-              headers,
+              headers: {
+                ...headers,
+                ...xsrfHeader(),
+              },
             },
           )
           .then(({ data }) => callback(null, data as ChannelAuthorizationPayload))

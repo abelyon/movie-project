@@ -14,15 +14,16 @@ const RealtimeBridge = () => {
     }
 
     let disposed = false;
-    const echo = createEcho();
+    let echo: ReturnType<typeof createEcho> | null = null;
 
     const setup = async () => {
-      // Ensure Sanctum/XSRF cookies are present before private channel auth.
+      // Ensure Sanctum/XSRF cookies are present before Echo ctor reads xsrfHeader().
       await getCsrfCookie();
       if (disposed) {
         return;
       }
 
+      echo = createEcho();
       const channel = echo.private(`users.${user.id}`);
       if (disposed) {
         return;
@@ -42,7 +43,7 @@ const RealtimeBridge = () => {
     return () => {
       disposed = true;
       // disconnect() closes all channels; leave() + disconnect() races on the same socket.
-      echo.disconnect();
+      echo?.disconnect();
     };
   }, [queryClient, user]);
 
