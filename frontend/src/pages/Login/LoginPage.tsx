@@ -18,11 +18,25 @@ const LoginPage = () => {
       await login(email, password);
       navigate("/discovery", { replace: true });
     } catch (err: unknown) {
-      const res = err && typeof err === "object" && "response" in err
-        ? (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data
-        : null;
-      const msg = res?.message ?? (res?.errors ? Object.values(res.errors).flat()[0] : null) ?? "Login failed";
-      setError(typeof msg === "string" ? msg : "Login failed");
+      if (err && typeof err === "object" && "response" in err) {
+        const data = (
+          err as {
+            response?: { data?: { message?: string; errors?: Record<string, string[]> } };
+          }
+        ).response?.data;
+        const apiMsg =
+          (typeof data?.message === "string" ? data.message : null) ??
+          (data?.errors ? (Object.values(data.errors).flat()[0] as string | undefined) : null);
+        if (typeof apiMsg === "string" && apiMsg.length > 0) {
+          setError(apiMsg);
+          return;
+        }
+      }
+      if (err instanceof Error && err.message) {
+        setError(err.message);
+        return;
+      }
+      setError("Login failed");
     } finally {
       setLoading(false);
     }

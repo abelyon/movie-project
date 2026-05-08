@@ -60,11 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string) => {
       await authApi.login(email, password);
       const verified = await authApi.fetchVerifiedSessionUser();
-      if (!verified) {
-        throw new Error(
-          "Signed in, but your session cookie was not saved. Check staging backend SESSION_SAME_SITE=none, SESSION_DOMAIN unset, SANCTUM_STATEFUL_DOMAINS, run config:cache after deploy, and confirm the frontend hits the correct API URL.",
-        );
-      }
       setUser(verified);
     },
     [],
@@ -73,11 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (input: authApi.RegisterInput) => {
     await authApi.register(input);
     const verified = await authApi.fetchVerifiedSessionUser();
-    if (!verified) {
-      throw new Error(
-        "Account created, but your session cookie was not saved. Check staging SESSION_* / SANCTUM_* and redeploy backend after env changes.",
-      );
-    }
     setUser(verified);
   }, []);
 

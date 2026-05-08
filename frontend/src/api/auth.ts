@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import api, { API_BASE_URL, LARAVEL_BASE } from "./client";
 
 export type User = {
@@ -76,9 +76,9 @@ export async function getCurrentUser(): Promise<User | null> {
 
 /**
  * GET /api/user using a plain axios call (no shared 401 interceptor).
- * Use after login/register to confirm the session cookie is actually stored before navigating.
+ * Call after login/register to confirm the session cookie is stored.
  */
-export async function fetchVerifiedSessionUser(): Promise<User | null> {
+export async function fetchVerifiedSessionUser(): Promise<User> {
   try {
     const { data } = await axios.get<User>(`${API_BASE_URL.replace(/\/+$/, "")}/user`, {
       withCredentials: true,
@@ -88,8 +88,13 @@ export async function fetchVerifiedSessionUser(): Promise<User | null> {
       },
     });
     return data;
-  } catch {
-    return null;
+  } catch (e) {
+    if (isAxiosError(e) && e.response?.status === 401) {
+      throw new Error(
+        "Login succeeded, but /api/user returned 401 — the session cookie is not working for API requests. Check POST /login response headers for Set-Cookie (needs SameSite=None; Secure). On Railway backend: SESSION_SAME_SITE=none, SESSION_SECURE_COOKIE=true, remove SESSION_DOMAIN entirely, SANCTUM_STATEFUL_DOMAINS must match your frontend host, and run php artisan optimize:clear && php artisan config:cache on the release phase (not only during image build).",
+      );
+    }
+    throw new Error("Could not verify session after login.");
   }
 }
 
