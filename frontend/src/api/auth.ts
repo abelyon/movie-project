@@ -1,5 +1,5 @@
 import axios from "axios";
-import api, { LARAVEL_BASE } from "./client";
+import api, { API_BASE_URL, LARAVEL_BASE } from "./client";
 
 export type User = {
   id: number;
@@ -68,6 +68,25 @@ export async function logout(): Promise<void> {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const { data } = await api.get<User>("/user");
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * GET /api/user using a plain axios call (no shared 401 interceptor).
+ * Use after login/register to confirm the session cookie is actually stored before navigating.
+ */
+export async function fetchVerifiedSessionUser(): Promise<User | null> {
+  try {
+    const { data } = await axios.get<User>(`${API_BASE_URL.replace(/\/+$/, "")}/user`, {
+      withCredentials: true,
+      headers: {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
     return data;
   } catch {
     return null;

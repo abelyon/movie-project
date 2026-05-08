@@ -113,4 +113,4 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { LARAVEL_BASE };
+export { API_BASE_URL, LARAVEL_BASE };

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import {
   getState,
   getSaved,
@@ -200,6 +201,7 @@ const refreshListsNow = async (qc: ReturnType<typeof useQueryClient>) => {
 };
 
 export const useMediaState = (tmdbId: number | undefined, mediaType: string | undefined) => {
+  const { user } = useAuth();
   const valid =
     tmdbId != null &&
     !Number.isNaN(tmdbId) &&
@@ -211,7 +213,7 @@ export const useMediaState = (tmdbId: number | undefined, mediaType: string | un
       const map = await getState([{ id: tmdbId!, media_type: mediaType! }]);
       return map[stateKey(tmdbId!, mediaType!)] ?? DEFAULT_STATE;
     },
-    enabled: valid,
+    enabled: valid && !!user,
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
@@ -440,11 +442,12 @@ export const useMediaActions = (
 };
 
 export const useMediaStateMap = (items: { id: number; media_type: string }[]) => {
+  const { user } = useAuth();
   const keys = items.map((i) => stateKey(i.id, i.media_type)).sort().join(",");
   return useQuery({
     queryKey: ["user", "media", "state", "batch", keys],
     queryFn: () => getState(items),
-    enabled: items.length > 0,
+    enabled: items.length > 0 && !!user,
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
@@ -456,26 +459,35 @@ export const useSavedList = (options?: {
   withFriendsSaved?: boolean;
   withFriendsSocial?: boolean;
   friendIds?: number[];
-}) =>
-  useQuery({
+}) => {
+  const { user } = useAuth();
+  return useQuery({
     queryKey: [...buildSavedListQueryKey(options)],
     queryFn: () => getSaved(options),
+    enabled: !!user,
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+};
 
-export const useLikedList = () =>
-  useQuery({
+export const useLikedList = () => {
+  const { user } = useAuth();
+  return useQuery({
     queryKey: ["user", "media", "liked"],
     queryFn: getLiked,
+    enabled: !!user,
     staleTime: 60_000,
   });
+};
 
-export const useFavoritedList = () =>
-  useQuery({
+export const useFavoritedList = () => {
+  const { user } = useAuth();
+  return useQuery({
     queryKey: ["user", "media", "favorited"],
     queryFn: getFavorited,
+    enabled: !!user,
     staleTime: 60_000,
   });
+};
