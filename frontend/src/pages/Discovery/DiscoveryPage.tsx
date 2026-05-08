@@ -185,9 +185,6 @@ const DiscoveryPage = () => {
   const savedBadgeCacheRef = useRef<Record<string, boolean>>({});
   const hasStateMap = stateMap !== undefined;
   const hasSavedList = savedList !== undefined;
-  const needsResolvedStateForFilters =
-    watchedFilter !== "all" || favoriteFilter === "favorited";
-  const isWaitingForFilterState = needsResolvedStateForFilters && !hasStateMap;
   const savedSet = useMemo(
     () => new Set((savedList ?? []).map((item) => stateKey(item.id, item.media_type))),
     [savedList],
@@ -206,8 +203,7 @@ const DiscoveryPage = () => {
 
   if (
     (canSearch && isPeopleSearchLoading) ||
-    (isPending && !data) ||
-    isWaitingForFilterState
+    (isPending && !data)
   ) {
     return (
       <div>
