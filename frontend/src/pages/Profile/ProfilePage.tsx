@@ -171,14 +171,14 @@ const ProfilePage = () => {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-3xl px-5 py-8 text-neutral-300">
+      <div className="mx-auto max-w-3xl px-5 py-8 font-space-grotesk text-neutral-300">
         Loading profile...
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8 pb-28 text-white">
+    <div className="mx-auto max-w-3xl px-5 py-8 pb-28 font-space-grotesk text-white">
       <div className={cardClass}>
         <div className="flex items-start justify-between gap-4">
           <div>

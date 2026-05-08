@@ -19,16 +19,11 @@ function isBroadcastingAuthRequest(error: AxiosError): boolean {
   return resolvedRequestUrl(cfg).includes("/broadcasting/auth");
 }
 
-/**
- * Laravel registers `routes/api.php` under the `/api` prefix.
- * Accept either `https://api.example.com` or `https://api.example.com/api` in env.
- */
 function resolveApiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_BASE_URL;
   let s = typeof raw === "string" ? raw.trim() : "";
   if (!s) {
     if (import.meta.env.DEV) {
-      // Keep hostnames aligned in local dev (localhost vs 127.0.0.1) so Sanctum session cookies stay stateful.
       const localHost = window.location.hostname === "localhost" ? "localhost" : "127.0.0.1";
       return `http://${localHost}:8000/api`;
     }
@@ -49,7 +44,6 @@ function resolveApiBaseUrl(): string {
         s = parsed.toString().replace(/\/+$/, "");
       }
     } catch {
-      // keep original value if env URL is not parseable
     }
   }
   if (!s.endsWith("/api")) {
@@ -58,7 +52,6 @@ function resolveApiBaseUrl(): string {
   return s;
 }
 
-/** Origin for Fortify + `/sanctum/csrf-cookie` (never ends with `/api`). Strip repeated `/api` segments from typos like `.../api/api`. */
 function laravelOriginFromApiBaseUrl(apiBaseUrl: string): string {
   const trimmed = apiBaseUrl.replace(/\/+$/, "");
   try {

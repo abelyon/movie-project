@@ -36,7 +36,6 @@ if ($sanctumDomainsRaw !== '') {
     ])));
 }
 
-// Always fold FRONTEND_URL host into stateful domains when split-deploy env skew causes mismatches.
 if ($frontendStateful !== null && $frontendStateful !== '') {
     $statefulDomains[] = $frontendStateful;
 }

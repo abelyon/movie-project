@@ -50,7 +50,7 @@ const RegisterPage = () => {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-6 backdrop-blur-md sm:p-8">
+      <div className="w-full max-w-md rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-6 font-space-grotesk backdrop-blur-md sm:p-8">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <h1 className="text-2xl font-space-grotesk font-bold text-neutral-100">Create account</h1>

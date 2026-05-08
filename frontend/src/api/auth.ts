@@ -12,7 +12,6 @@ export type User = {
   updated_at: string;
 };
 
-/** Readable XSRF cookie → header (needed where axios options bypass automatic CSRF merge). */
 export function xsrfHeader(): Record<string, string> {
   const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
   if (!match) return {};
@@ -21,7 +20,6 @@ export function xsrfHeader(): Record<string, string> {
 
 export async function getCsrfCookie(): Promise<void> {
   const root = LARAVEL_BASE.replace(/\/+$/, "");
-  // Always hit `/sanctum/csrf-cookie` on the Laravel origin — never under `/api` (axios baseURL + `/sanctum/...` would break).
   await axios.get(`${root}/sanctum/csrf-cookie`, {
     withCredentials: true,
     headers: {
@@ -74,10 +72,6 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-/**
- * GET /api/user using a plain axios call (no shared 401 interceptor).
- * Call after login/register to confirm the session cookie is stored.
- */
 export async function fetchVerifiedSessionUser(): Promise<User> {
   try {
     const { data } = await axios.get<User>(`${API_BASE_URL.replace(/\/+$/, "")}/user`, {

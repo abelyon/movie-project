@@ -17,7 +17,6 @@ const RealtimeBridge = () => {
     let echo: ReturnType<typeof createEcho> | null = null;
 
     const setup = async () => {
-      // Ensure Sanctum/XSRF cookies are present before Echo ctor reads xsrfHeader().
       await getCsrfCookie();
       if (disposed) {
         return;
@@ -42,7 +41,6 @@ const RealtimeBridge = () => {
 
     return () => {
       disposed = true;
-      // disconnect() closes all channels; leave() + disconnect() races on the same socket.
       echo?.disconnect();
     };
   }, [queryClient, user]);
