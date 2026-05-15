@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
@@ -33,10 +33,18 @@ const MediaCard = ({
   const watchRegion = user?.country_code && user.country_code.length === 2
     ? user.country_code.toUpperCase()
     : "US";
+  const imageRef = useRef<HTMLImageElement>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageSrc, setImageSrc] = useState(
     item.poster_path ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}` : NO_PHOTO_PLACEHOLDER,
   );
+
+  useLayoutEffect(() => {
+    const img = imageRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setImageLoaded(true);
+    }
+  }, [imageSrc]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const everyoneWantsToWatch = Boolean(
@@ -127,18 +135,19 @@ const MediaCard = ({
       className={`relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full ${
         everyoneWantsToWatch ? "border-y-2 border-white" : ""
       }`}
-      initial={{ opacity: 1, y: 0, scale: 1 }}
-      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: false, amount: 0.15, margin: "0px 0px -40px 0px" }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
       <div className="relative h-full w-full overflow-hidden rounded-4xl bg-neutral-800/80">
-        <motion.img
+        <img
+          ref={imageRef}
           src={imageSrc}
           alt={item.title ?? item.name ?? ""}
-          className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
           onLoad={() => setImageLoaded(true)}
           onError={() => {
             if (imageSrc !== NO_PHOTO_PLACEHOLDER) {
@@ -146,24 +155,20 @@ const MediaCard = ({
               setImageSrc(NO_PHOTO_PLACEHOLDER);
             }
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: imageLoaded ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
         />
-        <motion.div
-          className="absolute inset-0 rounded-4xl bg-neutral-800/90"
-          initial={false}
-          animate={{ opacity: imageLoaded ? 0 : 1 }}
-          transition={{ duration: 0.25 }}
-          style={{ pointerEvents: "none" }}
-        >
+        {!imageLoaded && (
           <motion.div
-            className="absolute inset-0 rounded-4xl bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
-            animate={{ x: ["-100%", "100%"] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-            style={{ width: "60%", willChange: "transform" }}
-          />
-        </motion.div>
+            className="absolute inset-0 rounded-4xl bg-neutral-800/90"
+            style={{ pointerEvents: "none" }}
+          >
+            <motion.div
+              className="absolute inset-0 rounded-4xl bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
+              animate={{ x: ["-100%", "100%"] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              style={{ width: "60%", willChange: "transform" }}
+            />
+          </motion.div>
+        )}
       </div>
       <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-between p-4">
         <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md">
