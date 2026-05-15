@@ -448,6 +448,7 @@ export const useMediaStateMap = (items: { id: number; media_type: string }[]) =>
     queryKey: ["user", "media", "state", "batch", keys],
     queryFn: () => getState(items),
     enabled: items.length > 0 && !!user,
+    placeholderData: (previousData) => previousData,
     staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
