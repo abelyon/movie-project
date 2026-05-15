@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useInfiniteTrending } from "../../hooks/useTrending";
@@ -10,6 +10,9 @@ import { fetchPeopleSearch } from "../../api/tmdb";
 import MediaCard from "./MediaCard";
 import PeopleCard from "./PeopleCard";
 import type { MainLayoutOutletContext } from "../../layout/MainLayout";
+
+const INFINITE_SCROLL_ROOT_MARGIN = "0px 0px 1500px 0px";
+const INFINITE_SCROLL_BOTTOM_MARGIN_PX = 1500;
 
 const SkeletonCards = ({ count = 12 }: { count?: number }) => (
   <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5">
@@ -85,6 +88,21 @@ const DiscoveryPage = () => {
     : trendingQuery.isFetchingNextPage;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const hasNextPageRef = useRef(hasNextPage);
+  const isFetchingNextPageRef = useRef(isFetchingNextPage);
+  hasNextPageRef.current = hasNextPage;
+  isFetchingNextPageRef.current = isFetchingNextPage;
+
+  const tryLoadMore = useCallback(() => {
+    if (!hasNextPageRef.current || isFetchingNextPageRef.current) return;
+    void fetchNextPage();
+  }, [fetchNextPage]);
+
+  const isSentinelNearViewport = useCallback((el: HTMLElement) => {
+    const rect = el.getBoundingClientRect();
+    return rect.top <= window.innerHeight + INFINITE_SCROLL_BOTTOM_MARGIN_PX;
+  }, []);
+
   const trimmedQuery = query.trim();
   const canSearch = showSearch && trimmedQuery.length >= 2;
   const { data: searchData, isLoading: isSearchLoading } = useSearch(
@@ -96,22 +114,6 @@ const DiscoveryPage = () => {
     enabled: canSearch,
     staleTime: 60_000,
   });
-
-  useEffect(() => {
-    if (showSearch) return;
-    if (!hasNextPage || isFetchingNextPage) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) fetchNextPage();
-      },
-      { rootMargin: "0px 0px 1500px 0px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, showSearch, useRegionalBrowse]);
 
   const rawTrending = data?.pages.flatMap((p) => p.results) ?? [];
   const rawSearch = searchData?.results ?? [];
@@ -203,6 +205,43 @@ const DiscoveryPage = () => {
       }),
     [favoriteFilter, mediaResults, stateMap, watchedFilter],
   );
+
+  const gridReady = !(
+    (canSearch && isPeopleSearchLoading) ||
+    (isPending && !data) ||
+    isWaitingForFilterState
+  );
+
+  useEffect(() => {
+    if (showSearch || !gridReady) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) tryLoadMore();
+      },
+      { rootMargin: INFINITE_SCROLL_ROOT_MARGIN },
+    );
+    observer.observe(el);
+
+    const raf = requestAnimationFrame(() => {
+      if (isSentinelNearViewport(el)) tryLoadMore();
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [
+    showSearch,
+    gridReady,
+    tryLoadMore,
+    isSentinelNearViewport,
+    useRegionalBrowse,
+    data?.pages.length,
+    visibleResults.length,
+  ]);
 
   if (
     (canSearch && isPeopleSearchLoading) ||
