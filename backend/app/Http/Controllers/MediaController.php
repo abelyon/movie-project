@@ -7,12 +7,24 @@ use App\Models\FriendRequest;
 use App\Models\Media;
 use App\Models\User;
 use App\Http\Requests\MediaIdRequest;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class MediaController extends Controller
 {
+    /**
+     * How long TMDB detail payloads stay cached (seconds). TMDB title metadata
+     * changes rarely, so caching avoids one external round-trip per saved item.
+     */
+    private const TMDB_DETAIL_TTL = 86400;
+
+    /**
+     * Max concurrent TMDB requests per pool batch.
+     */
+    private const TMDB_POOL_CHUNK = 20;
     private function emitSocialUpdate(Request $request, Media $row, string $action): void
     {
         event(new SocialSignalUpdated(
@@ -321,15 +333,14 @@ class MediaController extends Controller
         return config('services.tmdb.api_key');
     }
 
-    private function fetchFromTmdb(string $type, int $tmdbId): ?array
+    private function tmdbDetailCacheKey(string $type, int $tmdbId): string
     {
-        $url = $this->getTmdbUrl();
-        $key = $this->getTmdbKey();
-        $response = Http::get("{$url}/{$type}/{$tmdbId}", ['api_key' => $key]);
-        if ($response->failed()) {
-            return null;
-        }
-        $data = $response->json();
+        return "tmdb:detail:{$type}:{$tmdbId}";
+    }
+
+    private function shapeTmdbDetail(string $type, int $tmdbId, ?array $data): array
+    {
+        $data = $data ?? [];
         $data['media_type'] = $type === 'movie' ? 'movie' : 'tv';
         $data['id'] = $tmdbId;
         if ($type === 'movie') {
@@ -338,6 +349,124 @@ class MediaController extends Controller
             $data['name'] = $data['name'] ?? null;
         }
         return $data;
+    }
+
+    private function fetchFromTmdb(string $type, int $tmdbId): ?array
+    {
+        $type = $type === 'movie' ? 'movie' : 'tv';
+        $cacheKey = $this->tmdbDetailCacheKey($type, $tmdbId);
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $url = $this->getTmdbUrl();
+        $key = $this->getTmdbKey();
+        $response = Http::get("{$url}/{$type}/{$tmdbId}", ['api_key' => $key]);
+        if ($response->failed()) {
+            return null;
+        }
+
+        $data = $this->shapeTmdbDetail($type, $tmdbId, $response->json());
+        Cache::put($cacheKey, $data, self::TMDB_DETAIL_TTL);
+        return $data;
+    }
+
+    /**
+     * Resolve many TMDB detail payloads at once.
+     *
+     * Cached entries are served immediately; cache misses are fetched
+     * concurrently with Http::pool (instead of one blocking call per item),
+     * then cached. Returns a map keyed by "{type}-{tmdb_id}".
+     *
+     * @param  array<int, array{type?: string, tmdb_id?: int|string}>  $items
+     * @return array<string, array<string, mixed>>
+     */
+    private function fetchManyFromTmdb(array $items): array
+    {
+        $unique = [];
+        foreach ($items as $item) {
+            $type = (($item['type'] ?? 'movie') === 'movie') ? 'movie' : 'tv';
+            $tmdbId = (int) ($item['tmdb_id'] ?? 0);
+            if ($tmdbId <= 0) {
+                continue;
+            }
+            $unique["{$type}-{$tmdbId}"] = ['type' => $type, 'tmdb_id' => $tmdbId];
+        }
+
+        $resolved = [];
+        $misses = [];
+        foreach ($unique as $key => $meta) {
+            $cached = Cache::get($this->tmdbDetailCacheKey($meta['type'], $meta['tmdb_id']));
+            if (is_array($cached)) {
+                $resolved[$key] = $cached;
+                continue;
+            }
+            $misses[$key] = $meta;
+        }
+
+        if ($misses === []) {
+            return $resolved;
+        }
+
+        $url = $this->getTmdbUrl();
+        $apiKey = $this->getTmdbKey();
+
+        foreach (array_chunk(array_keys($misses), self::TMDB_POOL_CHUNK) as $chunk) {
+            $responses = Http::pool(function (Pool $pool) use ($chunk, $misses, $url, $apiKey) {
+                $requests = [];
+                foreach ($chunk as $key) {
+                    $meta = $misses[$key];
+                    $requests[] = $pool->as($key)
+                        ->get("{$url}/{$meta['type']}/{$meta['tmdb_id']}", ['api_key' => $apiKey]);
+                }
+                return $requests;
+            });
+
+            foreach ($chunk as $key) {
+                $response = $responses[$key] ?? null;
+                if (!$response instanceof \Illuminate\Http\Client\Response || !$response->successful()) {
+                    continue;
+                }
+                $meta = $misses[$key];
+                $data = $this->shapeTmdbDetail($meta['type'], $meta['tmdb_id'], $response->json());
+                Cache::put($this->tmdbDetailCacheKey($meta['type'], $meta['tmdb_id']), $data, self::TMDB_DETAIL_TTL);
+                $resolved[$key] = $data;
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Map plain Media rows to TMDB detail payloads, preserving input order.
+     *
+     * @param  iterable<int, Media>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapRowsToTmdbDetails($rows): array
+    {
+        $rowList = [];
+        foreach ($rows as $row) {
+            $type = $row->type === 'movie' ? 'movie' : 'tv';
+            $tmdbId = (int) $row->tmdb_id;
+            if ($tmdbId <= 0) {
+                continue;
+            }
+            $rowList[] = ['type' => $type, 'tmdb_id' => $tmdbId];
+        }
+
+        $details = $this->fetchManyFromTmdb($rowList);
+
+        $results = [];
+        foreach ($rowList as $entry) {
+            $item = $details["{$entry['type']}-{$entry['tmdb_id']}"] ?? null;
+            if ($item) {
+                $results[] = $item;
+            }
+        }
+
+        return $results;
     }
 
     private function updateOrCreate(Request $request, array $attributes): Media
@@ -514,23 +643,39 @@ class MediaController extends Controller
             $rows = $this->rankWatchTogetherForUsers($participantIds);
         }
 
-        $results = [];
+        $rowList = [];
         foreach ($rows as $row) {
             $isRankedRow = is_array($row);
             $type = ($isRankedRow ? ($row['type'] ?? 'movie') : $row->type) === 'movie' ? 'movie' : 'tv';
             $tmdbId = (int) ($isRankedRow ? ($row['tmdb_id'] ?? 0) : $row->tmdb_id);
-            $item = $this->fetchFromTmdb($type, $tmdbId);
-            if ($item) {
-                if ($isRankedRow) {
-                    $item['together_score'] = $row['together_score'] ?? null;
-                    $item['suggestion_pool'] = $row['pool'] ?? null;
-                    $item['suggestion_badges'] = $row['badges'] ?? [];
-                    $item['watch_want_count'] = $row['watch_want_count'] ?? null;
-                    $item['watch_participant_count'] = $row['watch_participant_count'] ?? null;
-                    $item['watch_want_user_ids'] = $row['watch_want_user_ids'] ?? [];
-                }
-                $results[] = $item;
+            if ($tmdbId <= 0) {
+                continue;
             }
+            $rowList[] = [
+                'type' => $type,
+                'tmdb_id' => $tmdbId,
+                'ranked' => $isRankedRow ? $row : null,
+            ];
+        }
+
+        $details = $this->fetchManyFromTmdb($rowList);
+
+        $results = [];
+        foreach ($rowList as $entry) {
+            $item = $details["{$entry['type']}-{$entry['tmdb_id']}"] ?? null;
+            if (!$item) {
+                continue;
+            }
+            if ($entry['ranked'] !== null) {
+                $row = $entry['ranked'];
+                $item['together_score'] = $row['together_score'] ?? null;
+                $item['suggestion_pool'] = $row['pool'] ?? null;
+                $item['suggestion_badges'] = $row['badges'] ?? [];
+                $item['watch_want_count'] = $row['watch_want_count'] ?? null;
+                $item['watch_participant_count'] = $row['watch_participant_count'] ?? null;
+                $item['watch_want_user_ids'] = $row['watch_want_user_ids'] ?? [];
+            }
+            $results[] = $item;
         }
         return response()->json(['results' => $results]);
     }
@@ -539,30 +684,14 @@ class MediaController extends Controller
     {
         $user = $request->user();
         $rows = Media::where('user_id', $user->id)->where('is_liked', true)->get();
-        $results = [];
-        foreach ($rows as $row) {
-            $type = $row->type === 'movie' ? 'movie' : 'tv';
-            $item = $this->fetchFromTmdb($type, (int) $row->tmdb_id);
-            if ($item) {
-                $results[] = $item;
-            }
-        }
-        return response()->json(['results' => $results]);
+        return response()->json(['results' => $this->mapRowsToTmdbDetails($rows)]);
     }
 
     public function favorited(Request $request): JsonResponse
     {
         $user = $request->user();
         $rows = Media::where('user_id', $user->id)->where('is_favorited', true)->get();
-        $results = [];
-        foreach ($rows as $row) {
-            $type = $row->type === 'movie' ? 'movie' : 'tv';
-            $item = $this->fetchFromTmdb($type, (int) $row->tmdb_id);
-            if ($item) {
-                $results[] = $item;
-            }
-        }
-        return response()->json(['results' => $results]);
+        return response()->json(['results' => $this->mapRowsToTmdbDetails($rows)]);
     }
 
     public function save(MediaIdRequest $request): JsonResponse
