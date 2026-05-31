@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useInfiniteTrending } from "../../hooks/useTrending";
@@ -13,6 +13,11 @@ import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 
 const INFINITE_SCROLL_ROOT_MARGIN = "0px 0px 1500px 0px";
 const INFINITE_SCROLL_BOTTOM_MARGIN_PX = 1500;
+
+// Number of above-the-fold cards whose images we wait on before revealing the
+// initial grid all at once, and the safety timeout that reveals it regardless.
+const INITIAL_REVEAL_BATCH = 12;
+const INITIAL_REVEAL_TIMEOUT_MS = 2500;
 
 const SkeletonCards = ({ count = 12 }: { count?: number }) => (
   <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5">
@@ -212,6 +217,44 @@ const DiscoveryPage = () => {
     isWaitingForFilterState
   );
 
+  // Reveal the first screenful of cards together once their images are decoded
+  // (or after a timeout), instead of letting them pop in one-by-one.
+  const revealBatchSize = Math.min(visibleResults.length, INITIAL_REVEAL_BATCH);
+  const [initialRevealed, setInitialRevealed] = useState(false);
+  const [settledCount, setSettledCount] = useState(0);
+  const settledKeysRef = useRef<Set<string>>(new Set());
+
+  const handleCardImageSettled = useCallback((key: string) => {
+    if (settledKeysRef.current.has(key)) return;
+    settledKeysRef.current.add(key);
+    setSettledCount(settledKeysRef.current.size);
+  }, []);
+
+  // While the page is still loading its data, fall back to the skeleton and
+  // arm the next reveal cycle (covers fresh loads and new searches).
+  useEffect(() => {
+    if (!gridReady) {
+      settledKeysRef.current = new Set();
+      setSettledCount(0);
+      setInitialRevealed(false);
+    }
+  }, [gridReady]);
+
+  // Reveal once enough of the first batch has decoded, immediately when there
+  // is nothing to wait for, or after a safety timeout if images stall.
+  useEffect(() => {
+    if (!gridReady || initialRevealed) return;
+    if (revealBatchSize === 0 || settledCount >= revealBatchSize) {
+      setInitialRevealed(true);
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setInitialRevealed(true),
+      INITIAL_REVEAL_TIMEOUT_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [gridReady, initialRevealed, revealBatchSize, settledCount]);
+
   useEffect(() => {
     if (showSearch || !gridReady) return;
     const el = sentinelRef.current;
@@ -250,7 +293,7 @@ const DiscoveryPage = () => {
   ) {
     return (
       <div>
-        <SkeletonCards count={8} />
+        <SkeletonCards count={INITIAL_REVEAL_BATCH} />
       </div>
     );
   }
@@ -282,27 +325,41 @@ const DiscoveryPage = () => {
 
       {isShowingSearchResults && isSearchLoading && isPeopleSearchLoading && !hasAnySearchResults && <SkeletonCards count={8} />}
 
-      <div className={`p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5 ${cardsTopSpacingClass}`}>
-        {peopleCardsToRender.map((person) => (
-          <PeopleCard key={`person-${person.id}`} person={person} />
-        ))}
-        {mediaCardsToRender.map((item) => (
-          (() => {
-            const key = stateKey(item.id, item.media_type);
-            const savedFromSources = Boolean(stateMap?.[key]?.is_saved) || savedSet.has(key);
-            const prevSaved = savedBadgeCacheRef.current[key] ?? false;
-            const canFinalizeFalse = hasStateMap && hasSavedList;
-            const isSaved = savedFromSources || (!canFinalizeFalse && prevSaved);
-            savedBadgeCacheRef.current[key] = isSaved;
-            return (
-          <MediaCard
-            key={`${item.media_type}-${item.id}`}
-            item={item}
-            isSaved={isSaved}
-          />
-            );
-          })()
-        ))}
+      <div className="relative">
+        <div
+          className={`p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5 ${cardsTopSpacingClass} transition-opacity duration-500 ${
+            initialRevealed ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {peopleCardsToRender.map((person) => (
+            <PeopleCard key={`person-${person.id}`} person={person} />
+          ))}
+          {mediaCardsToRender.map((item, index) => (
+            (() => {
+              const key = stateKey(item.id, item.media_type);
+              const savedFromSources = Boolean(stateMap?.[key]?.is_saved) || savedSet.has(key);
+              const prevSaved = savedBadgeCacheRef.current[key] ?? false;
+              const canFinalizeFalse = hasStateMap && hasSavedList;
+              const isSaved = savedFromSources || (!canFinalizeFalse && prevSaved);
+              savedBadgeCacheRef.current[key] = isSaved;
+              const inRevealBatch = !initialRevealed && index < revealBatchSize;
+              return (
+            <MediaCard
+              key={`${item.media_type}-${item.id}`}
+              item={item}
+              isSaved={isSaved}
+              eager={inRevealBatch}
+              onImageSettled={inRevealBatch ? () => handleCardImageSettled(key) : undefined}
+            />
+              );
+            })()
+          ))}
+        </div>
+        {!initialRevealed && revealBatchSize > 0 && (
+          <div className="absolute inset-0">
+            <SkeletonCards count={revealBatchSize} />
+          </div>
+        )}
       </div>
 
       {!showSearch && (

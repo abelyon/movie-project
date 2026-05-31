@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
@@ -23,11 +23,15 @@ const MediaCard = ({
   isSaved = false,
   watchTogetherMeta,
   scrollToTopOnOpen = false,
+  eager = false,
+  onImageSettled,
 }: {
   item: MediaItem;
   isSaved?: boolean;
   watchTogetherMeta?: WatchTogetherMeta;
   scrollToTopOnOpen?: boolean;
+  eager?: boolean;
+  onImageSettled?: () => void;
 }) => {
   const { user } = useAuth();
   const watchRegion = user?.country_code && user.country_code.length === 2
@@ -39,12 +43,22 @@ const MediaCard = ({
     item.poster_path ? `${TMDB_IMAGE_BASE_URL}${item.poster_path}` : NO_PHOTO_PLACEHOLDER,
   );
 
+  // Notify the parent at most once, when this card's image has finished
+  // resolving (loaded or failed), so the grid can reveal the batch together.
+  const settledRef = useRef(false);
+  const settle = useCallback(() => {
+    if (settledRef.current) return;
+    settledRef.current = true;
+    onImageSettled?.();
+  }, [onImageSettled]);
+
   useLayoutEffect(() => {
     const img = imageRef.current;
     if (img?.complete && img.naturalWidth > 0) {
       setImageLoaded(true);
+      settle();
     }
-  }, [imageSrc]);
+  }, [imageSrc, settle]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const everyoneWantsToWatch = Boolean(
@@ -143,16 +157,22 @@ const MediaCard = ({
           ref={imageRef}
           src={imageSrc}
           alt={item.title ?? item.name ?? ""}
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
           decoding="async"
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             imageLoaded ? "opacity-100" : "opacity-0"
           }`}
-          onLoad={() => setImageLoaded(true)}
+          onLoad={() => {
+            setImageLoaded(true);
+            settle();
+          }}
           onError={() => {
             if (imageSrc !== NO_PHOTO_PLACEHOLDER) {
               setImageLoaded(false);
               setImageSrc(NO_PHOTO_PLACEHOLDER);
+            } else {
+              // Placeholder also failed; unblock the batch reveal anyway.
+              settle();
             }
           }}
         />
