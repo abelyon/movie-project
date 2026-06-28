@@ -35,7 +35,6 @@ import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
 import MediaCard from "../Discovery/MediaCard";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
-const POSTER_SIZE = "w780";
 const BACKDROP_SIZE = "w1280";
 const PROFILE_SIZE = "w185";
 const PROVIDER_LOGO_SIZE = "w92";
@@ -318,17 +317,15 @@ const DetailPage = () => {
   const date = getDate(data, media_type);
   const runtime = getRuntime(data, media_type);
   const seasonsLabel = getSeasonsLabel(data, media_type);
-  const poster = data.poster_path
-    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.poster_path}`
+  const backdropPath = fetched?.backdrop_path ?? data.backdrop_path;
+  const heroImage = backdropPath
+    ? `${TMDB_IMAGE_BASE}/${BACKDROP_SIZE}${backdropPath}`
     : null;
-  const heroImage = data.backdrop_path
-    ? `${TMDB_IMAGE_BASE}/${BACKDROP_SIZE}${data.backdrop_path}`
-    : poster;
   const trailerKey = getTrailerYoutubeKey(data);
   const trailerUrl = trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null;
-  const trailerBackdrop = data.backdrop_path
-    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.backdrop_path}`
-    : poster;
+  const trailerBackdrop = backdropPath
+    ? `${TMDB_IMAGE_BASE}/${BACKDROP_SIZE}${backdropPath}`
+    : null;
   const voteDisplay = formatVoteDisplay(data.vote_average);
   const certification = fetched?.certification ?? null;
   const durationLabel =
