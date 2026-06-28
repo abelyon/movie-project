@@ -162,7 +162,7 @@ class TmdbController extends Controller
 
         $json = $response->json();
         $payload = is_array($json) ? $json : [];
-        $cert = $this->resolveMovieCertification($payload, $region, []);
+        $cert = $this->extractMovieCertificationFromReleaseDates($payload, $region);
 
         return response()->json([
             'watch_region' => $region,
@@ -192,7 +192,7 @@ class TmdbController extends Controller
 
         $json = $response->json();
         $payload = is_array($json) ? $json : [];
-        $cert = $this->resolveTvCertification($payload, $region, []);
+        $cert = $this->extractTvCertificationFromContentRatings($payload, $region);
 
         return response()->json([
             'watch_region' => $region,
@@ -216,76 +216,6 @@ class TmdbController extends Controller
             $rating = trim((string) ($row['rating'] ?? ''));
             if ($rating !== '') {
                 return $rating;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  list<string|array{iso_3166_1?: string}>  $originCountries
-     * @return list<string>
-     */
-    private function certificationRegionPriority(string $primary, array $originCountries): array
-    {
-        $regions = [];
-        $add = function (string $code) use (&$regions): void {
-            $code = strtoupper(trim($code));
-            if (strlen($code) !== 2 || in_array($code, $regions, true)) {
-                return;
-            }
-            $regions[] = $code;
-        };
-
-        $add($primary);
-        foreach ($originCountries as $country) {
-            if (is_string($country)) {
-                $add($country);
-            } elseif (is_array($country)) {
-                $add((string) ($country['iso_3166_1'] ?? ''));
-            }
-        }
-        foreach (['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'HU', 'KR', 'JP'] as $fallback) {
-            $add($fallback);
-        }
-
-        return $regions;
-    }
-
-    /**
-     * @param  list<string|array{iso_3166_1?: string}>  $originCountries
-     */
-    private function resolveTvCertification(array $payload, string $region, array $originCountries): ?string
-    {
-        foreach ($this->certificationRegionPriority($region, $originCountries) as $candidate) {
-            $cert = $this->extractTvCertificationFromContentRatings($payload, $candidate);
-            if ($cert !== null) {
-                return $cert;
-            }
-        }
-
-        foreach ($payload['results'] ?? [] as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            $rating = trim((string) ($row['rating'] ?? ''));
-            if ($rating !== '') {
-                return $rating;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  list<string|array{iso_3166_1?: string}>  $originCountries
-     */
-    private function resolveMovieCertification(array $payload, string $region, array $originCountries): ?string
-    {
-        foreach ($this->certificationRegionPriority($region, $originCountries) as $candidate) {
-            $cert = $this->extractMovieCertificationFromReleaseDates($payload, $candidate);
-            if ($cert !== null) {
-                return $cert;
             }
         }
 
@@ -461,11 +391,8 @@ class TmdbController extends Controller
         $json['watch_providers'] = $watchProviders;
         $releaseDates = $json['release_dates'] ?? null;
         unset($json['release_dates']);
-        $productionCountries = is_array($json['production_countries'] ?? null)
-            ? $json['production_countries']
-            : [];
         $json['certification'] = is_array($releaseDates)
-            ? $this->resolveMovieCertification($releaseDates, $region, $productionCountries)
+            ? $this->extractMovieCertificationFromReleaseDates($releaseDates, $region)
             : null;
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
@@ -502,11 +429,8 @@ class TmdbController extends Controller
         $json['watch_providers'] = $watchProviders;
         $contentRatings = $json['content_ratings'] ?? null;
         unset($json['content_ratings']);
-        $originCountries = is_array($json['origin_country'] ?? null)
-            ? $json['origin_country']
-            : [];
         $json['certification'] = is_array($contentRatings)
-            ? $this->resolveTvCertification($contentRatings, $region, $originCountries)
+            ? $this->extractTvCertificationFromContentRatings($contentRatings, $region)
             : null;
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);

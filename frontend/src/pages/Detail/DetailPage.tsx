@@ -511,7 +511,7 @@ const DetailPage = () => {
               <section className="flex flex-col gap-3">
                 <SectionHeader title="Synopsis" emphasized />
                 <p
-                  className={`font-space-grotesk font-bold leading-relaxed text-neutral-200 ${
+                  className={`font-space-grotesk font-medium leading-relaxed text-neutral-300 ${
                     synopsisExpanded ? "" : "line-clamp-3"
                   } ${!synopsisExpanded ? "cursor-pointer" : ""}`}
                   onDoubleClick={() => setSynopsisExpanded((prev) => !prev)}
@@ -604,7 +604,7 @@ const DetailPage = () => {
               </div>
             ) : data.overview ? (
               <p
-                className={`font-space-grotesk font-bold leading-relaxed text-neutral-200 ${
+                className={`font-space-grotesk font-medium leading-relaxed text-neutral-300 ${
                   synopsisExpanded ? "" : "line-clamp-3"
                 } ${!synopsisExpanded ? "cursor-pointer" : ""}`}
                 onDoubleClick={() => setSynopsisExpanded((prev) => !prev)}
