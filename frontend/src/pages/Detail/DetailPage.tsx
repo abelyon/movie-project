@@ -268,19 +268,17 @@ const DetailPage = () => {
   }, [data]);
 
   const wantChips = useMemo(() => {
-    const ids = whoWants.data?.want_user_ids ?? [];
+    const ids = whoWants.data?.want_friend_user_ids ?? [];
     const friendNameById = new Map<number, string>();
     for (const friend of friendsOverview.data?.friends ?? []) {
       friendNameById.set(friend.id, friend.name);
     }
     return ids.map((userId) => {
-      const isSelf = user && userId === user.id;
       const friendName = friendNameById.get(userId);
-      const displayName = isSelf ? "You" : friendName ?? `User ${userId}`;
-      const initialFrom = isSelf ? (user.name?.trim() || "You") : friendName ?? `User ${userId}`;
-      return { userId, displayName, initialFrom };
+      const displayName = friendName ?? `User ${userId}`;
+      return { userId, displayName, initialFrom: displayName };
     });
-  }, [whoWants.data?.want_user_ids, friendsOverview.data?.friends, user]);
+  }, [whoWants.data?.want_friend_user_ids, friendsOverview.data?.friends]);
 
   if (!media_type || !id)
     return <div className="p-5 text-neutral-400">Invalid route</div>;
@@ -426,7 +424,7 @@ const DetailPage = () => {
               {visibleFriendChips.map(({ userId, initialFrom }, index) => (
                 <div
                   key={userId}
-                  className="relative flex size-[41px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 p-2.5"
+                  className="relative flex size-[52px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 p-2.5"
                   style={{
                     backgroundColor: FRIEND_CHIP_COLORS[index % FRIEND_CHIP_COLORS.length],
                     marginRight: index < visibleFriendChips.length - 1 || overflowFriendCount > 0 ? -4 : 0,
@@ -434,17 +432,17 @@ const DetailPage = () => {
                   }}
                   title={initialFrom}
                 >
-                  <span className="font-space-grotesk text-[11px] font-bold leading-none text-white">
+                  <span className="font-space-grotesk text-sm font-bold leading-none text-white">
                     {userInitials(initialFrom)}
                   </span>
                 </div>
               ))}
               {overflowFriendCount > 0 ? (
                 <div
-                  className="relative z-0 flex size-[41px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800 p-2.5"
+                  className="relative z-0 flex size-[52px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800 p-2.5"
                   title={`${overflowFriendCount} more`}
                 >
-                  <span className="font-space-grotesk text-[11px] font-bold leading-none text-neutral-300">
+                  <span className="font-space-grotesk text-sm font-bold leading-none text-neutral-300">
                     +{overflowFriendCount}
                   </span>
                 </div>
