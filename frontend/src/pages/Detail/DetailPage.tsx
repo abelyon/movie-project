@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
@@ -130,13 +130,19 @@ const genrePillClass =
 function SectionHeader({
   title,
   action,
+  emphasized = false,
 }: {
   title: string;
   action?: React.ReactNode;
+  emphasized?: boolean;
 }) {
   return (
     <div className="flex w-full items-center justify-between">
-      <h2 className="font-space-grotesk text-2xl font-bold uppercase text-neutral-100">
+      <h2
+        className={`font-space-grotesk text-2xl uppercase text-neutral-100 ${
+          emphasized ? "font-extrabold" : "font-bold"
+        }`}
+      >
         {title}
       </h2>
       {action}
@@ -182,7 +188,7 @@ function CastPill({
           {person.name}
         </p>
         {person.character ? (
-          <p className="whitespace-nowrap font-space-grotesk text-sm text-neutral-400">
+          <p className="whitespace-nowrap font-space-grotesk text-sm font-bold text-neutral-400">
             {person.character}
           </p>
         ) : null}
@@ -343,9 +349,12 @@ const DetailPage = () => {
   const overflowFriendCount = Math.max(0, wantChips.length - MAX_VISIBLE_FRIEND_CHIPS);
   const cast = getCast(data);
   const providers = getUSProviders(data)?.flatrate ?? [];
+  const metadataParts = [date ? date.slice(0, 4) : null, certification, durationLabel].filter(
+    (part): part is string => Boolean(part),
+  );
 
   return (
-    <div className="overflow-hidden pb-28 text-white">
+    <div className="overflow-hidden text-white">
       <section className="relative h-[290px] w-full overflow-hidden">
         {heroImage ? (
           <img
@@ -387,14 +396,14 @@ const DetailPage = () => {
             <h1 className="font-space-grotesk text-[32px] font-bold uppercase leading-tight text-neutral-100">
               {title}
             </h1>
-            {(date || certification || durationLabel) && (
+            {(metadataParts.length > 0) && (
               <div className="flex items-center justify-center gap-5 font-space-grotesk text-xl font-bold text-neutral-300">
-                {date ? <span>{date.slice(0, 4)}</span> : null}
-                {date && (certification || durationLabel) ? <MetadataDot /> : null}
-                {certification ? <span>{certification}</span> : null}
-                {certification && durationLabel ? <MetadataDot /> : null}
-                {!certification && date && durationLabel ? <MetadataDot /> : null}
-                {durationLabel ? <span>{durationLabel}</span> : null}
+                {metadataParts.map((part, index) => (
+                  <Fragment key={`${part}-${index}`}>
+                    {index > 0 ? <MetadataDot /> : null}
+                    <span>{part}</span>
+                  </Fragment>
+                ))}
               </div>
             )}
           </motion.div>
@@ -424,7 +433,7 @@ const DetailPage = () => {
               {visibleFriendChips.map(({ userId, initialFrom }, index) => (
                 <div
                   key={userId}
-                  className="relative flex size-[52px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 p-2.5"
+                  className="relative flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900"
                   style={{
                     backgroundColor: FRIEND_CHIP_COLORS[index % FRIEND_CHIP_COLORS.length],
                     marginRight: index < visibleFriendChips.length - 1 || overflowFriendCount > 0 ? -4 : 0,
@@ -432,17 +441,17 @@ const DetailPage = () => {
                   }}
                   title={initialFrom}
                 >
-                  <span className="font-space-grotesk text-sm font-bold leading-none text-white">
+                  <span className="font-space-grotesk text-base font-extrabold leading-none tracking-wide text-white">
                     {userInitials(initialFrom)}
                   </span>
                 </div>
               ))}
               {overflowFriendCount > 0 ? (
                 <div
-                  className="relative z-0 flex size-[52px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800 p-2.5"
+                  className="relative z-0 flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800"
                   title={`${overflowFriendCount} more`}
                 >
-                  <span className="font-space-grotesk text-sm font-bold leading-none text-neutral-300">
+                  <span className="font-space-grotesk text-base font-extrabold leading-none tracking-wide text-neutral-300">
                     +{overflowFriendCount}
                   </span>
                 </div>
@@ -500,9 +509,9 @@ const DetailPage = () => {
 
             {data.overview && (
               <section className="flex flex-col gap-3">
-                <SectionHeader title="Synopsis" />
+                <SectionHeader title="Synopsis" emphasized />
                 <p
-                  className={`font-space-grotesk leading-relaxed text-neutral-200 ${
+                  className={`font-space-grotesk font-bold leading-relaxed text-neutral-200 ${
                     synopsisExpanded ? "" : "line-clamp-3"
                   } ${!synopsisExpanded ? "cursor-pointer" : ""}`}
                   onDoubleClick={() => setSynopsisExpanded((prev) => !prev)}
@@ -514,7 +523,7 @@ const DetailPage = () => {
             )}
 
             <section className="flex flex-col gap-3">
-              <SectionHeader title="Cast" />
+              <SectionHeader title="Cast" emphasized />
               {cast.length ? (
                 <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   <div className="flex gap-5 pb-1">
@@ -586,7 +595,7 @@ const DetailPage = () => {
 
         {isPreviewOnly && (data.overview || isFetching) && (
           <section className="flex flex-col gap-3">
-            <SectionHeader title="Synopsis" />
+            <SectionHeader title="Synopsis" emphasized />
             {isFetching ? (
               <div className="space-y-2" aria-hidden>
                 <div className="h-4 w-full rounded bg-neutral-800/70 animate-pulse" />
@@ -595,7 +604,7 @@ const DetailPage = () => {
               </div>
             ) : data.overview ? (
               <p
-                className={`font-space-grotesk leading-relaxed text-neutral-200 ${
+                className={`font-space-grotesk font-bold leading-relaxed text-neutral-200 ${
                   synopsisExpanded ? "" : "line-clamp-3"
                 } ${!synopsisExpanded ? "cursor-pointer" : ""}`}
                 onDoubleClick={() => setSynopsisExpanded((prev) => !prev)}
