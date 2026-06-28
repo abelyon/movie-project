@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateActio
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { fetchCertificationsList } from "../api/tmdb";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
@@ -87,14 +86,12 @@ export type MainLayoutOutletContext = {
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
     selectedWatchProviderIds: number[];
-    certification: string;
     watchRegion: string;
     setFilterType: (value: FilterType) => void;
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
     setSelectedWatchProviderIds: Dispatch<SetStateAction<number[]>>;
-    setCertification: (value: string) => void;
   };
   savedControls: {
     sortBy: SortKind;
@@ -104,7 +101,6 @@ export type MainLayoutOutletContext = {
     watchedFilter: WatchFilter;
     favoriteFilter: FavoriteFilter;
     yearFrom: string;
-    certification: string;
     watchRegion: string;
     selectedFriendIds: number[];
     showFriendsSocial: boolean;
@@ -113,7 +109,6 @@ export type MainLayoutOutletContext = {
     setSelectedGenreIds: Dispatch<SetStateAction<number[]>>;
     setMinRating: (value: MinRating) => void;
     setYearFrom: (value: string) => void;
-    setCertification: (value: string) => void;
   };
 };
 
@@ -135,7 +130,6 @@ const MainLayout = () => {
   const [dYearFrom, setDYearFrom] = useState("");
   const [dQuery, setDQuery] = useState("");
   const [dSelectedWatchProviderIds, setDSelectedWatchProviderIds] = useState<number[]>([]);
-  const [dCertification, setDCertification] = useState("");
   const dSearchInputRef = useRef<HTMLInputElement>(null);
 
   const [sShowFriends, setSShowFriends] = useState(false);
@@ -148,7 +142,6 @@ const MainLayout = () => {
   const [sWatchedFilter, setSWatchedFilter] = useState<WatchFilter>("all");
   const [sFavoriteFilter, setSFavoriteFilter] = useState<FavoriteFilter>("all");
   const [sYearFrom, setSYearFrom] = useState("");
-  const [sCertification, setSCertification] = useState("");
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
   const [showFriendsSocial, setShowFriendsSocial] = useState(false);
 
@@ -156,29 +149,6 @@ const MainLayout = () => {
     user?.country_code && user.country_code.length === 2
       ? user.country_code.toUpperCase()
       : "US";
-
-  const filterPanelOpenForCatalog =
-    Boolean(user) && ((isDiscovery && dShowFilter) || (isSaved && sShowFilter));
-  const filterTypeForCerts = isDiscovery ? dFilterType : sFilterType;
-  const certListType = filterTypeForCerts === "tv" ? "tv" : "movie";
-
-  const certificationsCatalog = useQuery({
-    queryKey: ["catalog", "certifications", certListType, watchRegion],
-    queryFn: () => fetchCertificationsList(certListType, watchRegion),
-    enabled: filterPanelOpenForCatalog && watchRegion.length === 2,
-    staleTime: 24 * 60 * 60 * 1000,
-  });
-
-  const certOptionsForRegion = useMemo(() => {
-    const raw = certificationsCatalog.data?.certifications?.[watchRegion];
-    if (!raw?.length) return [];
-    return [...raw]
-      .sort((a, b) => a.order - b.order)
-      .map((c) => ({
-        value: c.certification,
-        label: c.meaning ? `${c.certification} — ${c.meaning}` : c.certification,
-      }));
-  }, [certificationsCatalog.data, watchRegion]);
 
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
@@ -238,14 +208,12 @@ const hasModalBackdrop =
         favoriteFilter: dFavoriteFilter,
         yearFrom: dYearFrom,
         selectedWatchProviderIds: dSelectedWatchProviderIds,
-        certification: dCertification,
         watchRegion,
         setFilterType: setDFilterType,
         setSelectedGenreIds: setDSelectedGenreIds,
         setMinRating: setDMinRating,
         setYearFrom: setDYearFrom,
         setSelectedWatchProviderIds: setDSelectedWatchProviderIds,
-        setCertification: setDCertification,
       },
       savedControls: {
         sortBy: sSortBy,
@@ -255,7 +223,6 @@ const hasModalBackdrop =
         watchedFilter: sWatchedFilter,
         favoriteFilter: sFavoriteFilter,
         yearFrom: sYearFrom,
-        certification: sCertification,
         watchRegion,
         selectedFriendIds,
         showFriendsSocial,
@@ -264,14 +231,12 @@ const hasModalBackdrop =
         setSelectedGenreIds: setSSelectedGenreIds,
         setMinRating: setSMinRating,
         setYearFrom: setSYearFrom,
-        setCertification: setSCertification,
       },
     }),
     [
       dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
-      dSelectedWatchProviderIds, dCertification, watchRegion,
+      dSelectedWatchProviderIds, watchRegion,
       sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom,
-      sCertification,
       selectedFriendIds, showFriendsSocial,
     ],
   );
@@ -412,35 +377,6 @@ const hasModalBackdrop =
                         </select>
                       </div>
                     </div>
-                    <div className={`mt-3 ${dShowSearch ? "pointer-events-none opacity-45" : ""}`}>
-                      <label
-                        className="block px-1 text-xs uppercase tracking-wide text-neutral-400"
-                        htmlFor="discovery-layout-certification"
-                      >
-                        Content rating
-                      </label>
-                      <select
-                        id="discovery-layout-certification"
-                        value={dCertification}
-                        onChange={(e) => setDCertification(e.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                      >
-                        <option value="">Any rating</option>
-                        {certOptionsForRegion.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      {certificationsCatalog.isLoading && (
-                        <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
-                      )}
-                    </div>
-                    {dShowSearch && (
-                      <p className="mt-2 px-1 text-xs text-amber-200/90">
-                        Content rating applies to the Discovery grid, not while search is open.
-                      </p>
-                    )}
                     <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {(dFilterType === "tv" ? TV_GENRES : dFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -468,7 +404,6 @@ const hasModalBackdrop =
                           setDYearFrom("");
                           setDSelectedGenreIds([]);
                           setDSelectedWatchProviderIds([]);
-                          setDCertification("");
                         }}
                         className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
                       >
@@ -488,7 +423,7 @@ const hasModalBackdrop =
               <button
                 type="button"
                 onClick={() => { setDShowFilter((prev) => !prev); setDShowSort(false); setDShowSearch(false); }}
-                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "unwatched" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 || dCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
+                className={`${floatingActionButtonBaseClass} ${dFilterType !== "all" || dMinRating !== 0 || dWatchedFilter !== "unwatched" || dFavoriteFilter !== "all" || dYearFrom.trim() !== "" || dSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
               >
                 <AnimatedNavIcon>
                   <Filter size={24} strokeWidth={2.5} />
@@ -612,30 +547,6 @@ const hasModalBackdrop =
                       </select>
                     </div>
                   </div>
-                  <div className="mt-3">
-                    <label
-                      className="block px-1 text-xs uppercase tracking-wide text-neutral-400"
-                      htmlFor="saved-layout-certification"
-                    >
-                      Content rating
-                    </label>
-                    <select
-                      id="saved-layout-certification"
-                      value={sCertification}
-                      onChange={(e) => setSCertification(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-neutral-600 bg-neutral-900/70 px-3 py-2 text-sm text-neutral-100 outline-none"
-                    >
-                      <option value="">Any rating</option>
-                      {certOptionsForRegion.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    {certificationsCatalog.isLoading && (
-                      <p className="mt-1 px-1 text-xs text-neutral-500">Loading ratings…</p>
-                    )}
-                  </div>
                   <p className="mt-3 px-1 text-xs uppercase tracking-wide text-neutral-400">Genres</p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {(sFilterType === "tv" ? TV_GENRES : sFilterType === "movie" ? MOVIE_GENRES : ALL_GENRES).map((genre) => {
@@ -657,7 +568,6 @@ const hasModalBackdrop =
                         setSFavoriteFilter("all");
                         setSYearFrom("");
                         setSSelectedGenreIds([]);
-                        setSCertification("");
                       }}
                       className="w-full rounded-2xl border border-neutral-600 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-700/60"
                     >
@@ -674,7 +584,7 @@ const hasModalBackdrop =
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 || sCertification !== "" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>
                 <Filter size={24} strokeWidth={2.5} />
               </AnimatedNavIcon>

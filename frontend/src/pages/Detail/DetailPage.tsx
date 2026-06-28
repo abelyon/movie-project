@@ -331,7 +331,6 @@ const DetailPage = () => {
     ? `${TMDB_IMAGE_BASE}/${BACKDROP_SIZE}${backdropPath}`
     : null;
   const voteDisplay = formatVoteDisplay(data.vote_average);
-  const certification = fetched?.certification ?? null;
   const durationLabel =
     media_type === "movie" && runtime != null && runtime > 0
       ? formatRuntimeMinutes(runtime)
@@ -349,7 +348,7 @@ const DetailPage = () => {
   const overflowFriendCount = Math.max(0, wantChips.length - MAX_VISIBLE_FRIEND_CHIPS);
   const cast = getCast(data);
   const providers = getUSProviders(data)?.flatrate ?? [];
-  const metadataParts = [date ? date.slice(0, 4) : null, certification, durationLabel].filter(
+  const metadataParts = [date ? date.slice(0, 4) : null, durationLabel].filter(
     (part): part is string => Boolean(part),
   );
 
@@ -417,12 +416,14 @@ const DetailPage = () => {
         transition={enterFast}
       >
         {Boolean(data.genres?.length) && (
-          <div className="flex flex-wrap items-center justify-center gap-5">
-            {(data.genres ?? []).map((genre) => (
-              <span key={genre.id} className={genrePillClass}>
-                {genre.name}
-              </span>
-            ))}
+          <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mx-auto flex w-max items-center gap-5 pb-1">
+              {(data.genres ?? []).map((genre) => (
+                <span key={genre.id} className={genrePillClass}>
+                  {genre.name}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

@@ -9,8 +9,6 @@ function buildParams(
   opts: {
     watchRegion: string;
     watchProviderIds: number[];
-    certification: string;
-    applyCertification: boolean;
     selectedGenreIds: number[];
     minRating: MinRating;
     yearFrom: string;
@@ -39,10 +37,6 @@ function buildParams(
     params.watch_region = opts.watchRegion;
     params.with_watch_providers = opts.watchProviderIds.join("|");
   }
-  if (opts.certification && opts.applyCertification) {
-    params.certification_country = opts.watchRegion;
-    params.certification = opts.certification;
-  }
   return params;
 }
 
@@ -53,7 +47,6 @@ export function useInfiniteRegionalDiscover(options: {
   filterType: FilterType;
   watchRegion: string;
   watchProviderIds: number[];
-  certification: string;
   selectedGenreIds: number[];
   minRating: MinRating;
   yearFrom: string;
@@ -63,16 +56,10 @@ export function useInfiniteRegionalDiscover(options: {
     filterType,
     watchRegion,
     watchProviderIds,
-    certification,
     selectedGenreIds,
     minRating,
     yearFrom,
   } = options;
-
-  const applyCertMovie =
-    certification !== "" && (filterType === "movie" || filterType === "all");
-  const applyCertTv =
-    certification !== "" && (filterType === "tv" || filterType === "all");
 
   const providerKey = [...watchProviderIds].sort((a, b) => a - b).join("|");
 
@@ -82,7 +69,6 @@ export function useInfiniteRegionalDiscover(options: {
       filterType,
       watchRegion,
       providerKey,
-      certification,
       [...selectedGenreIds].sort((a, b) => a - b).join(","),
       minRating,
       yearFrom.trim(),
@@ -95,8 +81,6 @@ export function useInfiniteRegionalDiscover(options: {
           buildParams(page, "movie", {
             watchRegion,
             watchProviderIds,
-            certification,
-            applyCertification: applyCertMovie,
             selectedGenreIds,
             minRating,
             yearFrom,
@@ -111,8 +95,6 @@ export function useInfiniteRegionalDiscover(options: {
           buildParams(page, "tv", {
             watchRegion,
             watchProviderIds,
-            certification,
-            applyCertification: applyCertTv,
             selectedGenreIds,
             minRating,
             yearFrom,
@@ -128,8 +110,6 @@ export function useInfiniteRegionalDiscover(options: {
           buildParams(page, "movie", {
             watchRegion,
             watchProviderIds,
-            certification,
-            applyCertification: applyCertMovie,
             selectedGenreIds,
             minRating,
             yearFrom,
@@ -140,8 +120,6 @@ export function useInfiniteRegionalDiscover(options: {
           buildParams(page, "tv", {
             watchRegion,
             watchProviderIds,
-            certification,
-            applyCertification: applyCertTv,
             selectedGenreIds,
             minRating,
             yearFrom,

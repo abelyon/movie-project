@@ -43,14 +43,12 @@ const DiscoveryPage = () => {
     favoriteFilter: "all" as const,
     yearFrom: "",
     selectedWatchProviderIds: [] as number[],
-    certification: "",
     watchRegion: "US",
     setFilterType: () => {},
     setSelectedGenreIds: () => {},
     setMinRating: () => {},
     setYearFrom: () => {},
     setSelectedWatchProviderIds: () => {},
-    setCertification: () => {},
   };
   const {
     showSearch,
@@ -63,19 +61,17 @@ const DiscoveryPage = () => {
     favoriteFilter,
     yearFrom,
     selectedWatchProviderIds,
-    certification,
     watchRegion,
   } = discoveryControls;
   const useRegionalBrowse =
     !showSearch &&
-    (selectedWatchProviderIds.length > 0 || certification !== "");
+    selectedWatchProviderIds.length > 0;
   const trendingQuery = useInfiniteTrending({ enabled: !useRegionalBrowse });
   const regionalQuery = useInfiniteRegionalDiscover({
     enabled: useRegionalBrowse,
     filterType,
     watchRegion,
     watchProviderIds: selectedWatchProviderIds,
-    certification,
     selectedGenreIds,
     minRating,
     yearFrom,

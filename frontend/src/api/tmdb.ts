@@ -30,8 +30,6 @@ export type DiscoverQueryParams = {
   person_id?: number;
   watch_region?: string;
   with_watch_providers?: string;
-  certification?: string;
-  certification_country?: string;
   with_genres?: string;
   "vote_average.gte"?: number;
   "vote_count.gte"?: number;
@@ -138,7 +136,6 @@ export type MovieDetail = {
   runtime?: number;
   trailer_youtube_key?: string | null;
   recommendations?: MediaItem[];
-  certification?: string | null;
   media_type: "movie";
 };
 export type TvDetail = {
@@ -177,7 +174,6 @@ export type TvDetail = {
   number_of_seasons?: number;
   trailer_youtube_key?: string | null;
   recommendations?: MediaItem[];
-  certification?: string | null;
   media_type: "tv";
 };
 
@@ -222,26 +218,6 @@ export async function fetchWatchProvidersCatalog(params: {
   return data;
 }
 
-export type CertificationEntry = {
-  certification: string;
-  meaning: string;
-  order: number;
-};
-
-export type CertificationsListResponse = {
-  certifications: Record<string, CertificationEntry[]>;
-};
-
-export async function fetchCertificationsList(
-  type: "movie" | "tv",
-  watch_region: string,
-): Promise<CertificationsListResponse> {
-  const { data } = await api.get<CertificationsListResponse>(`/catalog/certifications/${type}`, {
-    params: { watch_region },
-  });
-  return data;
-}
-
 export async function fetchMediaWatchProviderIds(
   mediaType: "movie" | "tv",
   id: number,
@@ -252,17 +228,4 @@ export async function fetchMediaWatchProviderIds(
     params: { watch_region },
   });
   return data.provider_ids ?? [];
-}
-
-export async function fetchMediaCertification(
-  mediaType: "movie" | "tv",
-  id: number,
-  watch_region: string,
-): Promise<string | null> {
-  const path =
-    mediaType === "movie" ? `/movie/${id}/certification` : `/tv/${id}/certification`;
-  const { data } = await api.get<{ certification: string | null }>(path, {
-    params: { watch_region },
-  });
-  return data.certification ?? null;
 }

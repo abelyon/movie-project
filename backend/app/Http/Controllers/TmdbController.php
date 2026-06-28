@@ -5,16 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Tmdb;
 use App\Http\Requests\StoreTmdbRequest;
 use App\Http\Requests\UpdateTmdbRequest;
-use App\Services\JustWatchClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 
 class TmdbController extends Controller
 {
-    public function __construct(private readonly JustWatchClient $justWatch)
-    {
-    }
-
     public function discover(Request $request, $type)
     {
         $apiKey = config('services.tmdb.api_key');
@@ -49,8 +44,6 @@ class TmdbController extends Controller
         $forwardKeys = [
             'watch_region',
             'with_watch_providers',
-            'certification',
-            'certification_country',
             'with_genres',
             'vote_average.gte',
             'vote_count.gte',
@@ -114,26 +107,6 @@ class TmdbController extends Controller
         ]);
     }
 
-    public function certifications(Request $request, string $type)
-    {
-        if (!in_array($type, ['movie', 'tv'], true)) {
-            return response()->json(['message' => 'Invalid type.'], 400);
-        }
-
-        $region = strtoupper((string) $request->query('watch_region', 'US'));
-        if (strlen($region) !== 2) {
-            return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
-        }
-
-        $entries = $this->justWatch->certificationsForCountry($region, $type);
-
-        return response()->json([
-            'certifications' => [
-                $region => $entries,
-            ],
-        ], 200);
-    }
-
     public function movieWatchProviders(Request $request, int $id)
     {
         return $this->mediaWatchProviders($request, 'movie', $id);
@@ -142,106 +115,6 @@ class TmdbController extends Controller
     public function tvWatchProviders(Request $request, int $id)
     {
         return $this->mediaWatchProviders($request, 'tv', $id);
-    }
-
-    public function movieCertification(Request $request, int $id)
-    {
-        $region = strtoupper((string) $request->query('watch_region', 'US'));
-        if (strlen($region) !== 2) {
-            return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
-        }
-
-        $cert = $this->resolveJustWatchCertification('movie', $id, $region);
-
-        return response()->json([
-            'watch_region' => $region,
-            'certification' => $cert,
-        ], 200);
-    }
-
-    public function tvCertification(Request $request, int $id)
-    {
-        $region = strtoupper((string) $request->query('watch_region', 'US'));
-        if (strlen($region) !== 2) {
-            return response()->json(['message' => 'watch_region must be a 2-letter ISO code.'], 400);
-        }
-
-        $cert = $this->resolveJustWatchCertification('tv', $id, $region);
-
-        return response()->json([
-            'watch_region' => $region,
-            'certification' => $cert,
-        ], 200);
-    }
-
-    /**
-     * @param  array<string, mixed>  $tmdbPayload
-     */
-    private function resolveJustWatchCertification(
-        string $mediaType,
-        int $tmdbId,
-        string $region,
-        array $tmdbPayload = [],
-    ): ?string {
-        [$title, $alternateTitle] = $this->titlesForJustWatchLookup($mediaType, $tmdbPayload);
-        if ($title === '' && $alternateTitle === '') {
-            $tmdbPayload = $this->fetchTmdbTitlePayload($mediaType, $tmdbId);
-            [$title, $alternateTitle] = $this->titlesForJustWatchLookup($mediaType, $tmdbPayload);
-        }
-
-        if ($title === '' && $alternateTitle === '') {
-            return null;
-        }
-
-        return $this->justWatch->ageCertificationForTmdbTitle(
-            $region,
-            $mediaType,
-            $tmdbId,
-            $title !== '' ? $title : $alternateTitle,
-            $alternateTitle !== '' ? $alternateTitle : null,
-        );
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     * @return array{0: string, 1: string}
-     */
-    private function titlesForJustWatchLookup(string $mediaType, array $payload): array
-    {
-        if ($mediaType === 'tv') {
-            return [
-                trim((string) ($payload['name'] ?? '')),
-                trim((string) ($payload['original_name'] ?? '')),
-            ];
-        }
-
-        return [
-            trim((string) ($payload['title'] ?? '')),
-            trim((string) ($payload['original_title'] ?? '')),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function fetchTmdbTitlePayload(string $mediaType, int $tmdbId): array
-    {
-        $apiKey = config('services.tmdb.api_key');
-        if ($apiKey === null || $apiKey === '') {
-            return [];
-        }
-
-        $response = Http::acceptJson()->get("{$this->tmdbBaseUrl()}/{$mediaType}/{$tmdbId}", [
-            'api_key' => $apiKey,
-        ]);
-
-        if ($response->failed()) {
-            return [];
-        }
-
-        $json = $response->json();
-
-        return is_array($json) ? $json : [];
     }
 
     private function mediaWatchProviders(Request $request, string $type, int $id)
@@ -370,7 +243,6 @@ class TmdbController extends Controller
         $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
         unset($json['watch/providers']);
         $json['watch_providers'] = $watchProviders;
-        $json['certification'] = $this->resolveJustWatchCertification('movie', $mid, $region, $json);
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
         $videos = $json['videos'] ?? null;
@@ -404,7 +276,6 @@ class TmdbController extends Controller
         $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
         unset($json['watch/providers']);
         $json['watch_providers'] = $watchProviders;
-        $json['certification'] = $this->resolveJustWatchCertification('tv', $tid, $region, $json);
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
         $videos = $json['videos'] ?? null;
