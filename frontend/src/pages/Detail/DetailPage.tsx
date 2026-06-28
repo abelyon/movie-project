@@ -468,9 +468,9 @@ const DetailPage = () => {
 
         {!isPreviewOnly && (
           <>
-            {providers.length > 0 && (
-              <section className="flex flex-col gap-3">
-                <SectionHeader title="Streaming" />
+            <section className="flex flex-col gap-3">
+              <SectionHeader title="Streaming" />
+              {providers.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {providers.slice(0, 8).map((provider) => {
                     const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
@@ -510,8 +510,12 @@ const DetailPage = () => {
                     );
                   })}
                 </div>
-              </section>
-            )}
+              ) : (
+                <p className="font-space-grotesk text-sm font-medium text-neutral-400">
+                  Not available on any platform.
+                </p>
+              )}
+            </section>
 
             {data.overview && (
               <section className="flex flex-col gap-3">
