@@ -163,9 +163,9 @@ const MainLayout = () => {
   const certListType = filterTypeForCerts === "tv" ? "tv" : "movie";
 
   const certificationsCatalog = useQuery({
-    queryKey: ["catalog", "certifications", certListType],
-    queryFn: () => fetchCertificationsList(certListType),
-    enabled: filterPanelOpenForCatalog,
+    queryKey: ["catalog", "certifications", certListType, watchRegion],
+    queryFn: () => fetchCertificationsList(certListType, watchRegion),
+    enabled: filterPanelOpenForCatalog && watchRegion.length === 2,
     staleTime: 24 * 60 * 60 * 1000,
   });
 

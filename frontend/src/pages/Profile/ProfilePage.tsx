@@ -266,7 +266,7 @@ const ProfilePage = () => {
               <label className="block" htmlFor="profile-country">
                 <span className="text-xs text-neutral-500">Country / region</span>
                 <span className="mt-0.5 block text-[11px] text-neutral-600">
-                  Streaming services and content ratings in Discovery use this region (TMDB).
+                  Streaming services and content ratings in Discovery use this region (JustWatch).
                 </span>
                 <select
                   id="profile-country"

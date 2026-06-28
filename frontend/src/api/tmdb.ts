@@ -232,8 +232,13 @@ export type CertificationsListResponse = {
   certifications: Record<string, CertificationEntry[]>;
 };
 
-export async function fetchCertificationsList(type: "movie" | "tv"): Promise<CertificationsListResponse> {
-  const { data } = await api.get<CertificationsListResponse>(`/catalog/certifications/${type}`);
+export async function fetchCertificationsList(
+  type: "movie" | "tv",
+  watch_region: string,
+): Promise<CertificationsListResponse> {
+  const { data } = await api.get<CertificationsListResponse>(`/catalog/certifications/${type}`, {
+    params: { watch_region },
+  });
   return data;
 }
 
