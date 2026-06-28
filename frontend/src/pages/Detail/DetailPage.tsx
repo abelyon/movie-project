@@ -9,8 +9,24 @@ import {
   mediaItemFromDetail,
   useSavedList,
 } from "../../hooks/useMedia";
-import type { MediaDetail, MovieDetail, TvDetail } from "../../api/tmdb";
-import { ArrowLeft, Bookmark, Clapperboard, Eye, Heart, Play, ThumbsDown, ThumbsUp, Tv } from "lucide-react";
+import {
+  fetchMediaCertification,
+  type MediaDetail,
+  type MovieDetail,
+  type TvDetail,
+} from "../../api/tmdb";
+import {
+  ArrowLeft,
+  Bookmark,
+  Clapperboard,
+  Eye,
+  Heart,
+  MoreHorizontal,
+  Play,
+  ThumbsDown,
+  ThumbsUp,
+  Tv,
+} from "lucide-react";
 import type { MediaItem } from "../../api/types";
 import { previewItemToDetail } from "../../utils/detailPreview";
 import { providerMediaBrowseUrl } from "../../utils/streamingProviderLinks";
@@ -18,13 +34,24 @@ import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
 import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
-import { WatchTogetherUserStack } from "../../components/WatchTogetherUserStack";
 import MediaCard from "../Discovery/MediaCard";
-import PeopleCard from "../Discovery/PeopleCard";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const POSTER_SIZE = "w780";
+const BACKDROP_SIZE = "w1280";
+const PROFILE_SIZE = "w185";
 const PROVIDER_LOGO_SIZE = "w92";
+
+const FRIEND_CHIP_COLORS = [
+  "#fb2c36",
+  "#00c950",
+  "#ad46ff",
+  "#2b7fff",
+  "#f0b100",
+  "#ff6900",
+] as const;
+
+const MAX_VISIBLE_FRIEND_CHIPS = 9;
 
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
   mediaType === "movie"
@@ -47,16 +74,16 @@ const formatRuntimeMinutes = (minutes: number): string => {
   if (minutes <= 0) return "";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h > 0 && m > 0) return `${h}H ${m}M`;
-  if (h > 0) return `${h}H`;
-  return `${m}M`;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
 };
 
 const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undefined => {
   if (mediaType !== "tv") return undefined;
   const seasons = (detail as TvDetail).number_of_seasons;
   return seasons != null && seasons > 0
-    ? `${seasons} Season${seasons === 1 ? "" : "s"}`
+    ? `${seasons} season${seasons === 1 ? "" : "s"}`
     : undefined;
 };
 
@@ -66,6 +93,7 @@ const getWatchProvidersPageUrl = (detail: MediaDetail): string | null => {
   const link = detail.watch_providers?.link;
   return typeof link === "string" && link.trim() !== "" ? link.trim() : null;
 };
+
 const getCast = (detail: MediaDetail) =>
   (detail.cast ?? []).slice(0, 12).filter((p) => p?.name);
 
@@ -75,73 +103,94 @@ const getTrailerYoutubeKey = (detail: MediaDetail): string | null | undefined =>
 const getRecommendations = (detail: MediaDetail): MediaItem[] =>
   Array.isArray(detail.recommendations) ? detail.recommendations : [];
 
+const formatVoteDisplay = (vote: number | null | undefined): string | null => {
+  if (vote == null || vote <= 0) return null;
+  return String(Math.round(vote * 10));
+};
+
+const userInitials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+  return [...name.trim()].slice(0, 2).join("").toUpperCase() || "?";
+};
+
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
 const enterFast = { duration: 0.22, ease } as const;
 
 const pill =
-  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600  backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
+  "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
 const actionButtonInactive = "text-neutral-400";
 const actionButtonActive = "text-neutral-100";
 
-function DetailPosterBlock({
-  poster,
+const heroBadgeClass =
+  "flex h-10 min-w-[60px] items-center justify-center rounded-[42px] border-t border-neutral-600 bg-neutral-800/80 px-4 py-2 backdrop-blur-md";
+
+const genrePillClass =
+  "flex h-10 shrink-0 items-center justify-center rounded-[26px] border-t border-neutral-600 bg-neutral-800/80 px-4 py-2 font-space-grotesk text-base font-bold text-neutral-300";
+
+function SectionHeader({
   title,
-  mediaType,
-  voteAverage,
+  action,
 }: {
-  poster: string;
   title: string;
-  mediaType: string;
-  voteAverage: number | null | undefined;
+  action?: React.ReactNode;
 }) {
-  const [imageLoaded, setImageLoaded] = useState(false);
+  return (
+    <div className="flex w-full items-center justify-between">
+      <h2 className="font-space-grotesk text-2xl font-bold uppercase text-neutral-100">
+        {title}
+      </h2>
+      {action}
+    </div>
+  );
+}
+
+function MetadataDot() {
+  return <span className="size-1 shrink-0 rounded-[2px] bg-neutral-300" aria-hidden />;
+}
+
+function CastPill({
+  person,
+  onSelect,
+}: {
+  person: {
+    id: number;
+    name: string;
+    character?: string;
+    profile_path?: string | null;
+  };
+  onSelect: () => void;
+}) {
+  const imageSrc = person.profile_path
+    ? `${TMDB_IMAGE_BASE}/${PROFILE_SIZE}${person.profile_path}`
+    : "https://placehold.co/180x180/262626/a3a3a3?text=?";
 
   return (
-    <motion.div
-      className="relative w-full"
-      initial={{ opacity: 0, x: -12 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={enterFast}
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex shrink-0 items-center gap-5 rounded-[30px] bg-neutral-800 pr-6 text-left transition hover:bg-neutral-700/80"
     >
-      <motion.div
-        className="absolute inset-0 rounded-4xl bg-neutral-800/90 overflow-hidden aspect-2/3 h-full"
-        animate={{ opacity: imageLoaded ? 0 : 1 }}
-        transition={{ duration: 0.2 }}
-        style={{ pointerEvents: "none" }}
-      >
-        <motion.div
-          className="absolute inset-0 bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
-          animate={{ x: ["-100%", "100%"] }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-          style={{ width: "60%", willChange: "transform" }}
-        />
-      </motion.div>
-      <motion.img
-        src={poster}
-        alt={title}
-        className="w-full h-50 object-cover rounded-4xl"
+      <img
+        src={imageSrc}
+        alt=""
+        className="size-[90px] shrink-0 rounded-l-[30px] object-cover"
+        loading="lazy"
         decoding="async"
-        fetchPriority="high"
-        onLoad={() => setImageLoaded(true)}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: imageLoaded ? 1 : 0 }}
-        transition={{ duration: 0.2 }}
       />
-      <div className="absolute top-0 left-0 p-4 flex justify-between w-full pointer-events-none">
-        <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100">
-          {mediaType === "movie" ? (
-            <Clapperboard size={16} strokeWidth={2.5} />
-          ) : (
-            <Tv size={16} strokeWidth={2.5} />
-          )}
-        </span>
-        {voteAverage != null && voteAverage > 0 && (
-          <span className="flex items-center h-8 bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md px-2.5 py-1.5 rounded-4xl text-neutral-100 font-space-grotesk font-medium text-sm">
-            {voteAverage.toFixed(1)}
-          </span>
-        )}
+      <div className="flex flex-col gap-2 py-2">
+        <p className="whitespace-nowrap font-space-grotesk text-base font-bold text-neutral-100">
+          {person.name}
+        </p>
+        {person.character ? (
+          <p className="whitespace-nowrap font-space-grotesk text-sm text-neutral-400">
+            {person.character}
+          </p>
+        ) : null}
       </div>
-    </motion.div>
+    </button>
   );
 }
 
@@ -153,6 +202,12 @@ const DetailPage = () => {
   const location = useLocation();
   const { media_type, id } = useParams<{ media_type: string; id: string }>();
   const numericId = id ? parseInt(id, 10) : NaN;
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+
+  const watchRegion =
+    user?.country_code && user.country_code.length === 2
+      ? user.country_code.toUpperCase()
+      : "US";
 
   const previewFromNav = (location.state as DetailLocationState | null)?.preview;
   const previewDetail =
@@ -170,6 +225,8 @@ const DetailPage = () => {
   );
   const data = fetched ?? previewDetail;
   const showSkeleton = isPending && !data;
+  const isPreviewOnly = !fetched && !!previewDetail;
+
   const { data: userState } = useMediaState(
     Number.isNaN(numericId) ? undefined : numericId,
     media_type,
@@ -183,10 +240,12 @@ const DetailPage = () => {
     media_type === "tv" ? "tv" : "movie",
     savedListPreview,
   );
+
   const whoWantsEnabled =
     !!user &&
     !Number.isNaN(numericId) &&
     (media_type === "movie" || media_type === "tv");
+
   const whoWants = useQuery({
     queryKey: ["user", "media", "who-wants-to-watch", media_type, numericId],
     queryFn: () => getWhoWantsToWatch(numericId, media_type!),
@@ -198,6 +257,16 @@ const DetailPage = () => {
     queryFn: getFriendOverview,
     staleTime: 60_000,
     enabled: !!user,
+  });
+  const certificationQuery = useQuery({
+    queryKey: ["tmdb", "certification", media_type, numericId, watchRegion],
+    queryFn: () =>
+      fetchMediaCertification(media_type as "movie" | "tv", numericId, watchRegion),
+    enabled:
+      !isPreviewOnly &&
+      (media_type === "movie" || media_type === "tv") &&
+      !Number.isNaN(numericId),
+    staleTime: 30 * 60 * 1000,
   });
   const { data: savedList } = useSavedList();
   const savedSet = useMemo(
@@ -212,63 +281,6 @@ const DetailPage = () => {
     );
   }, [data]);
 
-  if (!media_type || !id)
-    return <div className="p-5 text-neutral-400">Invalid route</div>;
-  if (showSkeleton) {
-    return (
-      <div className="text-white overflow-hidden">
-        <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-          <div className="flex flex-col gap-6">
-            <div className="relative w-full">
-              <div className="w-full h-50 rounded-4xl bg-neutral-800/80 animate-pulse" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-3">
-                <div className="h-9 w-52 rounded-2xl bg-neutral-800/80 animate-pulse" />
-                <div className="h-7 w-16 rounded-2xl bg-neutral-800/80 animate-pulse" />
-              </div>
-              <div className="mt-4 flex gap-2">
-                <div className="h-7 w-24 rounded-4xl bg-neutral-800/80 animate-pulse" />
-                <div className="h-7 w-28 rounded-4xl bg-neutral-800/80 animate-pulse" />
-                <div className="h-7 w-20 rounded-4xl bg-neutral-800/80 animate-pulse" />
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="h-4 w-full rounded bg-neutral-800/80 animate-pulse" />
-                <div className="h-4 w-[95%] rounded bg-neutral-800/80 animate-pulse" />
-                <div className="h-4 w-[88%] rounded bg-neutral-800/80 animate-pulse" />
-                <div className="h-4 w-[92%] rounded bg-neutral-800/80 animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (isError && !data)
-    return <p className="p-5 text-red-400">Error: {error?.message}</p>;
-  if (!data) return null;
-
-  const title = getTitle(data, media_type);
-  const date = getDate(data, media_type);
-  const runtime = getRuntime(data, media_type);
-  const seasonsLabel = getSeasonsLabel(data, media_type);
-  const poster = data.poster_path
-    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.poster_path}`
-    : null;
-  const trailerKey = getTrailerYoutubeKey(data);
-  const trailerUrl = trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null;
-  const trailerBackdrop = data.backdrop_path
-    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.backdrop_path}`
-    : poster;
-  const isPreviewOnly = !fetched && !!previewDetail;
-
-  const isSaved = userState?.is_saved ?? false;
-  const isLiked = userState?.is_liked ?? false;
-  const isDisliked = userState?.is_disliked ?? false;
-  const isFavorited = userState?.is_favorited ?? false;
-  const isWatched = Boolean(userState?.watched_at);
-  const showWhoWantsToWatch =
-    (whoWants.data?.want_friend_user_ids?.length ?? 0) > 0;
   const wantChips = useMemo(() => {
     const ids = whoWants.data?.want_user_ids ?? [];
     const friendNameById = new Map<number, string>();
@@ -284,311 +296,377 @@ const DetailPage = () => {
     });
   }, [whoWants.data?.want_user_ids, friendsOverview.data?.friends, user]);
 
-  return (
-    <div className="text-white overflow-hidden">
-      <div className="relative z-10 mx-auto max-w-4xl px-5 py-8">
-        <div className="flex flex-col gap-6">
+  if (!media_type || !id)
+    return <div className="p-5 text-neutral-400">Invalid route</div>;
 
-          {poster && (
-            <DetailPosterBlock
-              key={`${media_type}-${numericId}`}
-              poster={poster}
-              title={title}
-              mediaType={media_type}
-              voteAverage={data.vote_average}
-            />
-          )}
+  if (showSkeleton) {
+    return (
+      <div className="overflow-hidden text-white">
+        <div className="h-[290px] animate-pulse bg-neutral-800/80" />
+        <div className="flex flex-col gap-9 px-5 py-9">
+          <div className="flex gap-5">
+            <div className="h-10 w-32 rounded-[26px] bg-neutral-800/80 animate-pulse" />
+            <div className="h-10 w-24 rounded-[26px] bg-neutral-800/80 animate-pulse" />
+          </div>
+          <div className="space-y-3">
+            <div className="h-7 w-28 rounded bg-neutral-800/80 animate-pulse" />
+            <div className="flex gap-2">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="size-[41px] rounded-full bg-neutral-800/80 animate-pulse" />
+              ))}
+            </div>
+          </div>
+          <div className="h-4 w-full rounded bg-neutral-800/80 animate-pulse" />
+          <div className="h-4 w-[92%] rounded bg-neutral-800/80 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError && !data)
+    return <p className="p-5 text-red-400">Error: {error?.message}</p>;
+  if (!data) return null;
+
+  const title = getTitle(data, media_type);
+  const date = getDate(data, media_type);
+  const runtime = getRuntime(data, media_type);
+  const seasonsLabel = getSeasonsLabel(data, media_type);
+  const poster = data.poster_path
+    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.poster_path}`
+    : null;
+  const heroImage = data.backdrop_path
+    ? `${TMDB_IMAGE_BASE}/${BACKDROP_SIZE}${data.backdrop_path}`
+    : poster;
+  const trailerKey = getTrailerYoutubeKey(data);
+  const trailerUrl = trailerKey ? `https://www.youtube.com/watch?v=${trailerKey}` : null;
+  const trailerBackdrop = data.backdrop_path
+    ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.backdrop_path}`
+    : poster;
+  const voteDisplay = formatVoteDisplay(data.vote_average);
+  const certification = certificationQuery.data;
+  const durationLabel =
+    media_type === "movie" && runtime != null && runtime > 0
+      ? formatRuntimeMinutes(runtime)
+      : media_type === "tv"
+        ? seasonsLabel
+        : undefined;
+
+  const isSaved = userState?.is_saved ?? false;
+  const isLiked = userState?.is_liked ?? false;
+  const isDisliked = userState?.is_disliked ?? false;
+  const isFavorited = userState?.is_favorited ?? false;
+  const isWatched = Boolean(userState?.watched_at);
+  const showFriendsSection = wantChips.length > 0;
+  const visibleFriendChips = wantChips.slice(0, MAX_VISIBLE_FRIEND_CHIPS);
+  const overflowFriendCount = Math.max(0, wantChips.length - MAX_VISIBLE_FRIEND_CHIPS);
+  const cast = getCast(data);
+  const providers = getUSProviders(data)?.flatrate ?? [];
+
+  return (
+    <div className="overflow-hidden pb-28 text-white">
+      <section className="relative h-[290px] w-full overflow-hidden">
+        {heroImage ? (
+          <img
+            src={heroImage}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            decoding="async"
+            fetchPriority="high"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-neutral-800" />
+        )}
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-neutral-500/0 via-neutral-900/20 to-neutral-900"
+          style={{ backgroundImage: "linear-gradient(to bottom, rgba(125,125,125,0) 0%, #171717 86.5%)" }}
+        />
+        <div className="relative z-10 flex h-full flex-col justify-between p-5">
+          <div className="flex items-center justify-between">
+            <span className={heroBadgeClass}>
+              {media_type === "movie" ? (
+                <Clapperboard size={20} strokeWidth={2.5} className="text-neutral-100" />
+              ) : (
+                <Tv size={20} strokeWidth={2.5} className="text-neutral-100" />
+              )}
+            </span>
+            {voteDisplay ? (
+              <span className={`${heroBadgeClass} font-space-grotesk text-xl font-bold text-neutral-100`}>
+                {voteDisplay}
+              </span>
+            ) : null}
+          </div>
 
           <motion.div
-            className="min-w-0 w-full"
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col items-center gap-2.5 text-center"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={enterFast}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-5">
-                <h1 className="wrap-break-word text-3xl font-space-grotesk font-bold">{title}</h1>
-              </div>
-              {date && (
-                <span className="text-xl font-space-grotesk font-bold text-neutral-400 shrink-0">
-                  {date.slice(0, 4)}
-                </span>
-              )}
-            </div>
-
-            {(Boolean(data.genres?.length) ||
-              Boolean(seasonsLabel) ||
-              (media_type === "movie" && runtime != null && runtime > 0)) && (
-              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-                {Boolean(data.genres?.length) && (
-                  <motion.p
-                    className="flex min-w-0 flex-1 flex-wrap gap-2"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                      hidden: {},
-                      visible: { transition: { staggerChildren: 0.03, delayChildren: 0 } },
-                    }}
-                  >
-                    {(data.genres ?? []).map((genre) => (
-                      <motion.span
-                        key={genre.id}
-                        className="text-sm font-space-grotesk font-medium text-neutral-400 bg-neutral-800/80 border-t border-neutral-600 px-3 py-1 rounded-4xl"
-                        variants={{
-                          hidden: { opacity: 0, y: 4 },
-                          visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease } },
-                        }}
-                      >
-                        {genre.name}
-                      </motion.span>
-                    ))}
-                  </motion.p>
-                )}
-                {((media_type === "movie" && runtime != null && runtime > 0) ||
-                  (media_type === "tv" && seasonsLabel)) && (
-                  <motion.span
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease }}
-                    className="shrink-0 text-base font-space-grotesk font-bold text-neutral-600"
-                  >
-                    {media_type === "movie" && runtime != null && runtime > 0
-                      ? formatRuntimeMinutes(runtime)
-                      : seasonsLabel}
-                  </motion.span>
-                )}
+            <h1 className="font-space-grotesk text-[32px] font-bold uppercase leading-tight text-neutral-100">
+              {title}
+            </h1>
+            {(date || certification || durationLabel) && (
+              <div className="flex items-center justify-center gap-5 font-space-grotesk text-xl font-bold text-neutral-300">
+                {date ? <span>{date.slice(0, 4)}</span> : null}
+                {date && (certification || durationLabel) ? <MetadataDot /> : null}
+                {certification ? <span>{certification}</span> : null}
+                {certification && durationLabel ? <MetadataDot /> : null}
+                {!certification && date && durationLabel ? <MetadataDot /> : null}
+                {durationLabel ? <span>{durationLabel}</span> : null}
               </div>
             )}
+          </motion.div>
+        </div>
+      </section>
 
-            {isPreviewOnly && isFetching ? (
-              <div className="mt-4 space-y-2" aria-hidden>
+      <motion.main
+        className="flex flex-col gap-9 px-5 pt-9"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={enterFast}
+      >
+        {Boolean(data.genres?.length) && (
+          <div className="flex flex-wrap items-center justify-center gap-5">
+            {(data.genres ?? []).map((genre) => (
+              <span key={genre.id} className={genrePillClass}>
+                {genre.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {showFriendsSection && (
+          <section className="flex flex-col gap-3">
+            <SectionHeader title="Friends" />
+            <div className="flex items-center">
+              {visibleFriendChips.map(({ userId, initialFrom }, index) => (
+                <div
+                  key={userId}
+                  className="relative flex size-[41px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 p-2.5"
+                  style={{
+                    backgroundColor: FRIEND_CHIP_COLORS[index % FRIEND_CHIP_COLORS.length],
+                    marginRight: index < visibleFriendChips.length - 1 || overflowFriendCount > 0 ? -4 : 0,
+                    zIndex: visibleFriendChips.length - index,
+                  }}
+                  title={initialFrom}
+                >
+                  <span className="font-space-grotesk text-[11px] font-bold leading-none text-white">
+                    {userInitials(initialFrom)}
+                  </span>
+                </div>
+              ))}
+              {overflowFriendCount > 0 ? (
+                <div
+                  className="relative z-0 flex size-[41px] shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800 p-2.5"
+                  title={`${overflowFriendCount} more`}
+                >
+                  <span className="font-space-grotesk text-[11px] font-bold leading-none text-neutral-300">
+                    +{overflowFriendCount}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        )}
+
+        {!isPreviewOnly && (
+          <>
+            <section className="flex flex-col gap-3">
+              <SectionHeader title="Streaming" />
+              {providers.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {providers.slice(0, 8).map((provider) => {
+                    const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
+                    const tmdbWatchUrl = getWatchProvidersPageUrl(data);
+                    const href = serviceUrl ?? tmdbWatchUrl;
+                    const inner = provider.logo_path ? (
+                      <img
+                        src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
+                        alt=""
+                        className="size-[45px] rounded-xl object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="size-[45px] rounded-xl bg-neutral-700" />
+                    );
+                    return href ? (
+                      <a
+                        key={`stream-${provider.provider_id}`}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl transition hover:opacity-80"
+                        title={provider.provider_name}
+                        aria-label={`${provider.provider_name}: open in a new tab`}
+                      >
+                        {inner}
+                      </a>
+                    ) : (
+                      <div
+                        key={`stream-${provider.provider_id}`}
+                        className="rounded-xl"
+                        title={provider.provider_name}
+                      >
+                        {inner}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-500 font-space-grotesk">
+                  No streaming provider data available.
+                </p>
+              )}
+            </section>
+
+            {data.overview && (
+              <section className="flex flex-col gap-3">
+                <SectionHeader
+                  title="Synopsis"
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setSynopsisExpanded((prev) => !prev)}
+                      className="text-neutral-400 transition hover:text-neutral-200"
+                      aria-label={synopsisExpanded ? "Collapse synopsis" : "Expand synopsis"}
+                      aria-expanded={synopsisExpanded}
+                    >
+                      <MoreHorizontal size={24} strokeWidth={2.5} />
+                    </button>
+                  }
+                />
+                <p
+                  className={`font-space-grotesk leading-relaxed text-neutral-200 ${
+                    synopsisExpanded ? "" : "line-clamp-3"
+                  }`}
+                >
+                  {data.overview}
+                </p>
+              </section>
+            )}
+
+            <section className="flex flex-col gap-3">
+              <SectionHeader title="Cast" />
+              {cast.length ? (
+                <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-5 pb-1">
+                    {cast.map((person) => (
+                      <CastPill
+                        key={`cast-${person.id}`}
+                        person={person}
+                        onSelect={() => navigate(`/person/${person.id}`)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-500 font-space-grotesk">
+                  No cast data available.
+                </p>
+              )}
+            </section>
+
+            {trailerUrl ? (
+              <section className="flex flex-col gap-3">
+                <SectionHeader title="Trailers" />
+                <a
+                  href={trailerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative block aspect-[373/186] w-full overflow-hidden rounded-3xl bg-neutral-800"
+                  aria-label={`Open ${title} trailer on YouTube`}
+                >
+                  {trailerBackdrop ? (
+                    <img
+                      src={trailerBackdrop}
+                      alt=""
+                      className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : null}
+                  <div className="absolute inset-0 bg-black/35 transition group-hover:bg-black/45" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition group-hover:bg-black/70">
+                      <Play size={26} fill="currentColor" strokeWidth={1.5} />
+                    </span>
+                  </div>
+                </a>
+              </section>
+            ) : null}
+
+            {recommendationItems.length > 0 ? (
+              <section className="flex flex-col gap-3">
+                <SectionHeader title="More like this" />
+                <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-5 pb-1">
+                    {recommendationItems.map((item) => (
+                      <div key={`reco-${item.media_type}-${item.id}`} className="w-44 shrink-0">
+                        <MediaCard
+                          item={item}
+                          isSaved={savedSet.has(stateKey(item.id, item.media_type))}
+                          scrollToTopOnOpen
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            ) : null}
+          </>
+        )}
+
+        {isPreviewOnly && (data.overview || isFetching) && (
+          <section className="flex flex-col gap-3">
+            <SectionHeader title="Synopsis" />
+            {isFetching ? (
+              <div className="space-y-2" aria-hidden>
                 <div className="h-4 w-full rounded bg-neutral-800/70 animate-pulse" />
                 <div className="h-4 w-[92%] rounded bg-neutral-800/70 animate-pulse" />
                 <div className="h-4 w-[85%] rounded bg-neutral-800/70 animate-pulse" />
               </div>
-            ) : (
-              data.overview && (
-                <motion.p
-                  className="mt-4 leading-relaxed text-neutral-200 font-space-grotesk"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.22, ease }}
-                >
-                  {data.overview}
-                </motion.p>
-              )
-            )}
+            ) : data.overview ? (
+              <p className="font-space-grotesk leading-relaxed text-neutral-200 line-clamp-3">
+                {data.overview}
+              </p>
+            ) : null}
+          </section>
+        )}
+      </motion.main>
 
-            {showWhoWantsToWatch && whoWants.data && (
-              <div
-                className={`mt-6 rounded-3xl border-t bg-neutral-800/80 p-4 ${
-                  (whoWants.data.watch_want_count ?? 0) >= (whoWants.data.participant_count ?? 1)
-                    ? "border-white"
-                    : "border-neutral-600"
-                }`}
-              >
-                <h2 className="font-space-grotesk text-sm font-semibold text-neutral-100">
-                  Who wants to watch
-                </h2>
-                <p className="mt-1 text-sm text-neutral-300">
-                  {(whoWants.data.watch_want_count ?? 0) >= (whoWants.data.participant_count ?? 1)
-                    ? "Everyone in your group wants to watch this."
-                    : `${whoWants.data.watch_want_count ?? 0}/${whoWants.data.participant_count ?? 0} in your group want to watch this.`}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {wantChips.length ? (
-                    wantChips.map(({ userId, displayName, initialFrom }) => (
-                      <div
-                        key={userId}
-                        className="flex w-20 shrink-0 flex-col items-center rounded-2xl px-2 py-2 text-neutral-300"
-                      >
-                        <WatchTogetherUserStack
-                          initialFrom={initialFrom}
-                          label={displayName}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-xs text-neutral-400">No one marked interest yet.</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {!isPreviewOnly && (
-              <>
-                <div className="mt-6">
-                  {getCast(data).length ? (
-                    <div className="mt-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                      <div className="flex gap-3 pb-1">
-                        {getCast(data).map((person) => (
-                          <div key={`cast-${person.id}`} className="w-36 shrink-0">
-                            <PeopleCard
-                              person={{
-                                id: person.id,
-                                name: person.name,
-                                profile_path: person.profile_path ?? null,
-                                known_for_department: person.character || "Cast",
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
-                      No cast data available.
-                    </p>
-                  )}
-                </div>
-
-                {trailerUrl ? (
-                  <div className="mt-6">
-                    <a
-                      href={trailerUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group relative block aspect-video w-full overflow-hidden rounded-3xl border-t border-neutral-600 bg-neutral-800"
-                      aria-label={`Open ${getTitle(data, media_type)} trailer on YouTube`}
-                    >
-                      {trailerBackdrop ? (
-                        <img
-                          src={trailerBackdrop}
-                          alt=""
-                          className="h-full w-full rounded-3xl object-cover transition duration-200"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 rounded-3xl bg-black/35 transition group-hover:bg-black/45" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition group-hover:bg-black/70">
-                          <Play size={26} fill="currentColor" strokeWidth={1.5} />
-                        </span>
-                      </div>
-                    </a>
-                  </div>
-                ) : null}
-
-                <div className="mt-6">
-                  {getUSProviders(data)?.flatrate?.length ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {getUSProviders(data)!.flatrate!.slice(0, 8).map((provider) => {
-                        const serviceUrl = providerMediaBrowseUrl(
-                          provider.provider_id,
-                          title,
-                        );
-                        const tmdbWatchUrl = getWatchProvidersPageUrl(data);
-                        const href = serviceUrl ?? tmdbWatchUrl;
-                        const inner = (
-                          <>
-                            {provider.logo_path ? (
-                              <img
-                                src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
-                                alt=""
-                                className="h-8 w-8 rounded-lg object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded-lg bg-neutral-700" />
-                            )}
-                          </>
-                        );
-                        return href ? (
-                          <a
-                            key={`stream-${provider.provider_id}`}
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-2xl border-t border-neutral-600 bg-neutral-800/80 p-1.5 transition hover:bg-neutral-700/80 hover:ring-1 hover:ring-neutral-500/50"
-                            title={
-                              serviceUrl
-                                ? `${provider.provider_name} — search for this title on their site`
-                                : `${provider.provider_name} — where to watch (TMDB)`
-                            }
-                            aria-label={
-                              serviceUrl
-                                ? `${provider.provider_name}: open streaming site search in a new tab`
-                                : `${provider.provider_name}: open where to watch on TMDB in a new tab`
-                            }
-                          >
-                            {inner}
-                          </a>
-                        ) : (
-                          <div
-                            key={`stream-${provider.provider_id}`}
-                            className="rounded-2xl border-t border-neutral-600 bg-neutral-800/80 p-1.5"
-                            title={provider.provider_name}
-                          >
-                            {inner}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-sm text-neutral-500 font-space-grotesk">
-                      No streaming provider data available.
-                    </p>
-                  )}
-                </div>
-
-                {recommendationItems.length > 0 ? (
-                  <div
-                    className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5"
-                    role="region"
-                    aria-label="Recommended titles"
-                  >
-                    {recommendationItems.map((item) => (
-                      <MediaCard
-                        key={`reco-${item.media_type}-${item.id}`}
-                        item={item}
-                        isSaved={savedSet.has(stateKey(item.id, item.media_type))}
-                        scrollToTopOnOpen
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </>
-            )}
-          </motion.div>
-        </div>
-      </div>
-
-      <div
-        className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3"
-      >
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-3">
         <AnimatePresence initial={false}>
           {isWatched && (
             <>
-            <motion.button
-              onClick={() => {
-                void (isDisliked ? actions.undislike() : actions.dislike());
-              }}
-              className={`${pill} ${isDisliked ? actionButtonActive : actionButtonInactive}`}
-              initial={{ opacity: 0, scale: 0.92, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 8 }}
-              transition={{ duration: 0.18, ease }}
-            >
-              <AnimatedNavIcon>
-                <ThumbsDown size={24} strokeWidth={2.5} />
-              </AnimatedNavIcon>
-            </motion.button>
-            <motion.button
-              onClick={() => {
-                void (isLiked ? actions.unlike() : actions.like());
-              }}
-              className={`${pill} ${isLiked ? actionButtonActive : actionButtonInactive}`}
-              initial={{ opacity: 0, scale: 0.92, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 8 }}
-              transition={{ duration: 0.18, ease, delay: 0.03 }}
-            >
-              <AnimatedNavIcon>
-                <ThumbsUp size={24} strokeWidth={2.5} />
-              </AnimatedNavIcon>
-            </motion.button>
+              <motion.button
+                onClick={() => {
+                  void (isDisliked ? actions.undislike() : actions.dislike());
+                }}
+                className={`${pill} ${isDisliked ? actionButtonActive : actionButtonInactive}`}
+                initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 8 }}
+                transition={{ duration: 0.18, ease }}
+              >
+                <AnimatedNavIcon>
+                  <ThumbsDown size={24} strokeWidth={2.5} />
+                </AnimatedNavIcon>
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  void (isLiked ? actions.unlike() : actions.like());
+                }}
+                className={`${pill} ${isLiked ? actionButtonActive : actionButtonInactive}`}
+                initial={{ opacity: 0, scale: 0.92, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 8 }}
+                transition={{ duration: 0.18, ease, delay: 0.03 }}
+              >
+                <AnimatedNavIcon>
+                  <ThumbsUp size={24} strokeWidth={2.5} />
+                </AnimatedNavIcon>
+              </motion.button>
             </>
           )}
         </AnimatePresence>
