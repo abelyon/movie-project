@@ -80,7 +80,7 @@ const getSeasonsLabel = (detail: MediaDetail, mediaType: string): string | undef
   if (mediaType !== "tv") return undefined;
   const seasons = (detail as TvDetail).number_of_seasons;
   return seasons != null && seasons > 0
-    ? `${seasons} season${seasons === 1 ? "" : "s"}`
+    ? `${seasons} Season${seasons === 1 ? "" : "s"}`
     : undefined;
 };
 
