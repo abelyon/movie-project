@@ -136,8 +136,9 @@ export type MovieDetail = {
     profile_path?: string | null;
   }>;
   runtime?: number;
-trailer_youtube_key?: string | null;
-recommendations?: MediaItem[];
+  trailer_youtube_key?: string | null;
+  recommendations?: MediaItem[];
+  certification?: string | null;
   media_type: "movie";
 };
 export type TvDetail = {
@@ -174,8 +175,9 @@ export type TvDetail = {
     profile_path?: string | null;
   }>;
   number_of_seasons?: number;
-trailer_youtube_key?: string | null;
-recommendations?: MediaItem[];
+  trailer_youtube_key?: string | null;
+  recommendations?: MediaItem[];
+  certification?: string | null;
   media_type: "tv";
 };
 

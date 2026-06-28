@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
@@ -10,7 +10,6 @@ import {
   useSavedList,
 } from "../../hooks/useMedia";
 import {
-  fetchMediaCertification,
   type MediaDetail,
   type MovieDetail,
   type TvDetail,
@@ -21,7 +20,6 @@ import {
   Clapperboard,
   Eye,
   Heart,
-  MoreHorizontal,
   Play,
   ThumbsDown,
   ThumbsUp,
@@ -171,7 +169,7 @@ function CastPill({
     <button
       type="button"
       onClick={onSelect}
-      className="flex shrink-0 items-center gap-5 rounded-[30px] bg-neutral-800 pr-6 text-left transition hover:bg-neutral-700/80"
+      className="flex shrink-0 items-center gap-5 rounded-[30px] bg-neutral-800 pr-6 text-left"
     >
       <img
         src={imageSrc}
@@ -204,10 +202,9 @@ const DetailPage = () => {
   const numericId = id ? parseInt(id, 10) : NaN;
   const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
-  const watchRegion =
-    user?.country_code && user.country_code.length === 2
-      ? user.country_code.toUpperCase()
-      : "US";
+  useEffect(() => {
+    setSynopsisExpanded(false);
+  }, [media_type, id]);
 
   const previewFromNav = (location.state as DetailLocationState | null)?.preview;
   const previewDetail =
@@ -257,16 +254,6 @@ const DetailPage = () => {
     queryFn: getFriendOverview,
     staleTime: 60_000,
     enabled: !!user,
-  });
-  const certificationQuery = useQuery({
-    queryKey: ["tmdb", "certification", media_type, numericId, watchRegion],
-    queryFn: () =>
-      fetchMediaCertification(media_type as "movie" | "tv", numericId, watchRegion),
-    enabled:
-      !isPreviewOnly &&
-      (media_type === "movie" || media_type === "tv") &&
-      !Number.isNaN(numericId),
-    staleTime: 30 * 60 * 1000,
   });
   const { data: savedList } = useSavedList();
   const savedSet = useMemo(
@@ -343,7 +330,7 @@ const DetailPage = () => {
     ? `${TMDB_IMAGE_BASE}/${POSTER_SIZE}${data.backdrop_path}`
     : poster;
   const voteDisplay = formatVoteDisplay(data.vote_average);
-  const certification = certificationQuery.data;
+  const certification = fetched?.certification ?? null;
   const durationLabel =
     media_type === "movie" && runtime != null && runtime > 0
       ? formatRuntimeMinutes(runtime)
@@ -471,9 +458,9 @@ const DetailPage = () => {
 
         {!isPreviewOnly && (
           <>
-            <section className="flex flex-col gap-3">
-              <SectionHeader title="Streaming" />
-              {providers.length ? (
+            {providers.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <SectionHeader title="Streaming" />
                 <div className="flex flex-wrap gap-2">
                   {providers.slice(0, 8).map((provider) => {
                     const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
@@ -513,33 +500,18 @@ const DetailPage = () => {
                     );
                   })}
                 </div>
-              ) : (
-                <p className="text-sm text-neutral-500 font-space-grotesk">
-                  No streaming provider data available.
-                </p>
-              )}
-            </section>
+              </section>
+            )}
 
             {data.overview && (
               <section className="flex flex-col gap-3">
-                <SectionHeader
-                  title="Synopsis"
-                  action={
-                    <button
-                      type="button"
-                      onClick={() => setSynopsisExpanded((prev) => !prev)}
-                      className="text-neutral-400 transition hover:text-neutral-200"
-                      aria-label={synopsisExpanded ? "Collapse synopsis" : "Expand synopsis"}
-                      aria-expanded={synopsisExpanded}
-                    >
-                      <MoreHorizontal size={24} strokeWidth={2.5} />
-                    </button>
-                  }
-                />
+                <SectionHeader title="Synopsis" />
                 <p
                   className={`font-space-grotesk leading-relaxed text-neutral-200 ${
                     synopsisExpanded ? "" : "line-clamp-3"
-                  }`}
+                  } ${!synopsisExpanded ? "cursor-pointer" : ""}`}
+                  onDoubleClick={() => setSynopsisExpanded((prev) => !prev)}
+                  title={synopsisExpanded ? undefined : "Double-click to read more"}
                 >
                   {data.overview}
                 </p>
@@ -574,7 +546,7 @@ const DetailPage = () => {
                   href={trailerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative block aspect-[373/186] w-full overflow-hidden rounded-3xl bg-neutral-800"
+                  className="group relative block aspect-[373/186] w-full overflow-hidden rounded-3xl bg-neutral-800 xl:max-w-xl"
                   aria-label={`Open ${title} trailer on YouTube`}
                 >
                   {trailerBackdrop ? (
@@ -627,7 +599,13 @@ const DetailPage = () => {
                 <div className="h-4 w-[85%] rounded bg-neutral-800/70 animate-pulse" />
               </div>
             ) : data.overview ? (
-              <p className="font-space-grotesk leading-relaxed text-neutral-200 line-clamp-3">
+              <p
+                className={`font-space-grotesk leading-relaxed text-neutral-200 ${
+                  synopsisExpanded ? "" : "line-clamp-3"
+                } ${!synopsisExpanded ? "cursor-pointer" : ""}`}
+                onDoubleClick={() => setSynopsisExpanded((prev) => !prev)}
+                title={synopsisExpanded ? undefined : "Double-click to read more"}
+              >
                 {data.overview}
               </p>
             ) : null}

@@ -191,30 +191,38 @@ class TmdbController extends Controller
         }
 
         $json = $response->json();
-        $results = is_array($json) && isset($json['results']) && is_array($json['results'])
-            ? $json['results']
-            : [];
-        $cert = null;
-        foreach ($results as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            if (strtoupper((string) ($row['iso_3166_1'] ?? '')) !== $region) {
-                continue;
-            }
-            $rating = trim((string) ($row['rating'] ?? ''));
-            if ($rating !== '') {
-                $cert = $rating;
-                break;
-            }
-        }
+        $payload = is_array($json) ? $json : [];
+        $cert = $this->extractTvCertificationFromContentRatings($payload, $region);
 
         return response()->json([
             'watch_region' => $region,
             'certification' => $cert,
         ], 200);
     }
-private function extractMovieCertificationFromReleaseDates(array $payload, string $region): ?string
+
+    private function extractTvCertificationFromContentRatings(array $payload, string $region): ?string
+    {
+        $results = isset($payload['results']) && is_array($payload['results'])
+            ? $payload['results']
+            : [];
+        $upper = strtoupper($region);
+        foreach ($results as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if (strtoupper((string) ($row['iso_3166_1'] ?? '')) !== $upper) {
+                continue;
+            }
+            $rating = trim((string) ($row['rating'] ?? ''));
+            if ($rating !== '') {
+                return $rating;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractMovieCertificationFromReleaseDates(array $payload, string $region): ?string
     {
         $upper = strtoupper($region);
         foreach ($payload['results'] ?? [] as $block) {
@@ -228,8 +236,7 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
             if (! is_array($dates)) {
                 continue;
             }
-            $preferred = [];
-            $fallback = [];
+            $byType = [];
             foreach ($dates as $d) {
                 if (! is_array($d)) {
                     continue;
@@ -239,17 +246,17 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
                     continue;
                 }
                 $type = (int) ($d['type'] ?? 0);
-                if ($type === 3) {
-                    $preferred[] = $c;
-                } else {
-                    $fallback[] = $c;
+                $byType[$type][] = $c;
+            }
+            foreach ([3, 4, 2, 5, 6, 1] as $type) {
+                if (isset($byType[$type][0])) {
+                    return $byType[$type][0];
                 }
             }
-            if ($preferred !== []) {
-                return $preferred[0];
-            }
-            if ($fallback !== []) {
-                return $fallback[0];
+            foreach ($byType as $certs) {
+                if ($certs !== []) {
+                    return $certs[0];
+                }
             }
         }
 
@@ -373,7 +380,7 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
 
         $response = Http::get("{$url}/movie/{$id}", [
             'api_key' => $apiKey,
-            'append_to_response' => 'credits,watch/providers,videos,recommendations',
+            'append_to_response' => 'credits,watch/providers,videos,recommendations,release_dates',
         ]);
         $json = $response->json();
         $mid = (int) $id;
@@ -382,6 +389,11 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
         $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
         unset($json['watch/providers']);
         $json['watch_providers'] = $watchProviders;
+        $releaseDates = $json['release_dates'] ?? null;
+        unset($json['release_dates']);
+        $json['certification'] = is_array($releaseDates)
+            ? $this->extractMovieCertificationFromReleaseDates($releaseDates, $region)
+            : null;
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
         $videos = $json['videos'] ?? null;
@@ -406,7 +418,7 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
 
         $response = Http::get("{$url}/tv/{$id}", [
             'api_key' => $apiKey,
-            'append_to_response' => 'credits,watch/providers,videos,recommendations',
+            'append_to_response' => 'credits,watch/providers,videos,recommendations,content_ratings',
         ]);
         $json = $response->json();
         $tid = (int) $id;
@@ -415,6 +427,11 @@ private function extractMovieCertificationFromReleaseDates(array $payload, strin
         $watchProviders = $this->tmdbRegionPayload($byCountry, $region);
         unset($json['watch/providers']);
         $json['watch_providers'] = $watchProviders;
+        $contentRatings = $json['content_ratings'] ?? null;
+        unset($json['content_ratings']);
+        $json['certification'] = is_array($contentRatings)
+            ? $this->extractTvCertificationFromContentRatings($contentRatings, $region)
+            : null;
         $json['cast'] = $json['credits']['cast'] ?? [];
         unset($json['credits']);
         $videos = $json['videos'] ?? null;
