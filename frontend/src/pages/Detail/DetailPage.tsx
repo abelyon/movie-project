@@ -127,6 +127,11 @@ const heroBadgeClass =
 const genrePillClass =
   "flex h-10 shrink-0 items-center justify-center rounded-[26px] border-t border-neutral-600 bg-neutral-800/80 px-4 py-2 font-space-grotesk text-base font-bold text-neutral-300";
 
+const formatGenreLabel = (genre: { id: number; name: string }): string => {
+  if (genre.id === 878 || genre.name === "Science Fiction") return "Sci-Fi";
+  return genre.name;
+};
+
 function SectionHeader({
   title,
   action,
@@ -420,7 +425,7 @@ const DetailPage = () => {
             <div className="mx-auto flex w-max items-center gap-5 pb-1">
               {(data.genres ?? []).map((genre) => (
                 <span key={genre.id} className={genrePillClass}>
-                  {genre.name}
+                  {formatGenreLabel(genre)}
                 </span>
               ))}
             </div>
