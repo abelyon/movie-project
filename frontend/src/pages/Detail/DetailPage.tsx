@@ -422,7 +422,7 @@ const DetailPage = () => {
       >
         {Boolean(data.genres?.length) && (
           <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="mx-auto flex w-max items-center gap-5 pb-1">
+            <div className="mx-auto flex w-max items-center gap-3 pb-1">
               {(data.genres ?? []).map((genre) => (
                 <span key={genre.id} className={genrePillClass}>
                   {formatGenreLabel(genre)}
@@ -532,7 +532,7 @@ const DetailPage = () => {
               <SectionHeader title="Cast" emphasized />
               {cast.length ? (
                 <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 pb-1">
+                  <div className="flex gap-3 pb-1">
                     {cast.map((person) => (
                       <CastPill
                         key={`cast-${person.id}`}
@@ -582,7 +582,7 @@ const DetailPage = () => {
               <section className="flex flex-col gap-3">
                 <SectionHeader title="More like this" />
                 <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 pb-1">
+                  <div className="flex gap-3 pb-1">
                     {recommendationItems.map((item) => (
                       <div key={`reco-${item.media_type}-${item.id}`} className="w-44 shrink-0">
                         <MediaCard
