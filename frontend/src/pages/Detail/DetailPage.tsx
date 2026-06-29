@@ -421,14 +421,12 @@ const DetailPage = () => {
         transition={enterFast}
       >
         {Boolean(data.genres?.length) && (
-          <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="mx-auto flex w-max items-center gap-3 pb-1">
-              {(data.genres ?? []).map((genre) => (
-                <span key={genre.id} className={genrePillClass}>
-                  {formatGenreLabel(genre)}
-                </span>
-              ))}
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {(data.genres ?? []).map((genre) => (
+              <span key={genre.id} className={genrePillClass}>
+                {formatGenreLabel(genre)}
+              </span>
+            ))}
           </div>
         )}
 
