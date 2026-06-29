@@ -216,7 +216,7 @@ const MediaCard = ({
       {isSaved && (
         <div className={`absolute right-0 bottom-0 ${mediaBadgePosterOverlayPadding}`}>
           <span className={mediaBadgePosterClass}>
-            <Bookmark size={mediaBadgePosterIconSize} strokeWidth={2.5} fill="currentColor" className="text-white" />
+            <Bookmark size={mediaBadgePosterIconSize} strokeWidth={2.5} fill="currentColor" />
           </span>
         </div>
       )}
