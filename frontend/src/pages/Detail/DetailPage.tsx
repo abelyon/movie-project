@@ -466,21 +466,29 @@ const DetailPage = () => {
             {providers.length > 0 && (
               <section className="flex flex-col gap-3">
                 <SectionHeader title="Streaming" />
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-3">
                   {providers.slice(0, 8).map((provider) => {
                     const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
                     const tmdbWatchUrl = getWatchProvidersPageUrl(data);
                     const href = serviceUrl ?? tmdbWatchUrl;
-                    const inner = provider.logo_path ? (
+                    const logo = provider.logo_path ? (
                       <img
                         src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
                         alt=""
-                        className="size-[45px] rounded-xl object-cover"
+                        className="size-[45px] shrink-0 rounded-xl object-cover"
                         loading="lazy"
                         decoding="async"
                       />
                     ) : (
-                      <div className="size-[45px] rounded-xl bg-neutral-700" />
+                      <div className="size-[45px] shrink-0 rounded-xl bg-neutral-700" />
+                    );
+                    const content = (
+                      <>
+                        {logo}
+                        <span className="font-space-grotesk text-base font-bold text-neutral-100">
+                          {provider.provider_name}
+                        </span>
+                      </>
                     );
                     return href ? (
                       <a
@@ -488,19 +496,19 @@ const DetailPage = () => {
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-xl transition hover:opacity-80"
+                        className="flex items-center gap-2.5 transition hover:opacity-80"
                         title={provider.provider_name}
                         aria-label={`${provider.provider_name}: open in a new tab`}
                       >
-                        {inner}
+                        {content}
                       </a>
                     ) : (
                       <div
                         key={`stream-${provider.provider_id}`}
-                        className="rounded-xl"
+                        className="flex items-center gap-2.5"
                         title={provider.provider_name}
                       >
-                        {inner}
+                        {content}
                       </div>
                     );
                   })}
