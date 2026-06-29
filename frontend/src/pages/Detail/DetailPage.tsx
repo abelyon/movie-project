@@ -39,15 +39,6 @@ const BACKDROP_SIZE = "w1280";
 const PROFILE_SIZE = "w185";
 const PROVIDER_LOGO_SIZE = "w92";
 
-const FRIEND_CHIP_COLORS = [
-  "#fb2c36",
-  "#00c950",
-  "#ad46ff",
-  "#2b7fff",
-  "#f0b100",
-  "#ff6900",
-] as const;
-
 const MAX_VISIBLE_FRIEND_CHIPS = 9;
 
 const getTitle = (detail: MediaDetail, mediaType: string): string =>
@@ -105,12 +96,10 @@ const formatVoteDisplay = (vote: number | null | undefined): string | null => {
   return vote.toFixed(1);
 };
 
-const userInitials = (name: string): string => {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  }
-  return [...name.trim()].slice(0, 2).join("").toUpperCase() || "?";
+const userInitial = (name: string): string => {
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  return trimmed[0]!.toUpperCase();
 };
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
@@ -353,7 +342,7 @@ const DetailPage = () => {
   const overflowFriendCount = Math.max(0, wantChips.length - MAX_VISIBLE_FRIEND_CHIPS);
   const cast = getCast(data);
   const providers = getUSProviders(data)?.flatrate ?? [];
-  const metadataParts = [date ? date.slice(0, 4) : null, durationLabel, voteDisplay].filter(
+  const metadataParts = [date ? date.slice(0, 4) : null, durationLabel].filter(
     (part): part is string => Boolean(part),
   );
 
@@ -437,22 +426,21 @@ const DetailPage = () => {
               {visibleFriendChips.map(({ userId, initialFrom }, index) => (
                 <div
                   key={userId}
-                  className="relative flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900"
+                  className="relative flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800/80"
                   style={{
-                    backgroundColor: FRIEND_CHIP_COLORS[index % FRIEND_CHIP_COLORS.length],
                     marginRight: index < visibleFriendChips.length - 1 || overflowFriendCount > 0 ? -4 : 0,
                     zIndex: visibleFriendChips.length - index,
                   }}
                   title={initialFrom}
                 >
-                  <span className="font-space-grotesk text-base font-extrabold leading-none tracking-wide text-white">
-                    {userInitials(initialFrom)}
+                  <span className="font-space-grotesk text-2xl font-extrabold leading-none tracking-wide text-neutral-100">
+                    {userInitial(initialFrom)}
                   </span>
                 </div>
               ))}
               {overflowFriendCount > 0 ? (
                 <div
-                  className="relative z-0 flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800"
+                  className="relative z-0 flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800/80"
                   title={`${overflowFriendCount} more`}
                 >
                   <span className="font-space-grotesk text-base font-extrabold leading-none tracking-wide text-neutral-300">
