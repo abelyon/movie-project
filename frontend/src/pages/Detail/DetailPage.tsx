@@ -179,12 +179,12 @@ function CastPill({
     <button
       type="button"
       onClick={onSelect}
-      className="flex shrink-0 items-center gap-5 rounded-3xl bg-neutral-800/80 pr-6 text-left"
+      className="flex shrink-0 items-center gap-5 rounded-4xl bg-neutral-800/80 pr-6 text-left"
     >
       <img
         src={imageSrc}
         alt=""
-        className="size-[90px] shrink-0 rounded-l-3xl object-cover"
+        className="size-[90px] shrink-0 rounded-l-4xl object-cover"
         loading="lazy"
         decoding="async"
       />
@@ -421,7 +421,7 @@ const DetailPage = () => {
         transition={enterFast}
       >
         {Boolean(data.genres?.length) && (
-          <div className="flex flex-wrap items-center justify-center gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {(data.genres ?? []).map((genre) => (
               <span key={genre.id} className={genrePillClass}>
                 {formatGenreLabel(genre)}
@@ -554,7 +554,7 @@ const DetailPage = () => {
                   href={trailerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group relative block aspect-[373/186] w-full overflow-hidden rounded-3xl bg-neutral-800 xl:max-w-xl"
+                  className="group relative block aspect-[373/186] w-full overflow-hidden rounded-4xl bg-neutral-800 xl:max-w-xl"
                   aria-label={`Open ${title} trailer on YouTube`}
                 >
                   {trailerBackdrop ? (
@@ -587,7 +587,6 @@ const DetailPage = () => {
                           item={item}
                           isSaved={savedSet.has(stateKey(item.id, item.media_type))}
                           scrollToTopOnOpen
-                          rounded="3xl"
                         />
                       </div>
                     ))}
