@@ -1,18 +1,24 @@
+import { profileColorBgClass } from "../constants/profileColors";
 import { userNameInitial } from "../utils/userDisplay";
+
 export function WatchTogetherUserStack({
   initialFrom,
   label,
+  profileColor,
   active = false,
 }: {
-initialFrom: string;
+  initialFrom: string;
   label: string;
+  profileColor?: string | null;
   active?: boolean;
 }) {
   return (
     <>
       <span
         className={`flex h-9 w-9 items-center justify-center rounded-full font-space-grotesk font-semibold leading-none ${
-          active ? "bg-neutral-200 text-neutral-900" : "bg-neutral-700/80 text-neutral-100"
+          active
+            ? "bg-neutral-200 text-neutral-900"
+            : `${profileColorBgClass(profileColor)} text-neutral-100`
         }`}
         aria-hidden
       >

@@ -19,14 +19,14 @@ class FriendController extends Controller
         $user = $request->user();
 
         $incoming = FriendRequest::query()
-            ->with('requester:id,name,email,public_user_id')
+            ->with('requester:id,name,email,public_user_id,profile_color')
             ->where('recipient_id', $user->id)
             ->where('status', 'pending')
             ->latest('id')
             ->get();
 
         $outgoing = FriendRequest::query()
-            ->with('recipient:id,name,email,public_user_id')
+            ->with('recipient:id,name,email,public_user_id,profile_color')
             ->where('requester_id', $user->id)
             ->where('status', 'pending')
             ->latest('id')
@@ -34,8 +34,8 @@ class FriendController extends Controller
 
         $accepted = FriendRequest::query()
             ->with([
-                'requester:id,name,email,public_user_id',
-                'recipient:id,name,email,public_user_id',
+                'requester:id,name,email,public_user_id,profile_color',
+                'recipient:id,name,email,public_user_id,profile_color',
             ])
             ->where('status', 'accepted')
             ->where(function ($q) use ($user): void {
@@ -205,7 +205,7 @@ class FriendController extends Controller
         event(new FriendRequestUpdated((int) $recipient->id, 'friend_request.received', (int) $friendRequest->id));
 
         return response()->json([
-            'request' => $friendRequest->load('recipient:id,name,email,public_user_id'),
+            'request' => $friendRequest->load('recipient:id,name,email,public_user_id,profile_color'),
         ], 201);
     }
 
@@ -231,8 +231,8 @@ class FriendController extends Controller
 
         return response()->json([
             'request' => $friendRequest->load([
-                'requester:id,name,email,public_user_id',
-                'recipient:id,name,email,public_user_id',
+                'requester:id,name,email,public_user_id,profile_color',
+                'recipient:id,name,email,public_user_id,profile_color',
             ]),
         ]);
     }
@@ -259,8 +259,8 @@ class FriendController extends Controller
 
         return response()->json([
             'request' => $friendRequest->load([
-                'requester:id,name,email,public_user_id',
-                'recipient:id,name,email,public_user_id',
+                'requester:id,name,email,public_user_id,profile_color',
+                'recipient:id,name,email,public_user_id,profile_color',
             ]),
         ]);
     }

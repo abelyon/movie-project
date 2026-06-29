@@ -663,6 +663,7 @@ const hasModalBackdrop =
                               <WatchTogetherUserStack
                                 initialFrom={friend.name}
                                 label={friend.name}
+                                profileColor={friend.profile_color}
                                 active={active}
                               />
                             </button>

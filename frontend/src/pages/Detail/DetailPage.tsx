@@ -29,6 +29,7 @@ import type { MediaItem } from "../../api/types";
 import { previewItemToDetail } from "../../utils/detailPreview";
 import { providerMediaBrowseUrl } from "../../utils/streamingProviderLinks";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
+import { UserAvatar } from "../../components/UserAvatar";
 import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
 import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
@@ -94,12 +95,6 @@ const getRecommendations = (detail: MediaDetail): MediaItem[] =>
 const formatVoteDisplay = (vote: number | null | undefined): string | null => {
   if (vote == null || vote <= 0) return null;
   return vote.toFixed(1);
-};
-
-const userInitial = (name: string): string => {
-  const trimmed = name.trim();
-  if (!trimmed) return "?";
-  return trimmed[0]!.toUpperCase();
 };
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;
@@ -269,14 +264,17 @@ const DetailPage = () => {
 
   const wantChips = useMemo(() => {
     const ids = whoWants.data?.want_friend_user_ids ?? [];
-    const friendNameById = new Map<number, string>();
-    for (const friend of friendsOverview.data?.friends ?? []) {
-      friendNameById.set(friend.id, friend.name);
-    }
+    const friendById = new Map(
+      (friendsOverview.data?.friends ?? []).map((friend) => [friend.id, friend]),
+    );
     return ids.map((userId) => {
-      const friendName = friendNameById.get(userId);
-      const displayName = friendName ?? `User ${userId}`;
-      return { userId, displayName, initialFrom: displayName };
+      const friend = friendById.get(userId);
+      const displayName = friend?.name ?? `User ${userId}`;
+      return {
+        userId,
+        displayName,
+        profileColor: friend?.profile_color ?? null,
+      };
     });
   }, [whoWants.data?.want_friend_user_ids, friendsOverview.data?.friends]);
 
@@ -423,19 +421,22 @@ const DetailPage = () => {
           <section className="flex flex-col gap-3">
             <SectionHeader title="Friends" />
             <div className="flex items-center">
-              {visibleFriendChips.map(({ userId, initialFrom }, index) => (
+              {visibleFriendChips.map(({ userId, displayName, profileColor }, index) => (
                 <div
                   key={userId}
-                  className="relative flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-neutral-900 bg-neutral-800/80"
+                  className="relative shrink-0"
                   style={{
                     marginRight: index < visibleFriendChips.length - 1 || overflowFriendCount > 0 ? -4 : 0,
                     zIndex: visibleFriendChips.length - index,
                   }}
-                  title={initialFrom}
+                  title={displayName}
                 >
-                  <span className="font-space-grotesk text-2xl font-extrabold leading-none tracking-wide text-neutral-100">
-                    {userInitial(initialFrom)}
-                  </span>
+                  <UserAvatar
+                    name={displayName}
+                    profileColor={profileColor}
+                    size="lg"
+                    bordered
+                  />
                 </div>
               ))}
               {overflowFriendCount > 0 ? (

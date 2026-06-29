@@ -7,6 +7,7 @@ export type User = {
   name: string;
   email: string;
   country_code: string | null;
+  profile_color: string | null;
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
@@ -95,6 +96,7 @@ export async function fetchVerifiedSessionUser(): Promise<User> {
 export async function updateProfile(input: {
   name: string;
   country_code?: string | null;
+  profile_color?: string | null;
 }): Promise<User> {
   await getCsrfCookie();
   const { data } = await api.patch<{ user: User }>(

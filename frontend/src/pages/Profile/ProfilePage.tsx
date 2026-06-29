@@ -17,8 +17,14 @@ import {
   resendVerificationEmail,
   updateProfile,
 } from "../../api/auth";
-import { userNameInitial } from "../../utils/userDisplay";
 import { TMDB_COUNTRY_OPTIONS } from "../../constants/tmdbCountries";
+import { UserAvatar } from "../../components/UserAvatar";
+import {
+  PROFILE_COLOR_BG_CLASSES,
+  PROFILE_COLOR_IDS,
+  resolveProfileColor,
+  type ProfileColorId,
+} from "../../constants/profileColors";
 
 const cardClass =
   "rounded-4xl border-t border-neutral-600 bg-neutral-800/80 p-5 backdrop-blur-md";
@@ -34,6 +40,9 @@ const ProfilePage = () => {
   const [searchError, setSearchError] = useState("");
   const [nameInput, setNameInput] = useState(user?.name ?? "");
   const [countryCode, setCountryCode] = useState(user?.country_code ?? "");
+  const [profileColorInput, setProfileColorInput] = useState<ProfileColorId>(
+    resolveProfileColor(user?.profile_color),
+  );
   const [nameError, setNameError] = useState("");
   const [verifyMessage, setVerifyMessage] = useState("");
 
@@ -45,7 +54,9 @@ const ProfilePage = () => {
     setCountryCode(user?.country_code ?? "");
   }, [user?.country_code]);
 
-  const avatarInitial = useMemo(() => userNameInitial(user?.name), [user?.name]);
+  useEffect(() => {
+    setProfileColorInput(resolveProfileColor(user?.profile_color));
+  }, [user?.profile_color]);
 
   const joinedAt = useMemo(() => {
     if (!user?.created_at) return "Unknown";
@@ -185,12 +196,11 @@ const ProfilePage = () => {
             <p className="text-sm uppercase tracking-wide text-neutral-400">Profile</p>
             <h1 className="mt-1 text-3xl font-space-grotesk font-bold">{user.name}</h1>
           </div>
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border-t border-neutral-600 bg-neutral-900/70 font-space-grotesk text-xl font-semibold text-neutral-100"
-            aria-hidden
-          >
-            {avatarInitial}
-          </div>
+          <UserAvatar
+            name={user.name}
+            profileColor={profileColorInput}
+            shape="rounded"
+          />
         </div>
 
         {showUnverifiedBanner && (
@@ -251,6 +261,7 @@ const ProfilePage = () => {
                 void updateProfileMutation.mutateAsync({
                   name: trimmed,
                   country_code: cc.length === 2 ? cc : null,
+                  profile_color: profileColorInput,
                 });
               }}
             >
@@ -282,6 +293,28 @@ const ProfilePage = () => {
                   ))}
                 </select>
               </label>
+              <div>
+                <span className="text-xs text-neutral-500">Profile color</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PROFILE_COLOR_IDS.map((colorId) => {
+                    const selected = profileColorInput === colorId;
+                    return (
+                      <button
+                        key={colorId}
+                        type="button"
+                        onClick={() => setProfileColorInput(colorId)}
+                        aria-label={colorId}
+                        aria-pressed={selected}
+                        className={`size-8 rounded-full ${PROFILE_COLOR_BG_CLASSES[colorId]} transition ${
+                          selected
+                            ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-900"
+                            : "hover:scale-105"
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
               <button
                 type="submit"
                 disabled={updateProfileMutation.isPending}

@@ -6,6 +6,7 @@ export type FriendUser = {
   name: string;
   email: string;
   public_user_id: string;
+  profile_color: string | null;
 };
 
 export type FriendRequestRow = {

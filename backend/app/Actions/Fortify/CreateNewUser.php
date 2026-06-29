@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Support\ProfileColors;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -40,6 +41,7 @@ class CreateNewUser implements CreatesNewUsers
             'name' => $input['name'],
             'email' => $email,
             'password' => Hash::make($input['password']),
+            'profile_color' => ProfileColors::DEFAULT,
         ]);
     }
 }
