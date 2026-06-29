@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import type { MediaItem } from "../../api/types";
-import { getState, stateKey } from "../../api/userMedia";
+import { getFriendOverview } from "../../api/friends";
+import { getState, getWhoWantsToWatch, stateKey } from "../../api/userMedia";
 import { Bookmark, Clapperboard, Star, Tv } from "lucide-react";
 import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
 import { useAuth } from "../../contexts/AuthContext";
@@ -112,9 +113,26 @@ const MediaCard = ({
     });
   };
 
+  const prefetchFriendsSocial = () => {
+    if (!user) return;
+    const mt = item.media_type;
+    if (mt !== "movie" && mt !== "tv") return;
+    void queryClient.prefetchQuery({
+      queryKey: ["friends", "overview"],
+      queryFn: getFriendOverview,
+      staleTime: 60_000,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: ["user", "media", "who-wants-to-watch", mt, item.id],
+      queryFn: () => getWhoWantsToWatch(item.id, mt),
+      staleTime: 30_000,
+    });
+  };
+
   const prefetchForDetail = () => {
     prefetchDetail();
     prefetchUserMediaState();
+    prefetchFriendsSocial();
   };
 
   const openDetail = async () => {
@@ -140,6 +158,20 @@ const MediaCard = ({
         },
         staleTime: 30_000,
       }),
+      user
+        ? queryClient.ensureQueryData({
+            queryKey: ["friends", "overview"],
+            queryFn: getFriendOverview,
+            staleTime: 60_000,
+          })
+        : Promise.resolve(),
+      user && (item.media_type === "movie" || item.media_type === "tv")
+        ? queryClient.ensureQueryData({
+            queryKey: ["user", "media", "who-wants-to-watch", item.media_type, item.id],
+            queryFn: () => getWhoWantsToWatch(item.id, item.media_type),
+            staleTime: 30_000,
+          })
+        : Promise.resolve(),
     ]);
     navigate(`/${item.media_type}/${item.id}`, { state: { preview: item } });
     if (scrollToTopOnOpen) {

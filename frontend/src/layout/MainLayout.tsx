@@ -168,9 +168,8 @@ const MainLayout = () => {
   } = useQuery({
     queryKey: ["friends", "overview"],
     queryFn: getFriendOverview,
-    enabled: isSaved,
-    staleTime: 30_000,
-    refetchOnMount: "always",
+    enabled: !!user,
+    staleTime: 60_000,
   });
   const friends = friendsOverview?.friends ?? [];
 
