@@ -102,7 +102,7 @@ const getRecommendations = (detail: MediaDetail): MediaItem[] =>
 
 const formatVoteDisplay = (vote: number | null | undefined): string | null => {
   if (vote == null || vote <= 0) return null;
-  return String(Math.round(vote * 10));
+  return vote.toFixed(1);
 };
 
 const userInitials = (name: string): string => {
@@ -353,7 +353,7 @@ const DetailPage = () => {
   const overflowFriendCount = Math.max(0, wantChips.length - MAX_VISIBLE_FRIEND_CHIPS);
   const cast = getCast(data);
   const providers = getUSProviders(data)?.flatrate ?? [];
-  const metadataParts = [date ? date.slice(0, 4) : null, durationLabel].filter(
+  const metadataParts = [date ? date.slice(0, 4) : null, durationLabel, voteDisplay].filter(
     (part): part is string => Boolean(part),
   );
 
@@ -385,7 +385,7 @@ const DetailPage = () => {
               )}
             </span>
             {voteDisplay ? (
-              <span className={`${heroBadgeClass} font-space-grotesk text-xl font-bold text-neutral-100`}>
+              <span className={`${heroBadgeClass} font-space-grotesk text-xl font-medium text-neutral-100`}>
                 {voteDisplay}
               </span>
             ) : null}
