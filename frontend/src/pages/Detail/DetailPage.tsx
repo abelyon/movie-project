@@ -34,6 +34,11 @@ import { getFriendOverview } from "../../api/friends";
 import { useAuth } from "../../contexts/AuthContext";
 import { getWhoWantsToWatch, stateKey } from "../../api/userMedia";
 import MediaCard from "../Discovery/MediaCard";
+import {
+  mediaBadgeHeroClass,
+  mediaBadgeHeroIconSize,
+  mediaBadgeHeroScoreClass,
+} from "../../constants/mediaBadges";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 const BACKDROP_SIZE = "w1280";
@@ -104,9 +109,6 @@ const pill =
   "flex items-center justify-center bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl p-4 cursor-pointer transition-colors";
 const actionButtonInactive = "text-neutral-400";
 const actionButtonActive = "text-neutral-100";
-
-const heroBadgeClass =
-  "flex h-10 min-w-[60px] items-center justify-center rounded-[42px] border-t border-neutral-600 bg-neutral-800/80 px-4 py-2 backdrop-blur-md";
 
 const genrePillClass =
   "flex h-10 shrink-0 items-center justify-center rounded-[26px] border-t border-neutral-600 bg-neutral-800/80 px-4 py-2 font-space-grotesk text-base font-bold text-neutral-300";
@@ -365,15 +367,15 @@ const DetailPage = () => {
         />
         <div className="relative z-10 flex h-full flex-col justify-between p-5">
           <div className="flex items-center justify-between">
-            <span className={heroBadgeClass}>
+            <span className={mediaBadgeHeroClass}>
               {media_type === "movie" ? (
-                <Clapperboard size={20} strokeWidth={2.5} className="text-neutral-100" />
+                <Clapperboard size={mediaBadgeHeroIconSize} strokeWidth={2.5} className="text-neutral-100" />
               ) : (
-                <Tv size={20} strokeWidth={2.5} className="text-neutral-100" />
+                <Tv size={mediaBadgeHeroIconSize} strokeWidth={2.5} className="text-neutral-100" />
               )}
             </span>
             {voteDisplay ? (
-              <span className={`${heroBadgeClass} font-space-grotesk text-xl font-medium text-neutral-100`}>
+              <span className={`${mediaBadgeHeroClass} ${mediaBadgeHeroScoreClass}`}>
                 {voteDisplay}
               </span>
             ) : null}
@@ -572,8 +574,8 @@ const DetailPage = () => {
             {recommendationItems.length > 0 ? (
               <section className="flex flex-col gap-3">
                 <SectionHeader title="More like this" />
-                <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 pb-1">
+                <div className="-mx-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-5 px-5 pb-1">
                     {recommendationItems.map((item) => (
                       <div key={`reco-${item.media_type}-${item.id}`} className="w-44 shrink-0">
                         <MediaCard

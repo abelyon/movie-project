@@ -7,6 +7,12 @@ import { getState, stateKey } from "../../api/userMedia";
 import { Bookmark, Clapperboard, Star, Tv } from "lucide-react";
 import { detailQueryKey, fetchDetail } from "../../hooks/useDetail";
 import { useAuth } from "../../contexts/AuthContext";
+import {
+  mediaBadgePosterClass,
+  mediaBadgePosterIconSize,
+  mediaBadgePosterOverlayPadding,
+  mediaBadgePosterScoreClass,
+} from "../../constants/mediaBadges";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const NO_PHOTO_PLACEHOLDER =
@@ -193,40 +199,40 @@ const MediaCard = ({
           </motion.div>
         )}
       </div>
-      <div className="pointer-events-none absolute top-0 left-0 flex w-full justify-between p-4">
-        <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md">
+      <div className={`pointer-events-none absolute top-0 left-0 flex w-full justify-between ${mediaBadgePosterOverlayPadding}`}>
+        <span className={mediaBadgePosterClass}>
           {item.media_type === "movie" ? (
-            <Clapperboard size={16} strokeWidth={2.5} />
+            <Clapperboard size={mediaBadgePosterIconSize} strokeWidth={2.5} />
           ) : item.media_type === "tv" ? (
-            <Tv size={16} strokeWidth={2.5} />
+            <Tv size={mediaBadgePosterIconSize} strokeWidth={2.5} />
           ) : null}
         </span>
         {item.vote_average != null && item.vote_average > 0 && (
-          <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-sm text-neutral-100 backdrop-blur-md font-space-grotesk font-medium">
+          <span className={`${mediaBadgePosterClass} ${mediaBadgePosterScoreClass}`}>
             {item.vote_average.toFixed(1)}
           </span>
         )}
       </div>
       {isSaved && (
-        <div className="absolute right-0 bottom-0 p-4">
-          <span className="flex h-8 items-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-white backdrop-blur-md">
-            <Bookmark size={16} strokeWidth={2.5} fill="currentColor" />
+        <div className={`absolute right-0 bottom-0 ${mediaBadgePosterOverlayPadding}`}>
+          <span className={mediaBadgePosterClass}>
+            <Bookmark size={mediaBadgePosterIconSize} strokeWidth={2.5} fill="currentColor" className="text-white" />
           </span>
         </div>
       )}
       {watchTogetherMeta && showWatchTogetherBadge && (
-        <div className="pointer-events-none absolute right-0 bottom-0 flex flex-col items-start gap-2 p-4">
+        <div className={`pointer-events-none absolute right-0 bottom-0 flex flex-col items-start gap-2 ${mediaBadgePosterOverlayPadding}`}>
           {watchTogetherMeta.wantCount >= watchTogetherMeta.participantCount ? (
             <span
               title="Everyone wants to watch"
-              className="flex h-8 min-w-[40px] items-center justify-center rounded-4xl border-t border-white bg-neutral-800/80 px-2.5 py-1.5 text-neutral-100 backdrop-blur-md"
+              className={`${mediaBadgePosterClass} border-white text-neutral-100`}
             >
-              <Star size={16} strokeWidth={2.5} fill="currentColor" />
+              <Star size={mediaBadgePosterIconSize} strokeWidth={2.5} fill="currentColor" />
             </span>
           ) : (
             <span
               title={`${watchTogetherMeta.wantCount} selected user(s) want to watch`}
-              className="flex h-8 min-w-[40px] items-center justify-center rounded-4xl border-t border-neutral-600 bg-neutral-800/80 px-2.5 py-1.5 text-sm text-neutral-100 backdrop-blur-md font-space-grotesk font-medium"
+              className={`${mediaBadgePosterClass} ${mediaBadgePosterScoreClass}`}
             >
               {watchTogetherMeta.wantCount}
             </span>
