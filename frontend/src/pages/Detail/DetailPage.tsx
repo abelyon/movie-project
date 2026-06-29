@@ -568,9 +568,12 @@ const DetailPage = () => {
                   ) : null}
                   <div className="absolute inset-0 bg-black/35 transition group-hover:bg-black/45" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/60 bg-black/55 text-white shadow-lg backdrop-blur-sm transition group-hover:bg-black/70">
-                      <Play size={26} fill="currentColor" strokeWidth={1.5} />
-                    </span>
+                    <Play
+                      size={32}
+                      fill="currentColor"
+                      strokeWidth={1.5}
+                      className="text-white transition-transform duration-200 group-hover:scale-125"
+                    />
                   </div>
                 </a>
               </section>
