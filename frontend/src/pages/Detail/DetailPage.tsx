@@ -522,7 +522,7 @@ const DetailPage = () => {
               <SectionHeader title="Cast" emphasized />
               {cast.length ? (
                 <div className="-mx-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 pl-5 pb-1">
+                  <div className="flex gap-5 px-5 pb-1">
                     {cast.map((person) => (
                       <CastPill
                         key={`cast-${person.id}`}
@@ -530,7 +530,6 @@ const DetailPage = () => {
                         onSelect={() => navigate(`/person/${person.id}`)}
                       />
                     ))}
-                    <div className="shrink-0 w-5" aria-hidden />
                   </div>
                 </div>
               ) : (
@@ -576,7 +575,7 @@ const DetailPage = () => {
               <section className="flex flex-col gap-3">
                 <SectionHeader title="More like this" />
                 <div className="-mx-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 pl-5 pb-1">
+                  <div className="flex gap-5 px-5 pb-1">
                     {recommendationItems.map((item) => (
                       <div key={`reco-${item.media_type}-${item.id}`} className="w-44 shrink-0">
                         <MediaCard
@@ -586,7 +585,6 @@ const DetailPage = () => {
                         />
                       </div>
                     ))}
-                    <div className="shrink-0 w-5" aria-hidden />
                   </div>
                 </div>
               </section>
