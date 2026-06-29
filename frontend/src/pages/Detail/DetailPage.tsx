@@ -179,12 +179,12 @@ function CastPill({
     <button
       type="button"
       onClick={onSelect}
-      className="flex shrink-0 items-center gap-5 rounded-[30px] bg-neutral-800/80 pr-6 text-left"
+      className="flex shrink-0 items-center gap-5 rounded-3xl bg-neutral-800/80 pr-6 text-left"
     >
       <img
         src={imageSrc}
         alt=""
-        className="size-[90px] shrink-0 rounded-l-[30px] object-cover"
+        className="size-[90px] shrink-0 rounded-l-3xl object-cover"
         loading="lazy"
         decoding="async"
       />
@@ -587,6 +587,7 @@ const DetailPage = () => {
                           item={item}
                           isSaved={savedSet.has(stateKey(item.id, item.media_type))}
                           scrollToTopOnOpen
+                          rounded="3xl"
                         />
                       </div>
                     ))}

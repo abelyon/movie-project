@@ -25,6 +25,7 @@ const MediaCard = ({
   scrollToTopOnOpen = false,
   eager = false,
   onImageSettled,
+  rounded = "4xl",
 }: {
   item: MediaItem;
   isSaved?: boolean;
@@ -32,7 +33,9 @@ const MediaCard = ({
   scrollToTopOnOpen?: boolean;
   eager?: boolean;
   onImageSettled?: () => void;
+  rounded?: "3xl" | "4xl";
 }) => {
+  const cardRounded = rounded === "3xl" ? "rounded-3xl" : "rounded-4xl";
   const { user } = useAuth();
   const watchRegion = user?.country_code && user.country_code.length === 2
     ? user.country_code.toUpperCase()
@@ -146,13 +149,13 @@ const MediaCard = ({
       onMouseEnter={prefetchForDetail}
       onFocus={prefetchForDetail}
       onTouchStart={prefetchForDetail}
-      className={`relative m-auto flex flex-col items-center justify-center rounded-4xl overflow-hidden cursor-pointer aspect-2/3 w-full ${
+      className={`relative m-auto flex flex-col items-center justify-center ${cardRounded} overflow-hidden cursor-pointer aspect-2/3 w-full ${
         everyoneWantsToWatch ? "border-y-2 border-white" : ""
       }`}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
-      <div className="relative h-full w-full overflow-hidden rounded-4xl bg-neutral-800/80">
+      <div className={`relative h-full w-full overflow-hidden ${cardRounded} bg-neutral-800/80`}>
         <img
           ref={imageRef}
           src={imageSrc}
@@ -178,11 +181,11 @@ const MediaCard = ({
         />
         {!imageLoaded && (
           <motion.div
-            className="absolute inset-0 rounded-4xl bg-neutral-800/90"
+            className={`absolute inset-0 ${cardRounded} bg-neutral-800/90`}
             style={{ pointerEvents: "none" }}
           >
             <motion.div
-              className="absolute inset-0 rounded-4xl bg-linear-to-r from-transparent via-neutral-600/30 to-transparent"
+              className={`absolute inset-0 ${cardRounded} bg-linear-to-r from-transparent via-neutral-600/30 to-transparent`}
               animate={{ x: ["-100%", "100%"] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
               style={{ width: "60%", willChange: "transform" }}
