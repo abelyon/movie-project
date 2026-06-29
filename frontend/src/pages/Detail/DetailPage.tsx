@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useLayoutEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
@@ -196,7 +196,8 @@ const DetailPage = () => {
   const numericId = id ? parseInt(id, 10) : NaN;
   const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
     setSynopsisExpanded(false);
   }, [media_type, id]);
 
@@ -518,8 +519,8 @@ const DetailPage = () => {
             <section className="flex flex-col gap-3">
               <SectionHeader title="Cast" emphasized />
               {cast.length ? (
-                <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 pb-1">
+                <div className="-mx-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-5 px-5 pb-1">
                     {cast.map((person) => (
                       <CastPill
                         key={`cast-${person.id}`}
