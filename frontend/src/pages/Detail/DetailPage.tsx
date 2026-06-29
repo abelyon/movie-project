@@ -466,52 +466,54 @@ const DetailPage = () => {
             {providers.length > 0 && (
               <section className="flex flex-col gap-3">
                 <SectionHeader title="Streaming" />
-                <div className="flex flex-col gap-3">
-                  {providers.slice(0, 8).map((provider) => {
-                    const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
-                    const tmdbWatchUrl = getWatchProvidersPageUrl(data);
-                    const href = serviceUrl ?? tmdbWatchUrl;
-                    const logo = provider.logo_path ? (
-                      <img
-                        src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
-                        alt=""
-                        className="size-[45px] shrink-0 rounded-xl object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="size-[45px] shrink-0 rounded-xl bg-neutral-700" />
-                    );
-                    const content = (
-                      <>
-                        {logo}
-                        <span className="font-space-grotesk text-base font-bold text-neutral-100">
-                          {provider.provider_name}
-                        </span>
-                      </>
-                    );
-                    return href ? (
-                      <a
-                        key={`stream-${provider.provider_id}`}
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 transition hover:opacity-80"
-                        title={provider.provider_name}
-                        aria-label={`${provider.provider_name}: open in a new tab`}
-                      >
-                        {content}
-                      </a>
-                    ) : (
-                      <div
-                        key={`stream-${provider.provider_id}`}
-                        className="flex items-center gap-2.5"
-                        title={provider.provider_name}
-                      >
-                        {content}
-                      </div>
-                    );
-                  })}
+                <div className={horizontalScrollOuterClass}>
+                  <div className={horizontalScrollInnerClass}>
+                    {providers.map((provider) => {
+                      const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
+                      const tmdbWatchUrl = getWatchProvidersPageUrl(data);
+                      const href = serviceUrl ?? tmdbWatchUrl;
+                      const logo = provider.logo_path ? (
+                        <img
+                          src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
+                          alt=""
+                          className="size-[45px] shrink-0 rounded-xl object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="size-[45px] shrink-0 rounded-xl bg-neutral-700" />
+                      );
+                      const content = (
+                        <>
+                          {logo}
+                          <span className="whitespace-nowrap font-space-grotesk text-base font-bold text-neutral-100">
+                            {provider.provider_name}
+                          </span>
+                        </>
+                      );
+                      return href ? (
+                        <a
+                          key={`stream-${provider.provider_id}`}
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex shrink-0 items-center gap-2.5 transition hover:opacity-80"
+                          title={provider.provider_name}
+                          aria-label={`${provider.provider_name}: open in a new tab`}
+                        >
+                          {content}
+                        </a>
+                      ) : (
+                        <div
+                          key={`stream-${provider.provider_id}`}
+                          className="flex shrink-0 items-center gap-2.5"
+                          title={provider.provider_name}
+                        >
+                          {content}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </section>
             )}
