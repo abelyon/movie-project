@@ -415,7 +415,7 @@ const DetailPage = () => {
       </section>
 
       <motion.main
-        className="flex flex-col gap-9 px-5 pt-9"
+        className="flex flex-col gap-9 px-5 pt-5"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={enterFast}
