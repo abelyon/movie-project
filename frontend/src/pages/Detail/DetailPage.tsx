@@ -179,7 +179,7 @@ function CastPill({
     <button
       type="button"
       onClick={onSelect}
-      className="flex shrink-0 items-center gap-5 rounded-[30px] bg-neutral-800 pr-6 text-left"
+      className="flex shrink-0 items-center gap-5 rounded-[30px] bg-neutral-800/80 pr-6 text-left"
     >
       <img
         src={imageSrc}
@@ -188,7 +188,7 @@ function CastPill({
         loading="lazy"
         decoding="async"
       />
-      <div className="flex flex-col gap-2 py-2">
+      <div className="flex flex-col py-2">
         <p className="whitespace-nowrap font-space-grotesk text-base font-bold text-neutral-100">
           {person.name}
         </p>
@@ -421,7 +421,7 @@ const DetailPage = () => {
         transition={enterFast}
       >
         {Boolean(data.genres?.length) && (
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-5">
             {(data.genres ?? []).map((genre) => (
               <span key={genre.id} className={genrePillClass}>
                 {formatGenreLabel(genre)}
@@ -530,7 +530,7 @@ const DetailPage = () => {
               <SectionHeader title="Cast" emphasized />
               {cast.length ? (
                 <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-3 pb-1">
+                  <div className="flex gap-5 pb-1">
                     {cast.map((person) => (
                       <CastPill
                         key={`cast-${person.id}`}
@@ -580,7 +580,7 @@ const DetailPage = () => {
               <section className="flex flex-col gap-3">
                 <SectionHeader title="More like this" />
                 <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-3 pb-1">
+                  <div className="flex gap-5 pb-1">
                     {recommendationItems.map((item) => (
                       <div key={`reco-${item.media_type}-${item.id}`} className="w-44 shrink-0">
                         <MediaCard
