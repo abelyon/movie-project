@@ -694,13 +694,6 @@ const hasModalBackdrop =
               </button>
             </div>
           )}
-
-          <div
-            className={`${floatingActionButtonBaseClass} pointer-events-none opacity-0`}
-            aria-hidden
-          >
-            <User size={24} strokeWidth={2.5} />
-          </div>
         </div>
       )}
 
