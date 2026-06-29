@@ -415,7 +415,7 @@ const DetailPage = () => {
       </section>
 
       <motion.main
-        className="flex flex-col gap-9 px-5 pt-5"
+        className="flex flex-col gap-9 px-5 pt-0"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={enterFast}
@@ -466,57 +466,57 @@ const DetailPage = () => {
           </section>
         )}
 
+        <section className="flex flex-col gap-3">
+          <SectionHeader title="Streaming" />
+          {providers.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {providers.slice(0, 8).map((provider) => {
+                const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
+                const tmdbWatchUrl = getWatchProvidersPageUrl(data);
+                const href = serviceUrl ?? tmdbWatchUrl;
+                const inner = provider.logo_path ? (
+                  <img
+                    src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
+                    alt=""
+                    className="size-[45px] rounded-xl object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="size-[45px] rounded-xl bg-neutral-700" />
+                );
+                return href ? (
+                  <a
+                    key={`stream-${provider.provider_id}`}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl transition hover:opacity-80"
+                    title={provider.provider_name}
+                    aria-label={`${provider.provider_name}: open in a new tab`}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div
+                    key={`stream-${provider.provider_id}`}
+                    className="rounded-xl"
+                    title={provider.provider_name}
+                  >
+                    {inner}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="font-space-grotesk text-sm font-medium text-neutral-400">
+              Not available on any platform.
+            </p>
+          )}
+        </section>
+
         {!isPreviewOnly && (
           <>
-            <section className="flex flex-col gap-3">
-              <SectionHeader title="Streaming" />
-              {providers.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {providers.slice(0, 8).map((provider) => {
-                    const serviceUrl = providerMediaBrowseUrl(provider.provider_id, title);
-                    const tmdbWatchUrl = getWatchProvidersPageUrl(data);
-                    const href = serviceUrl ?? tmdbWatchUrl;
-                    const inner = provider.logo_path ? (
-                      <img
-                        src={`${TMDB_IMAGE_BASE}/${PROVIDER_LOGO_SIZE}${provider.logo_path}`}
-                        alt=""
-                        className="size-[45px] rounded-xl object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="size-[45px] rounded-xl bg-neutral-700" />
-                    );
-                    return href ? (
-                      <a
-                        key={`stream-${provider.provider_id}`}
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-xl transition hover:opacity-80"
-                        title={provider.provider_name}
-                        aria-label={`${provider.provider_name}: open in a new tab`}
-                      >
-                        {inner}
-                      </a>
-                    ) : (
-                      <div
-                        key={`stream-${provider.provider_id}`}
-                        className="rounded-xl"
-                        title={provider.provider_name}
-                      >
-                        {inner}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="font-space-grotesk text-sm font-medium text-neutral-400">
-                  Not available on any platform.
-                </p>
-              )}
-            </section>
-
             {data.overview && (
               <section className="flex flex-col gap-3">
                 <SectionHeader title="Synopsis" emphasized />
