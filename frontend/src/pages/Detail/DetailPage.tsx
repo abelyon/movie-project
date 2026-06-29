@@ -574,8 +574,8 @@ const DetailPage = () => {
             {recommendationItems.length > 0 ? (
               <section className="flex flex-col gap-3">
                 <SectionHeader title="More like this" />
-                <div className="-mx-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex gap-5 px-5 pb-1">
+                <div className="-ml-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-5 pl-5 pr-5 pb-1">
                     {recommendationItems.map((item) => (
                       <div key={`reco-${item.media_type}-${item.id}`} className="w-44 shrink-0">
                         <MediaCard
