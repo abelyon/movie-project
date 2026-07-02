@@ -11,6 +11,8 @@ import type { MainLayoutOutletContext } from "../../layout/MainLayout";
 const SavedPage = () => {
   const outletContext = useOutletContext<MainLayoutOutletContext | undefined>();
   const savedControls = outletContext?.savedControls ?? {
+    showSearch: false,
+    query: "",
     sortBy: "default" as const,
     filterType: "all" as const,
     selectedGenreIds: [] as number[],
@@ -28,6 +30,8 @@ const SavedPage = () => {
     setYearFrom: () => {},
   };
   const {
+    showSearch,
+    query,
     sortBy,
     filterType,
     selectedGenreIds,
@@ -103,7 +107,20 @@ const SavedPage = () => {
     return sorted;
   }, [filteredSaved, sortBy]);
 
-  const { data: stateMap } = useMediaStateMap(processedSaved);
+  const trimmedQuery = query.trim();
+  const canSearch = showSearch && trimmedQuery.length >= 2;
+  const isShowingSearchHint = showSearch && trimmedQuery.length > 0 && trimmedQuery.length < 2;
+
+  const searchFilteredSaved = useMemo(() => {
+    if (!canSearch) return processedSaved;
+    const normalized = trimmedQuery.toLowerCase();
+    return processedSaved.filter((item) => {
+      const title = (item.title ?? item.name ?? "").toLowerCase();
+      return title.includes(normalized);
+    });
+  }, [canSearch, processedSaved, trimmedQuery]);
+
+  const { data: stateMap } = useMediaStateMap(searchFilteredSaved);
   const watchTogetherNameMap = useMemo(() => {
     const map = new Map<number, string>();
     if (user) map.set(user.id, "You");
@@ -114,15 +131,22 @@ const SavedPage = () => {
   }, [friendsOverview.data?.friends, user]);
   const visibleSaved = useMemo(
     () =>
-      processedSaved.filter((item) => {
+      searchFilteredSaved.filter((item) => {
         const key = stateKey(item.id, item.media_type);
         if (favoriteFilter === "favorited" && !stateMap?.[key]?.is_favorited) return false;
         if (watchedFilter === "all") return true;
         const watched = Boolean(stateMap?.[key]?.watched_at);
         return watchedFilter === "watched" ? watched : !watched;
       }),
-    [favoriteFilter, processedSaved, stateMap, watchedFilter],
+    [favoriteFilter, searchFilteredSaved, stateMap, watchedFilter],
   );
+
+  const searchNotice = isShowingSearchHint
+    ? "Type at least 2 characters to search."
+    : canSearch && !visibleSaved.length
+      ? `No saved items match "${trimmedQuery}".`
+      : null;
+  const showPinnedSearchNotice = showSearch && searchNotice !== null;
 
   if (isLoading && (saved ?? []).length === 0) {
     return (
@@ -136,8 +160,16 @@ const SavedPage = () => {
   if (isError) return <p className="p-5 text-red-400">Error: {error?.message}</p>;
 
   return (
-    <div>
-      {!visibleSaved.length ? (
+    <div className={showSearch ? "pt-20" : ""}>
+      {showPinnedSearchNotice && (
+        <div className="px-5 pb-5">
+          <p role="status" className="mx-5 text-left text-sm text-neutral-300 font-space-grotesk">
+            {searchNotice}
+          </p>
+        </div>
+      )}
+
+      {!visibleSaved.length && !showPinnedSearchNotice ? (
         <div className="p-5">
           <p className="text-neutral-400">
             {saved?.length
@@ -149,7 +181,7 @@ const SavedPage = () => {
                 : "No saved items yet. Tap the bookmark on any movie or show's detail page."}
           </p>
         </div>
-      ) : (
+      ) : isShowingSearchHint ? null : (
         <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6 gap-5">
           {visibleSaved.map((item) => (
             <MediaCard

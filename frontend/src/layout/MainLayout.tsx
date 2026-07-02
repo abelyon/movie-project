@@ -94,6 +94,8 @@ export type MainLayoutOutletContext = {
     setSelectedWatchProviderIds: Dispatch<SetStateAction<number[]>>;
   };
   savedControls: {
+    showSearch: boolean;
+    query: string;
     sortBy: SortKind;
     filterType: FilterType;
     selectedGenreIds: number[];
@@ -135,6 +137,9 @@ const MainLayout = () => {
   const [sShowFriends, setSShowFriends] = useState(false);
   const [sShowFilter, setSShowFilter] = useState(false);
   const [sShowSort, setSShowSort] = useState(false);
+  const [sShowSearch, setSShowSearch] = useState(false);
+  const [sQuery, setSQuery] = useState("");
+  const sSearchInputRef = useRef<HTMLInputElement>(null);
   const [sSortBy, setSSortBy] = useState<SortKind>("default");
   const [sFilterType, setSFilterType] = useState<FilterType>("all");
   const [sSelectedGenreIds, setSSelectedGenreIds] = useState<number[]>([]);
@@ -153,6 +158,10 @@ const MainLayout = () => {
   useEffect(() => {
     if (dShowSearch) dSearchInputRef.current?.focus();
   }, [dShowSearch]);
+
+  useEffect(() => {
+    if (sShowSearch) sSearchInputRef.current?.focus();
+  }, [sShowSearch]);
 
   useEffect(() => {
     setDSelectedGenreIds([]);
@@ -215,6 +224,8 @@ const hasModalBackdrop =
         setSelectedWatchProviderIds: setDSelectedWatchProviderIds,
       },
       savedControls: {
+        showSearch: sShowSearch,
+        query: sQuery,
         sortBy: sSortBy,
         filterType: sFilterType,
         selectedGenreIds: sSelectedGenreIds,
@@ -235,7 +246,7 @@ const hasModalBackdrop =
     [
       dShowSearch, dQuery, dSortBy, dFilterType, dSelectedGenreIds, dMinRating, dWatchedFilter, dFavoriteFilter, dYearFrom,
       dSelectedWatchProviderIds, watchRegion,
-      sSortBy, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom,
+      sSortBy, sShowSearch, sQuery, sFilterType, sSelectedGenreIds, sMinRating, sWatchedFilter, sFavoriteFilter, sYearFrom,
       selectedFriendIds, showFriendsSocial,
     ],
   );
@@ -490,6 +501,38 @@ const hasModalBackdrop =
       )}
 
       {user && isSaved && (
+        <>
+          <AnimatePresence>
+            {sShowSearch && (
+              <motion.div
+                key="saved-search-bar"
+                className="fixed top-0 left-0 right-0 z-[70] p-5"
+                initial={{ opacity: 0, y: -14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -14 }}
+                transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                <div className="mx-auto max-w-4xl">
+                  <motion.div
+                    className="bg-neutral-800/80 border-t border-neutral-600 backdrop-blur-md rounded-4xl px-4 py-3"
+                    initial={{ scale: 0.98 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0.98 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <input
+                      ref={sSearchInputRef}
+                      value={sQuery}
+                      onChange={(e) => setSQuery(e.target.value)}
+                      placeholder="Search saved titles..."
+                      className="w-full bg-transparent text-neutral-100 placeholder:text-neutral-400 outline-none font-space-grotesk"
+                    />
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
         <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
           <div className="relative">
             <AnimatePresence>
@@ -583,7 +626,7 @@ const hasModalBackdrop =
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowFilter((prev) => !prev); setSShowSort(false); setSShowFriends(false); setSShowSearch(false); }} className={`${floatingActionButtonBaseClass} ${sFilterType !== "all" || sMinRating !== 0 || sWatchedFilter !== "all" || sFavoriteFilter !== "all" || sYearFrom.trim() !== "" || sSelectedGenreIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>
                 <Filter size={24} strokeWidth={2.5} />
               </AnimatedNavIcon>
@@ -618,7 +661,7 @@ const hasModalBackdrop =
                 </motion.div>
               )}
             </AnimatePresence>
-            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
+            <button type="button" onClick={() => { setSShowSort((prev) => !prev); setSShowFilter(false); setSShowFriends(false); setSShowSearch(false); }} className={`${floatingActionButtonBaseClass} ${sSortBy !== "default" ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}>
               <AnimatedNavIcon>{sortButtonIcon(sSortBy)}</AnimatedNavIcon>
             </button>
           </div>
@@ -684,6 +727,7 @@ const hasModalBackdrop =
                   setSShowFriends((prev) => !prev);
                   setSShowFilter(false);
                   setSShowSort(false);
+                  setSShowSearch(false);
                   setShowFriendsSocial(false);
                 }}
                 className={`${floatingActionButtonBaseClass} ${selectedFriendIds.length > 0 ? "bg-emerald-500/80 border-emerald-400 text-white" : ""}`}
@@ -694,7 +738,28 @@ const hasModalBackdrop =
               </button>
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (sShowSearch) {
+                setSShowSearch(false);
+                setSQuery("");
+                return;
+              }
+              setSShowSearch(true);
+              setSShowFilter(false);
+              setSShowSort(false);
+              setSShowFriends(false);
+            }}
+            className={floatingActionButtonBaseClass}
+          >
+            <AnimatedNavIcon>
+              {sShowSearch ? <X size={24} strokeWidth={2.5} /> : <Search size={24} strokeWidth={2.5} />}
+            </AnimatedNavIcon>
+          </button>
         </div>
+        </>
       )}
 
       {user && (
