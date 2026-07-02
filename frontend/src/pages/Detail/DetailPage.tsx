@@ -367,8 +367,8 @@ const DetailPage = () => {
           <div className="absolute inset-0 bg-neutral-800" />
         )}
         <div
-          className="absolute inset-0 bg-gradient-to-b from-neutral-500/0 via-neutral-950/20 to-neutral-950"
-          style={{ backgroundImage: "linear-gradient(to bottom, rgba(125,125,125,0) 0%, #0a0a0a 86.5%)" }}
+          className="absolute inset-0 bg-gradient-to-b from-neutral-500/0 via-neutral-900/20 to-neutral-900"
+          style={{ backgroundImage: "linear-gradient(to bottom, rgba(125,125,125,0) 0%, #171717 86.5%)" }}
         />
         <div className="relative z-10 flex h-full flex-col justify-between p-5">
           <div className="flex items-center justify-between">
