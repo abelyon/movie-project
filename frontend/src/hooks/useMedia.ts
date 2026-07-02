@@ -200,6 +200,10 @@ const refreshListsNow = async (qc: ReturnType<typeof useQueryClient>) => {
   ]);
 };
 
+const cancelStateQueries = async (qc: ReturnType<typeof useQueryClient>) => {
+  await qc.cancelQueries({ queryKey: ["user", "media", "state"] });
+};
+
 export const useMediaState = (tmdbId: number | undefined, mediaType: string | undefined) => {
   const { user } = useAuth();
   const valid =
@@ -218,6 +222,7 @@ export const useMediaState = (tmdbId: number | undefined, mediaType: string | un
     gcTime: 30 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
   });
 };
 
@@ -279,164 +284,74 @@ export const useMediaActions = (
     };
   }
 
+  const runMutation = async (
+    updates: Partial<UserMediaState>,
+    request: () => Promise<void>,
+    onSuccess?: () => void,
+  ) => {
+    await cancelStateQueries(qc);
+    const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
+    const prevBatches = snapshotBatchMaps();
+    const prevSaved = snapshotSavedLists(qc);
+    patchLocalAndGrid(updates);
+    onSuccess?.();
+    try {
+      await request();
+      await refreshListsNow(qc);
+    } catch {
+      qc.setQueryData(qKey, prev);
+      for (const { key, data } of prevBatches) {
+        qc.setQueryData(key, data);
+      }
+      restoreSavedListsSnapshot(qc, prevSaved);
+    }
+  };
+
   return {
     save: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedLists(qc);
-      patchLocalAndGrid({ is_saved: true });
-      optimisticUpsertSavedList(qc, savedPreview());
-      try {
-        await saveMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-        restoreSavedListsSnapshot(qc, prevSaved);
-      }
+      await runMutation({ is_saved: true }, () => saveMedia(tmdbId, mediaType), () =>
+        optimisticUpsertSavedList(qc, savedPreview()),
+      );
     },
     unsave: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      const prevSaved = snapshotSavedLists(qc);
-      patchLocalAndGrid({ is_saved: false });
-      optimisticRemoveFromSavedList(qc, tmdbId, mediaType);
-      try {
-        await unsaveMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-        restoreSavedListsSnapshot(qc, prevSaved);
-      }
+      await runMutation({ is_saved: false }, () => unsaveMedia(tmdbId, mediaType), () =>
+        optimisticRemoveFromSavedList(qc, tmdbId, mediaType),
+      );
     },
     like: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({
-        is_liked: true,
-        is_disliked: false,
-        watched_at: new Date().toISOString(),
-      });
-      try {
-        await likeMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation(
+        { is_liked: true, is_disliked: false, watched_at: new Date().toISOString() },
+        () => likeMedia(tmdbId, mediaType),
+      );
     },
     unlike: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({ is_liked: false });
-      try {
-        await unlikeMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation({ is_liked: false }, () => unlikeMedia(tmdbId, mediaType));
     },
     dislike: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({
-        is_disliked: true,
-        is_liked: false,
-        watched_at: new Date().toISOString(),
-      });
-      try {
-        await dislikeMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation(
+        { is_disliked: true, is_liked: false, watched_at: new Date().toISOString() },
+        () => dislikeMedia(tmdbId, mediaType),
+      );
     },
     undislike: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({ is_disliked: false });
-      try {
-        await undislikeMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation({ is_disliked: false }, () => undislikeMedia(tmdbId, mediaType));
     },
     favorite: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({ is_favorited: true });
-      try {
-        await favoriteMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation({ is_favorited: true }, () => favoriteMedia(tmdbId, mediaType));
     },
     unfavorite: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({ is_favorited: false });
-      try {
-        await unfavoriteMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation({ is_favorited: false }, () => unfavoriteMedia(tmdbId, mediaType));
     },
     watched: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({ watched_at: new Date().toISOString() });
-      try {
-        await watchedMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation({ watched_at: new Date().toISOString() }, () =>
+        watchedMedia(tmdbId, mediaType),
+      );
     },
     unwatched: async () => {
-      const prev = qc.getQueryData<UserMediaState>(qKey) ?? DEFAULT_STATE;
-      const prevBatches = snapshotBatchMaps();
-      patchLocalAndGrid({
-        watched_at: null,
-        is_liked: false,
-        is_disliked: false,
-      });
-      try {
-        await unwatchedMedia(tmdbId, mediaType);
-        await refreshListsNow(qc);
-      } catch {
-        qc.setQueryData(qKey, prev);
-        for (const { key, data } of prevBatches) {
-          qc.setQueryData(key, data);
-        }
-      }
+      await runMutation(
+        { watched_at: null, is_liked: false, is_disliked: false },
+        () => unwatchedMedia(tmdbId, mediaType),
+      );
     },
   };
 };

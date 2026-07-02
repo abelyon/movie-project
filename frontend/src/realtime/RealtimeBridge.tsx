@@ -33,7 +33,11 @@ const RealtimeBridge = () => {
       });
 
       channel.listen(".social.signal.updated", () => {
-        void queryClient.invalidateQueries({ queryKey: ["user", "media"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media", "saved"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media", "liked"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media", "favorited"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media", "who-wants-to-watch"] });
+        void queryClient.invalidateQueries({ queryKey: ["user", "media", "state", "batch"] });
       });
     };
 
