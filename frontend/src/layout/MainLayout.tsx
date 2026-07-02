@@ -241,7 +241,7 @@ const hasModalBackdrop =
   );
 
   return (
-    <div className="relative isolate flex min-h-screen flex-col bg-neutral-900">
+    <div className="relative isolate flex min-h-screen flex-col bg-neutral-950">
       <div
         className="pointer-events-none fixed inset-0 opacity-35"
         style={{
