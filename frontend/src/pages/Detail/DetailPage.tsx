@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type { MediaItem } from "../../api/types";
 import { previewItemToDetail } from "../../utils/detailPreview";
+import { formatVoteAverage } from "../../utils/formatVoteAverage";
 import { providerMediaBrowseUrl } from "../../utils/streamingProviderLinks";
 import { AnimatedNavIcon } from "../../components/AnimatedNavIcon";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -99,7 +100,7 @@ const getRecommendations = (detail: MediaDetail): MediaItem[] =>
 
 const formatVoteDisplay = (vote: number | null | undefined): string | null => {
   if (vote == null || vote <= 0) return null;
-  return vote.toFixed(1);
+  return formatVoteAverage(vote);
 };
 
 const ease = [0.25, 0.46, 0.45, 0.94] as const;

@@ -14,6 +14,7 @@ import {
   mediaBadgePosterOverlayPadding,
   mediaBadgePosterScoreClass,
 } from "../../constants/mediaBadges";
+import { formatVoteAverage } from "../../utils/formatVoteAverage";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 const NO_PHOTO_PLACEHOLDER =
@@ -241,7 +242,7 @@ const MediaCard = ({
         </span>
         {item.vote_average != null && item.vote_average > 0 && (
           <span className={`${mediaBadgePosterClass} ${mediaBadgePosterScoreClass}`}>
-            {item.vote_average.toFixed(1)}
+            {formatVoteAverage(item.vote_average)}
           </span>
         )}
       </div>
