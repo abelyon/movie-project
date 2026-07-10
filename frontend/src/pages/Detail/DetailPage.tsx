@@ -271,20 +271,42 @@ const DetailPage = () => {
   }, [data]);
 
   const wantChips = useMemo(() => {
-    const ids = whoWants.data?.want_friend_user_ids ?? [];
+    const wantUserIds = whoWants.data?.want_user_ids ?? [];
+    const friendIds = whoWants.data?.want_friend_user_ids ?? [];
     const friendById = new Map(
       (friendsOverview.data?.friends ?? []).map((friend) => [friend.id, friend]),
     );
-    return ids.map((userId) => {
+
+    const chips: {
+      userId: number;
+      displayName: string;
+      profileColor: string | null;
+    }[] = [];
+
+    if (user && wantUserIds.includes(user.id)) {
+      chips.push({
+        userId: user.id,
+        displayName: user.name,
+        profileColor: user.profile_color ?? null,
+      });
+    }
+
+    for (const userId of friendIds) {
       const friend = friendById.get(userId);
-      const displayName = friend?.name ?? `User ${userId}`;
-      return {
+      chips.push({
         userId,
-        displayName,
+        displayName: friend?.name ?? `User ${userId}`,
         profileColor: friend?.profile_color ?? null,
-      };
-    });
-  }, [whoWants.data?.want_friend_user_ids, friendsOverview.data?.friends]);
+      });
+    }
+
+    return chips;
+  }, [
+    whoWants.data?.want_user_ids,
+    whoWants.data?.want_friend_user_ids,
+    friendsOverview.data?.friends,
+    user,
+  ]);
 
   if (!media_type || !id)
     return <div className="p-5 text-neutral-400">Invalid route</div>;
@@ -427,7 +449,7 @@ const DetailPage = () => {
 
         {showFriendsSection && (
           <section className="flex flex-col gap-3">
-            <SectionHeader title="Friends" />
+            <SectionHeader title="Want to watch" />
             <div className="flex items-center">
               {visibleFriendChips.map(({ userId, displayName, profileColor }, index) => (
                 <div
